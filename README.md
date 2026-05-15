@@ -1,70 +1,70 @@
 # Glitter
 
-Glitter 是一个面向 Obsidian 的灵感记录插件，帮助你在阅读、写作和整理笔记时，快速记录、分类整理、回看复用并插入灵感。
+Glitter 是一个面向 Obsidian 的灵感记录插件，适合保存那些值得留下、却不一定需要立刻建成正式笔记的小点子、片段和灵感。它让你先把内容轻量收住，避免 vault 被大量临时笔记塞满；等真正需要沉淀时，再按需整理、建文件或插回正文。
 
-Glitter is an Obsidian plugin for quickly capturing, organizing, revisiting, and inserting ideas while you work in your vault.
+Glitter is an Obsidian plugin for saving ideas that are worth keeping but not necessarily worth turning into full notes yet. It gives you a lightweight place to catch them first, so your vault does not fill up with throwaway files; when an idea is ready, you can organize it, turn it into a Markdown note, or insert it back into your writing.
 
 <!-- Future media slot: product overview image or short demo -->
 
 ## Why Glitter / 为什么使用 Glitter
 
 ### 中文
-灵感往往出现在最不想被打断的时候：写到一半、读到一半、整理资料到一半。Glitter 的目标，是让你先把想法收住，再决定之后如何整理，而不是被迫立刻新建一篇正式笔记。
+Obsidian 原生内容大多依赖笔记文件承载，但很多灵感并不在出现的当下就值得新建一篇正式笔记。若每次冒出一个小想法都直接建文件，vault 很快会堆满零散、半成品、回头也不容易翻到的笔记。
 
-你可以用 Glitter 在 Obsidian 里快速记录文本、链接、图片和视频；粘贴链接时，Glitter 还可以自动识别并补全相关信息。记录下来的灵感可以继续放进不同的灵感池中整理，也可以在写作时重新插回正文，避免好点子被埋没在零散草稿里。
+Glitter 就是为这个空档而设计的：先把文本、链接、图片、视频等灵感轻量保存下来，不强迫它们立刻变成正式文件。之后你可以把它们放进灵感池整理、搜索与回看；当其中某条真的需要独立沉淀或进入写作上下文时，再选择创建 Markdown 文件，或把它作为片段插入正文。
 
 ### English
-Ideas usually show up at the worst possible moment to break your flow: in the middle of writing, reading, or sorting notes. Glitter is designed to help you capture first and organize later, instead of forcing every thought to become a full note immediately.
+Most content in Obsidian lives in notes, but many ideas are not worth becoming full notes the moment they appear. If every small thought becomes a new file right away, your vault quickly fills with scattered, half-formed notes that are hard to revisit later.
 
-With Glitter, you can quickly save text, links, images, and videos inside Obsidian. When you paste a link, Glitter can also recognize it and fill in relevant details automatically. Later, you can sort ideas into pools and insert them back into your notes as reusable snippets instead of losing them in scattered drafts.
+Glitter is built for that gap. It lets you save text, links, images, and videos in a lighter way first, without forcing them to become formal files immediately. Later, you can organize them into pools, search and revisit them, and when an idea is ready to stand on its own or support a piece of writing, turn it into a Markdown note or insert it into a note body as a snippet.
 
 ## Quick Start / 快速上手
 
 <!-- Future media slot: quick-start walkthrough -->
 
 ### 中文
-1. 在 Obsidian 中打开 Glitter，并使用快速记录入口开始保存灵感。
-2. 输入文本，或直接粘贴链接；如果你正在记录图片或视频，也可以一并保存到灵感里。
-3. 选择合适的灵感池后保存；如果你希望这条灵感成为独立笔记，也可以选择为它创建 Markdown 文件。
-4. 之后你可以在 Glitter 中搜索、浏览和回看这些灵感；写作时，还可以把某条灵感以片段形式插入当前笔记正文。
+1. 在 Obsidian 中打开 Glitter，用快速记录入口先把灵感收住，而不是先决定要不要新建笔记。
+2. 输入文本，或直接粘贴链接；如果这条灵感本身包含图片或视频，也可以一并保存。
+3. 选择合适的灵感池后保存；只有当这条内容真的需要独立沉淀时，再选择为它创建 Markdown 文件。
+4. 之后你可以在 Glitter 中搜索、浏览和回看这些灵感；写作时，也可以把某条灵感作为片段插回当前笔记正文。
 
 ### English
-1. Open Glitter in Obsidian and use its quick capture entry to save an idea.
-2. Type text or paste a link directly; if your idea includes images or videos, you can save those too.
-3. Choose the right pool and save it. If you want the idea to become its own note, you can also choose to create a Markdown file for it.
-4. Later, you can search, browse, and revisit the idea in Glitter, or insert it into a note body as a snippet while writing.
+1. Open Glitter in Obsidian and catch the idea first instead of deciding immediately whether it deserves a new note.
+2. Type text or paste a link directly; if the idea includes images or videos, you can save those too.
+3. Choose the right pool and save it. Only when the idea really needs to stand on its own do you turn it into a Markdown note.
+4. Later, you can search, browse, and revisit the idea in Glitter, or insert it back into a note body as a snippet while writing.
 
 ## Feature Areas / 功能分区
 
 <!-- Future media slot: feature overview gallery -->
 
 ### 中文
-- **快速记录**：在不离开 Obsidian 的前提下，尽快把想法记下来，减少打断感。
+- **先记录，不先建笔记**：先把灵感留下来，避免每个小想法都立刻变成一篇独立文件。
 - **多内容类型支持**：支持文本、链接、图片、视频等常见灵感内容；粘贴链接后可自动识别并补全基础信息。
 - **灵感池整理**：把灵感放入不同的池中，便于分类、浏览、筛选与后续整理。
+- **可选创建文件**：当某条灵感真的需要独立沉淀时，你再决定是否为它创建 Markdown 文件。
 - **片段插入**：写笔记时，可以把已有灵感插入正文，方便引用、延展和继续写作。
-- **可选创建文件**：并不是每条灵感都必须变成独立笔记；你可以按需决定是否创建 Markdown 文件。
-- **回看与复用**：已经保存的灵感可以持续回看和再利用，而不是只停留在一次性速记里。
+- **回看与复用**：已经保存的灵感可以持续回看和再利用，而不是被埋在临时笔记里。
 
 ### English
-- **Quick capture**: Save an idea quickly without leaving Obsidian or breaking your flow.
+- **Capture before note creation**: Keep the idea first instead of turning every small thought into a separate file right away.
 - **Support for multiple content types**: Work with text, links, images, and videos, with automatic recognition and basic detail filling when you paste a link.
 - **Pools for organization**: Group ideas into different pools so they are easier to classify, browse, filter, and sort later.
+- **Optional file creation**: Only when an idea truly needs to stand on its own do you decide whether it should become a Markdown note.
 - **Snippet insertion**: Insert an existing idea into a note body while writing so it can be referenced and expanded in context.
-- **Optional file creation**: Not every idea needs to become a standalone note; you can decide whether a Markdown file should be created.
-- **Revisit and reuse**: Saved ideas stay available for later review and reuse instead of disappearing into one-off capture notes.
+- **Revisit and reuse**: Saved ideas stay available for later review and reuse instead of disappearing into temporary notes.
 
 ## Design Philosophy / 设计理念
 
 ### 中文
-Glitter 的设计核心不是“把一切都立刻结构化”，而是“先把灵感留住，再用更轻的方式慢慢整理”。
+Glitter 的设计核心，不是让每个想法都立刻服从 Obsidian 的文件结构，而是在“正式笔记”之前，先给灵感一个更轻的落点。
 
-这意味着它会尽量减少记录时的阻力，同时保留之后整理和复用的空间：你可以先快速收集，再通过灵感池归类；可以先不建文件，等需要时再创建；可以先独立保存，之后再把灵感片段插入正文。整个过程都围绕同一个目标展开：让灵感更容易被再次看见、再次使用。
+它想拆开两件常被绑在一起的事：**值得留下来**，和 **值得立刻建文件**。你可以先把灵感保存下来，再决定是否分类、是否创建 Markdown 文件、是否插回正文继续写。这样既能减少 vault 里为了速记而产生的大量临时文件，也能让真正重要的灵感更容易被回看、复用和沉淀。
 
 ### English
-Glitter is not built around the idea that everything should be structured immediately. Its core philosophy is to help you keep the idea first, then organize it in a lighter way over time.
+Glitter is not designed around making every thought fit Obsidian’s file structure immediately. Its core idea is to give an idea a lighter landing place before it has to become a formal note.
 
-That means reducing friction at capture time while leaving room for later structure and reuse. You can collect first, sort into pools later, skip file creation unless it is useful, and bring ideas back into note bodies as snippets when they are ready to become part of your writing. The goal is simple: make ideas easier to see again and easier to use again.
+It separates two decisions that are often forced together: **this is worth keeping**, and **this deserves its own file right now**. You can save first, then decide whether to classify it, turn it into a Markdown note, or bring it back into a note body as a snippet. That keeps your vault from filling with quick-capture clutter while making important ideas easier to revisit, reuse, and develop.
 
 ## Install & Update / 安装与更新
 
@@ -101,6 +101,9 @@ That means reducing friction at capture time while leaving room for later struct
 ## FAQ / Notes / 常见问题与说明
 
 ### 中文
+**Q: 为什么不直接在 Obsidian 里新建一篇笔记？**  
+A: 因为很多灵感值得留下，但并不值得在出现当下就变成正式笔记。Glitter 的作用，就是先把它们轻量保存下来，减少 vault 里因速记产生的大量临时文件。
+
 **Q: Glitter 适合记录哪些内容？**  
 A: 适合快速记录文本、链接、图片和视频等内容；如果你粘贴的是链接，Glitter 还可以自动识别并补全相关信息。
 
@@ -117,6 +120,9 @@ A: 可以。Glitter 支持把灵感作为片段插入笔记正文，方便在写
 A: 会。当前版本先聚焦于安装说明和功能说明，后续会在相同章节结构中补充截图与演示媒体。
 
 ### English
+**Q: Why not just create a note in Obsidian directly?**  
+A: Because many ideas are worth keeping without being worth a full note yet. Glitter gives them a lighter place to live first, so your vault does not fill up with quick-capture clutter.
+
 **Q: What kinds of content can Glitter capture?**  
 A: Glitter is designed for quickly saving text, links, images, and videos. If you paste a link, it can also recognize it and fill in relevant details automatically.
 

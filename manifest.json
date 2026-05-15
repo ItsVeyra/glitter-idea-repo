@@ -3,8 +3,8 @@
   "name": "Glitter",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "A distinctive Obsidian plugin for quickly recording, browsing, and organizing ideas anywhere in Obsidian as text, images, videos, and links, with automatic web content recognition.",
+  "description": "Save ideas in Obsidian without creating a full note first, then organize them into pools, files, or reusable snippets when needed.",
   "author": "ItsVeyra",
-  "authorUrl": "https://github.com/your-account",
+  "authorUrl": "https://github.com/ItsVeyra/glitter-plugin-release",
   "isDesktopOnly": false
 }
