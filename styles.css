@@ -5571,24 +5571,36 @@
   content: "";
   position: absolute;
   left: 50%;
-  bottom: -14px;
-  width: 58%;
-  height: 28px;
+  bottom: -18px;
+  width: 52%;
+  height: 20px;
   transform: translateX(-50%);
   border-radius: 999px;
   background: radial-gradient(
     ellipse at center,
-    color-mix(in srgb, black 22%, transparent) 0%,
-    color-mix(in srgb, black 10%, transparent) 42%,
-    transparent 78%
+    color-mix(in srgb, black 16%, transparent) 0%,
+    color-mix(in srgb, black 7%, transparent) 42%,
+    transparent 82%
   );
-  filter: blur(9px);
+  filter: blur(12px);
   pointer-events: none;
   z-index: 0;
 }
 
 .glitter-pool-stage__card-media-stage--image {
   aspect-ratio: 4 / 3;
+}
+
+.glitter-pool-stage__card-media-clip {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.glitter-pool-stage__card-media-stage--image .glitter-pool-stage__card-media-clip {
+  height: 100%;
 }
 
 .glitter-pool-stage__card-content--image > :not(.glitter-pool-stage__card-media-stage),
