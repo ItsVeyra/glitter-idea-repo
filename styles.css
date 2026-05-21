@@ -122,17 +122,47 @@
   --glitter-home-empty-icon: color-mix(in srgb, var(--glitter-runtime-accent) 58%, var(--glitter-runtime-text-normal) 42%);
   --glitter-home-stage-sample-layer-1:
     radial-gradient(
-      circle at 50% 52%,
-      color-mix(in srgb, var(--glitter-runtime-accent) 16%, transparent) 0%,
-      color-mix(in srgb, var(--glitter-runtime-accent) 10%, transparent) 22%,
-      transparent 46%
+      circle at 50% 46%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 18%, white 6%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 10%, transparent) 26%,
+      transparent 54%
     );
   --glitter-home-stage-sample-layer-2:
     radial-gradient(
-      circle at 50% 78%,
-      color-mix(in srgb, var(--glitter-home-empty-halo) 34%, transparent) 0%,
-      color-mix(in srgb, var(--glitter-home-empty-halo) 18%, transparent) 24%,
-      transparent 58%
+      circle at 50% 72%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 84%, white 12%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 8%, transparent) 40%,
+      transparent 72%
+    );
+  --glitter-home-center-field-layer-1:
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 18%, white 6%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 12%, transparent) 24%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 5%, transparent) 52%,
+      transparent 84%
+    );
+  --glitter-home-center-field-layer-2:
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 88%, white 8%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 4%, transparent) 38%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 2%, transparent) 64%,
+      transparent 90%
+    );
+  --glitter-home-center-field-glow-layer-1:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, white 10%, transparent) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 14%, transparent) 28%,
+      transparent 72%
+    );
+  --glitter-home-center-field-glow-layer-2:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, white 8%, transparent) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 10%, transparent) 46%,
+      transparent 78%
     );
 
   position: relative;
@@ -141,13 +171,6 @@
   border: none;
   border-radius: 0;
   background-color: var(--glitter-runtime-bg-base);
-  background-image:
-    var(--glitter-home-stage-sample-layer-1),
-    var(--glitter-home-stage-sample-layer-2);
-  background-repeat: no-repeat;
-  background-size:
-    100% 100%,
-    100% 100%;
   color: var(--glitter-shell-text);
   overflow: hidden;
 
@@ -189,6 +212,50 @@
     var(--glitter-runtime-accent) 54%,
     var(--glitter-runtime-text-normal) 46%
   );
+  --glitter-home-stage-sample-layer-1:
+    radial-gradient(
+      circle at 50% 46%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 8%, white 92%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 5%, white 95%) 28%,
+      transparent 58%
+    );
+  --glitter-home-stage-sample-layer-2:
+    radial-gradient(
+      circle at 50% 72%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 3%, white 97%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 3%, white 97%) 42%,
+      transparent 74%
+    );
+  --glitter-home-center-field-layer-1:
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 6%, white 94%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 4%, white 96%) 26%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 2%, transparent) 54%,
+      transparent 86%
+    );
+  --glitter-home-center-field-layer-2:
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 2%, white 98%) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 2%, white 98%) 40%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 1%, transparent) 66%,
+      transparent 92%
+    );
+  --glitter-home-center-field-glow-layer-1:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, white 24%, transparent) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-secondary) 8%, transparent) 30%,
+      transparent 72%
+    );
+  --glitter-home-center-field-glow-layer-2:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, white 18%, transparent) 0%,
+      color-mix(in srgb, var(--glitter-runtime-bg-base) 6%, transparent) 44%,
+      transparent 78%
+    );
   --glitter-home-populated-orb-label-muted: color-mix(
     in srgb,
     var(--text-muted, #a5adba) 44%,
@@ -716,9 +783,35 @@
   overflow: visible;
 }
 
+.glitter-home-stage--populated .glitter-home-stage__orb-region::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(100%, clamp(560px, 80vw, 1160px));
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  background-image:
+    var(--glitter-home-center-field-layer-1),
+    var(--glitter-home-center-field-layer-2);
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    100% 100%;
+  background-position:
+    50% 50%,
+    50% 50%;
+  filter: blur(42px);
+  opacity: 0.66;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .glitter-home-stage__orb-stage {
   position: relative;
   min-height: 100%;
+  z-index: 1;
 }
 
 .glitter-home-stage__empty-layout {
@@ -740,18 +833,10 @@
   transform: translate(-50%, -50%);
   border-radius: 999px;
   background:
-    radial-gradient(circle,
-      color-mix(in srgb, var(--glitter-home-empty-core-inner) 32%, transparent) 0%,
-      color-mix(in srgb, var(--glitter-home-empty-core-mid) 24%, transparent) 24%,
-      color-mix(in srgb, var(--glitter-home-empty-halo) 36%, transparent) 44%,
-      color-mix(in srgb, var(--glitter-home-empty-halo) 18%, transparent) 58%,
-      transparent 78%),
-    radial-gradient(circle,
-      color-mix(in srgb, var(--glitter-home-empty-halo) 28%, transparent) 0%,
-      color-mix(in srgb, var(--glitter-home-empty-core-outer) 8%, transparent) 52%,
-      transparent 74%);
-  filter: blur(30px);
-  opacity: 1;
+    var(--glitter-home-center-field-glow-layer-1),
+    var(--glitter-home-center-field-glow-layer-2);
+  filter: blur(24px);
+  opacity: 0.94;
   pointer-events: none;
   z-index: 0;
 }
@@ -5347,6 +5432,9 @@
   position: relative;
   width: 100%;
   min-height: 100%;
+  padding: 8px 0 24px;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .glitter-pool-stage__card-shell {
@@ -5355,6 +5443,7 @@
   left: 0;
   width: 280px;
   min-width: 0;
+  z-index: 1;
 }
 
 @media (max-width: 760px) {
@@ -5364,6 +5453,7 @@
 }
 
 .glitter-pool-stage__card-surface {
+  position: relative;
   width: 100%;
   min-width: 0;
   min-height: 0;
@@ -5385,6 +5475,15 @@
   -webkit-user-select: text;
   user-select: text;
   box-sizing: border-box;
+  transform-origin: center top;
+  transition:
+    filter 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 360ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 240ms ease,
+    background 280ms ease,
+    box-shadow 320ms ease;
+  will-change: filter, opacity, transform;
 }
 
 .glitter-pool-stage__card-surface--search-hit {
@@ -5418,6 +5517,22 @@
 
 .glitter-pool-stage__card-surface--selected {
   background: color-mix(in srgb, var(--glitter-ui-surface) 66%, var(--glitter-ui-accent) 34%);
+}
+
+.glitter-pool-stage__card-shell--isolation-active {
+  z-index: 6;
+}
+
+.glitter-pool-stage--card-isolation-reading .glitter-pool-stage__card-shell--isolation-active .glitter-pool-stage__card-surface {
+  border-color: color-mix(in srgb, var(--glitter-ui-accent) 26%, white 26%);
+  background: color-mix(in srgb, var(--glitter-ui-surface) 78%, white 6%);
+  box-shadow:
+    0 22px 46px color-mix(in srgb, black 16%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, white 8%, transparent);
+}
+
+.glitter-pool-stage--card-isolation-reading .glitter-pool-stage__card-shell--isolation-muted .glitter-pool-stage__card-surface {
+  box-shadow: none;
 }
 
 .glitter-pool-stage__batch-panel {
@@ -5565,26 +5680,6 @@
   overflow: visible;
   border-radius: 18px;
   isolation: isolate;
-}
-
-.glitter-pool-stage__card-media-stage::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -18px;
-  width: 52%;
-  height: 20px;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: radial-gradient(
-    ellipse at center,
-    color-mix(in srgb, black 16%, transparent) 0%,
-    color-mix(in srgb, black 7%, transparent) 42%,
-    transparent 82%
-  );
-  filter: blur(12px);
-  pointer-events: none;
-  z-index: 0;
 }
 
 .glitter-pool-stage__card-media-stage--image {
@@ -5785,42 +5880,111 @@ video.glitter-pool-stage__card-media-thumbnail {
 
 .glitter-pool-stage__card-media-switcher {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
+  inset: 0;
   z-index: 2;
-  display: grid;
-  grid-template-columns: 28px 1fr 28px;
-  align-items: center;
-  gap: 8px;
   pointer-events: none;
 }
 
-.glitter-pool-stage__card-media-switch {
-  pointer-events: auto;
-  width: 28px;
-  height: 28px;
+.glitter-pool-stage button.glitter-pool-stage__card-media-switch {
+  position: absolute;
+  top: 50%;
+  pointer-events: none;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: none;
+  overflow: hidden;
+  isolation: isolate;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--glitter-ui-bg-alt) 88%, transparent);
-  color: var(--glitter-ui-text);
-  display: grid;
-  place-items: center;
-  box-shadow: none;
+  border: 1px solid color-mix(in srgb, white 16%, var(--glitter-ui-border-strong) 14%);
+  background:
+    radial-gradient(circle at 32% 24%, color-mix(in srgb, white 16%, transparent), transparent 54%),
+    linear-gradient(180deg, color-mix(in srgb, white 10%, transparent), color-mix(in srgb, black 8%, transparent)),
+    color-mix(in srgb, var(--glitter-ui-bg) 18%, transparent);
+  color: color-mix(in srgb, var(--glitter-ui-text) 92%, white 8%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 16%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, black 12%, transparent),
+    0 10px 20px color-mix(in srgb, black 14%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(164%);
+  backdrop-filter: blur(22px) saturate(164%);
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transform: translateY(calc(-50% + 6px));
+  transition:
+    opacity 140ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.glitter-pool-stage__card-media-switch:hover {
-  background: color-mix(in srgb, var(--glitter-ui-bg-alt) 78%, var(--glitter-ui-accent) 22%);
+.glitter-pool-stage button.glitter-pool-stage__card-media-switch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 14%, transparent), transparent 62%),
+    radial-gradient(circle at 50% -10%, color-mix(in srgb, white 10%, transparent), transparent 72%);
+  opacity: 1;
 }
 
-.glitter-pool-stage__card-media-switch:focus-visible {
-  outline: 1px solid color-mix(in srgb, var(--glitter-ui-border-strong) 72%, transparent);
-  outline-offset: 0;
+.glitter-pool-stage__card-media-switch .glitter-write-stage__icon {
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  pointer-events: none;
+}
+
+.glitter-pool-stage__card-media-clip:hover .glitter-pool-stage__card-media-switch,
+.glitter-pool-stage__card-media-thumbnail[role="button"]:focus-visible ~ .glitter-pool-stage__card-media-switcher .glitter-pool-stage__card-media-switch,
+.glitter-pool-stage button.glitter-pool-stage__card-media-switch:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%);
+}
+
+.glitter-pool-stage button.glitter-pool-stage__card-media-switch:not(:disabled):hover,
+.glitter-pool-stage button.glitter-pool-stage__card-media-switch:not(:disabled):focus-visible {
+  color: var(--glitter-ui-accent);
+  border-color: color-mix(in srgb, var(--glitter-ui-accent) 68%, white 20%);
+  background:
+    radial-gradient(circle at 32% 22%, color-mix(in srgb, white 52%, transparent), transparent 48%),
+    linear-gradient(180deg, color-mix(in srgb, white 44%, transparent), color-mix(in srgb, var(--glitter-ui-accent) 26%, transparent)),
+    color-mix(in srgb, var(--glitter-ui-bg) 58%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--glitter-ui-accent) 18%, white 14%),
+    inset 0 1px 0 color-mix(in srgb, white 48%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--glitter-ui-accent) 30%, transparent),
+    0 18px 34px color-mix(in srgb, black 28%, transparent);
+  outline: none;
+}
+
+.glitter-pool-stage button.glitter-pool-stage__card-media-switch:not(:disabled):hover {
+  transform: translateY(calc(-50% - 1px));
+}
+
+.glitter-pool-stage__card-media-switch--previous {
+  left: 8px;
+}
+
+.glitter-pool-stage__card-media-switch--next {
+  right: 8px;
 }
 
 .glitter-pool-stage__card-media-pagination {
-  justify-self: center;
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
   min-width: 44px;
   padding: 0 8px;
   border-radius: 999px;
@@ -6029,7 +6193,7 @@ video.glitter-pool-stage__card-media-thumbnail {
   display: grid;
   gap: 0;
   border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 82%, transparent);
-  border-radius: 12px;
+  border-radius: 24px;
   overflow-x: hidden;
   overflow-y: auto;
   background: color-mix(in srgb, var(--glitter-ui-surface) 96%, transparent);
@@ -6936,7 +7100,7 @@ video.glitter-pool-stage__card-media-thumbnail {
 
   .glitter-home-stage__empty-field-glow {
     width: clamp(172px, 48vw, 300px);
-    filter: blur(18px);
+    filter: blur(16px);
   }
 
   .glitter-home-stage__orb-wrap {
