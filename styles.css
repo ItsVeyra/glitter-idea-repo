@@ -40,6 +40,10 @@
   --glitter-space-1: 6px;
   --glitter-space-2: 10px;
   --glitter-home-floating-action-bottom-offset: 14px;
+  --glitter-home-stage-padding-x: 28px;
+  --glitter-home-stage-padding-top: 14px;
+  --glitter-home-stage-padding-bottom: 14px;
+  --glitter-home-stage-gap: 14px;
 
   --glitter-shell-bg: var(--glitter-ui-bg);
   --glitter-shell-bg-alt: var(--glitter-ui-bg-alt);
@@ -79,9 +83,9 @@
   --glitter-home-guide-text: color-mix(in srgb, var(--glitter-shell-text) 66%, var(--glitter-shell-accent) 34%);
   --glitter-home-guide-helper: color-mix(in srgb, var(--glitter-shell-text-muted) 90%, white 6%);
   --glitter-home-guide-prompt: color-mix(in srgb, var(--glitter-shell-text) 84%, white 8%);
-  --glitter-home-populated-action-shell-bg: color-mix(in srgb, var(--glitter-runtime-bg-base) 68%, var(--glitter-runtime-bg-secondary) 32%);
-  --glitter-home-populated-action-shell-border: color-mix(in srgb, var(--background-modifier-border, #4a5f84) 74%, white 10%);
-  --glitter-home-populated-action-shell-shadow: inset 0 1px 0 color-mix(in srgb, white 6%, transparent), 0 18px 34px color-mix(in srgb, black 24%, transparent);
+  --glitter-home-populated-action-shell-bg: color-mix(in srgb, var(--glitter-ui-surface) 88%, transparent);
+  --glitter-home-populated-action-shell-border: color-mix(in srgb, var(--background-modifier-border, #4a5f84) 58%, white 20%);
+  --glitter-home-populated-action-shell-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent), 0 18px 34px color-mix(in srgb, black 14%, transparent);
   --glitter-home-populated-action-secondary-bg: color-mix(in srgb, var(--glitter-runtime-bg-base) 82%, var(--glitter-runtime-bg-secondary) 18%);
   --glitter-home-populated-action-secondary-border: color-mix(in srgb, var(--background-modifier-border, #4a5f84) 78%, white 8%);
   --glitter-home-populated-action-secondary-text: color-mix(in srgb, var(--text-normal, #dce5ff) 88%, white 12%);
@@ -177,9 +181,14 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   align-content: stretch;
-  gap: 14px;
-  padding: 14px 28px;
+  gap: var(--glitter-home-stage-gap);
+  padding: var(--glitter-home-stage-padding-top) var(--glitter-home-stage-padding-x) var(--glitter-home-stage-padding-bottom);
   color-scheme: dark;
+}
+
+.glitter-home-stage--populated {
+  --glitter-home-stage-padding-top: 0px;
+  --glitter-home-stage-gap: 0px;
 }
 
 .glitter-home-stage[data-glitter-theme="obsidian-light"] {
@@ -321,6 +330,17 @@
   gap: 12px;
   padding-bottom: 10px;
   border-bottom: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.glitter-home-stage--populated .glitter-home-stage__topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  padding: 14px var(--glitter-home-stage-padding-x) 10px;
 }
 
 .glitter-home-stage__brand {
@@ -378,7 +398,7 @@
   height: 42px;
   border-radius: 10px;
   border: none;
-  background: color-mix(in srgb, var(--glitter-shell-bg-alt) 78%, transparent);
+  background: color-mix(in srgb, var(--glitter-ui-surface) 88%, transparent);
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -680,7 +700,7 @@
   height: 42px;
   border-radius: 10px;
   border: none;
-  background: color-mix(in srgb, var(--glitter-shell-bg-alt) 82%, transparent);
+  background: color-mix(in srgb, var(--glitter-ui-surface) 88%, transparent);
   color: var(--glitter-home-topbar-control-text);
   font-size: 11px;
   line-height: 1;
@@ -745,6 +765,10 @@
   height: 100%;
   display: flex;
   overflow: hidden;
+}
+
+.glitter-home-stage--populated .glitter-home-stage__field {
+  grid-row: 1 / -1;
 }
 
 .glitter-home-stage__field--empty {
@@ -1691,9 +1715,11 @@
   gap: 14px;
   flex-wrap: nowrap;
   padding: 8px 12px;
-  border: 1px solid var(--glitter-home-populated-action-shell-border);
+  border: none;
   border-radius: 16px;
-  background: color-mix(in srgb, var(--glitter-home-populated-action-shell-bg) 92%, transparent);
+  background: var(--glitter-home-populated-action-shell-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(146%);
+  backdrop-filter: blur(20px) saturate(146%);
   box-shadow: var(--glitter-home-populated-action-shell-shadow);
 }
 
@@ -3817,16 +3843,388 @@
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   max-height: 120px;
-  scrollbar-color: color-mix(in srgb, var(--glitter-ui-text) 26%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--glitter-ui-accent) 18%, var(--glitter-ui-text) 32%) transparent;
 }
 
-.glitter-write-stage__pool-scroll::-webkit-scrollbar {
+.glitter-write-stage .glitter-write-stage__pool-scroll,
+.glitter-pool-stage .glitter-pool-stage__card-grid,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--glitter-ui-accent) 18%, var(--glitter-ui-text) 32%) transparent;
+}
+
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
-.glitter-write-stage__pool-scroll::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--glitter-ui-text) 26%, transparent);
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar-track {
   border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--glitter-ui-surface) 14%, transparent) 0%,
+    color-mix(in srgb, var(--glitter-ui-bg-alt) 18%, transparent) 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--glitter-ui-border) 22%, transparent),
+    inset 0 0 10px color-mix(in srgb, black 10%, transparent);
+}
+
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar-track-piece:vertical:start {
+  border-radius: 999px 999px 14px 14px;
+  background:
+    radial-gradient(
+      92% 18px at 50% 100%,
+      color-mix(in srgb, var(--glitter-ui-surface) 82%, transparent) 0 42%,
+      transparent 58%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-text) 44%, transparent) 0 3px,
+      transparent 3px 7px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-surface) 14%, transparent) 0%,
+      color-mix(in srgb, var(--glitter-ui-bg-alt) 18%, transparent) 100%
+    );
+}
+
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar-track-piece:vertical:end {
+  border-radius: 14px 14px 999px 999px;
+  background:
+    radial-gradient(
+      92% 18px at 50% 0,
+      color-mix(in srgb, var(--glitter-ui-surface) 82%, transparent) 0 42%,
+      transparent 58%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-text-muted) 34%, transparent) 0 3px,
+      transparent 3px 7px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-surface) 14%, transparent) 0%,
+      color-mix(in srgb, var(--glitter-ui-bg-alt) 18%, transparent) 100%
+    );
+}
+
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background:
+    linear-gradient(
+      to right,
+      transparent 0,
+      color-mix(in srgb, white 26%, transparent) 28%,
+      color-mix(in srgb, white 34%, transparent) 50%,
+      color-mix(in srgb, white 26%, transparent) 72%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-text) 28%, transparent) 0 2px,
+      transparent 2px 6px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-surface) 82%, white 8%) 0%,
+      color-mix(in srgb, var(--glitter-ui-accent) 36%, var(--glitter-ui-text) 64%) 54%,
+      color-mix(in srgb, var(--glitter-ui-accent) 50%, white 20%) 100%
+    );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, white 18%, transparent),
+    0 0 0 1px color-mix(in srgb, black 10%, transparent),
+    0 8px 16px color-mix(in srgb, black 12%, transparent);
+}
+
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar-thumb:vertical,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-thumb:vertical,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar-thumb:vertical,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar-thumb:vertical,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar-thumb:vertical,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-thumb:vertical,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar-thumb:vertical,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar-thumb:vertical {
+  min-height: 42px;
+}
+
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar-thumb:horizontal,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-thumb:horizontal,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar-thumb:horizontal,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar-thumb:horizontal,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar-thumb:horizontal,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-thumb:horizontal,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar-thumb:horizontal,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar-thumb:horizontal {
+  min-width: 42px;
+}
+
+.glitter-write-stage .glitter-write-stage__pool-scroll::-webkit-scrollbar-thumb:hover,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-thumb:hover,
+.glitter-pool-stage .glitter-pool-stage__pool-markdown-preview-content::-webkit-scrollbar-thumb:hover,
+.glitter-pool-stage .glitter-pool-stage__pool-popup-list::-webkit-scrollbar-thumb:hover,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu::-webkit-scrollbar-thumb:hover,
+.glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-thumb:hover,
+.glitter-pool-stage .glitter-pool-stage__card-more-menu::-webkit-scrollbar-thumb:hover,
+.glitter-pool-stage .glitter-pool-stage__card-move-dialog-list::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(
+      to right,
+      transparent 0,
+      color-mix(in srgb, white 32%, transparent) 28%,
+      color-mix(in srgb, white 40%, transparent) 50%,
+      color-mix(in srgb, white 32%, transparent) 72%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-text) 34%, transparent) 0 2px,
+      transparent 2px 6px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-surface) 76%, white 12%) 0%,
+      color-mix(in srgb, var(--glitter-ui-accent) 44%, var(--glitter-ui-text) 56%) 54%,
+      color-mix(in srgb, var(--glitter-ui-accent) 58%, white 24%) 100%
+    );
+}
+
+.glitter-pool-stage .glitter-pool-stage__card-grid {
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
+}
+
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-track,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-track-piece:vertical:start,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-track-piece:vertical:end,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-thumb,
+.glitter-pool-stage .glitter-pool-stage__card-grid::-webkit-scrollbar-thumb:hover {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.glitter-pool-stage__card-scroll-indicator {
+  --glitter-pool-scroll-indicator-progress: 0.0000;
+  position: absolute;
+  top: 14px;
+  right: calc(var(--glitter-pool-stage-side-padding, 32px) * -1 + 4px);
+  bottom: 24px;
+  width: 18px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  z-index: 5;
+}
+
+.glitter-pool-stage__card-scroll-indicator::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to right,
+      transparent 0,
+      color-mix(in srgb, var(--glitter-ui-bg-alt) 14%, transparent) 50%,
+      transparent 100%
+    ) center / 12px 100% no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-bg-alt) 56%, transparent) 0%,
+      color-mix(in srgb, var(--glitter-ui-bg-alt) 56%, transparent) 100%
+    ) center / 2px 100% no-repeat;
+  opacity: 0.94;
+}
+
+.glitter-pool-stage__card-scroll-indicator::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(var(--glitter-pool-scroll-indicator-center) - 24px);
+  width: 2px;
+  height: 48px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--glitter-ui-bg-alt) 56%, transparent) 10%,
+    color-mix(in srgb, var(--glitter-ui-text-muted) 70%, var(--glitter-ui-bg-alt) 30%) 30%,
+    color-mix(in srgb, var(--glitter-ui-text) 88%, var(--glitter-ui-accent) 12%) 50%,
+    color-mix(in srgb, var(--glitter-ui-text-muted) 70%, var(--glitter-ui-bg-alt) 30%) 70%,
+    color-mix(in srgb, var(--glitter-ui-bg-alt) 56%, transparent) 90%,
+    transparent 100%
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--glitter-ui-accent) 12%, transparent);
+  opacity: 0;
+  transition: opacity 120ms ease, box-shadow 120ms ease;
+}
+
+.glitter-pool-stage__card-scroll-indicator-thumb {
+  position: absolute;
+  left: 50%;
+  top: var(--glitter-pool-scroll-indicator-center);
+  width: 8px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  clip-path: polygon(50% 0%, 82% 16%, 100% 50%, 82% 84%, 50% 100%, 18% 84%, 0% 50%, 18% 16%);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 26%, var(--glitter-ui-accent) 74%) 0%,
+    color-mix(in srgb, var(--glitter-ui-accent) 54%, white 18%) 100%
+  );
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--glitter-ui-accent) 14%, transparent),
+    0 0 18px color-mix(in srgb, var(--glitter-ui-accent) 22%, transparent);
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
+}
+
+.glitter-pool-stage[data-glitter-theme="obsidian-light"] .glitter-pool-stage__card-scroll-indicator::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--glitter-ui-accent) 6%, transparent) 10%,
+    color-mix(in srgb, var(--glitter-ui-accent) 14%, white 86%) 30%,
+    color-mix(in srgb, var(--glitter-ui-accent) 26%, white 74%) 50%,
+    color-mix(in srgb, var(--glitter-ui-accent) 14%, white 86%) 70%,
+    color-mix(in srgb, var(--glitter-ui-accent) 6%, transparent) 90%,
+    transparent 100%
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--glitter-ui-accent) 7%, transparent);
+}
+
+.glitter-pool-stage[data-glitter-theme="obsidian-light"] .glitter-pool-stage__card-scroll-indicator-thumb {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--glitter-ui-accent) 62%, white 38%) 0%,
+    color-mix(in srgb, var(--glitter-ui-accent) 28%, white 72%) 100%
+  );
+  box-shadow:
+    0 0 4px color-mix(in srgb, var(--glitter-ui-accent) 6%, transparent),
+    0 0 10px color-mix(in srgb, var(--glitter-ui-accent) 10%, transparent);
+}
+
+.glitter-pool-stage__card-grid.glitter-pool-stage__card-grid--scrolling + .glitter-pool-stage__card-scroll-indicator {
+  opacity: 1;
+}
+
+.glitter-pool-stage__card-grid.glitter-pool-stage__card-grid--scrolling + .glitter-pool-stage__card-scroll-indicator::after {
+  opacity: 1;
+}
+
+.glitter-pool-stage__card-grid.glitter-pool-stage__card-grid--scrolling + .glitter-pool-stage__card-scroll-indicator .glitter-pool-stage__card-scroll-indicator-thumb {
+  opacity: 1;
+  animation: glitter-pool-scroll-indicator-pulse 420ms steps(2, end) infinite;
+}
+
+.glitter-pool-stage[data-glitter-theme="obsidian-light"] .glitter-pool-stage__card-grid.glitter-pool-stage__card-grid--scrolling + .glitter-pool-stage__card-scroll-indicator .glitter-pool-stage__card-scroll-indicator-thumb {
+  animation: glitter-pool-scroll-indicator-pulse-light 520ms ease-in-out infinite;
+}
+
+@keyframes glitter-pool-scroll-indicator-pulse {
+  0%,
+  100% {
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, white 30%, var(--glitter-ui-accent) 70%) 0%,
+      color-mix(in srgb, var(--glitter-ui-accent) 58%, white 22%) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 24%, transparent),
+      0 0 12px color-mix(in srgb, var(--glitter-ui-accent) 18%, transparent),
+      0 0 22px color-mix(in srgb, var(--glitter-ui-accent) 26%, transparent);
+  }
+
+  50% {
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, white 42%, var(--glitter-ui-accent) 58%) 0%,
+      color-mix(in srgb, var(--glitter-ui-accent) 64%, white 30%) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 32%, transparent),
+      0 0 16px color-mix(in srgb, var(--glitter-ui-accent) 24%, transparent),
+      0 0 28px color-mix(in srgb, var(--glitter-ui-accent) 38%, transparent);
+  }
+}
+
+@keyframes glitter-pool-scroll-indicator-pulse-light {
+  0%,
+  100% {
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-accent) 62%, white 38%) 0%,
+      color-mix(in srgb, var(--glitter-ui-accent) 28%, white 72%) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 8%, transparent),
+      0 0 6px color-mix(in srgb, var(--glitter-ui-accent) 6%, transparent),
+      0 0 10px color-mix(in srgb, var(--glitter-ui-accent) 10%, transparent);
+  }
+
+  50% {
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glitter-ui-accent) 68%, white 32%) 0%,
+      color-mix(in srgb, var(--glitter-ui-accent) 34%, white 66%) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 12%, transparent),
+      0 0 8px color-mix(in srgb, var(--glitter-ui-accent) 8%, transparent),
+      0 0 12px color-mix(in srgb, var(--glitter-ui-accent) 12%, transparent);
+  }
 }
 
 .glitter-write-stage__pool-option {
@@ -4177,6 +4575,7 @@
 }
 
 .glitter-pool-stage {
+  --glitter-pool-stage-side-padding: clamp(28px, 2.6vw, 40px);
   position: relative;
   width: 100%;
   max-width: 100%;
@@ -4187,7 +4586,7 @@
   background: transparent;
   box-shadow: none;
   color: var(--glitter-ui-text);
-  padding: 20px 24px 0;
+  padding: 20px var(--glitter-pool-stage-side-padding) 0;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -4962,7 +5361,7 @@
   border-radius: 12px;
   font-size: 13px;
   line-height: 1.5;
-  background: color-mix(in srgb, var(--glitter-ui-surface) 82%, transparent);
+  background: color-mix(in srgb, var(--glitter-ui-surface) 88%, transparent);
 }
 
 .glitter-pool-stage .glitter-pool-stage__detail-action,
@@ -5175,7 +5574,7 @@
   gap: 12px;
   margin-top: 8px;
   padding-bottom: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .glitter-pool-stage__results-header {
@@ -5307,6 +5706,7 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
   padding: 14px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 78%, transparent);
@@ -5366,15 +5766,15 @@
   transform-origin: right bottom;
   z-index: 7;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--glitter-ui-text) 24%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--glitter-ui-accent) 18%, var(--glitter-ui-text) 32%) transparent;
 }
 
 .glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .glitter-pool-stage .glitter-pool-stage__toolbar-menu--batch::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--glitter-ui-text) 24%, transparent);
   border-radius: 999px;
 }
 
@@ -5414,6 +5814,15 @@
 .glitter-pool-stage__toolbar-menu-item--hint {
   color: var(--glitter-ui-text-muted);
   cursor: default;
+}
+
+.glitter-pool-stage__card-grid-shell {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .glitter-pool-stage__card-grid {
@@ -6997,8 +7406,8 @@ video.glitter-pool-stage__card-media-thumbnail {
 
 @media (max-width: 900px) {
   .glitter-home-stage {
-    gap: 12px;
-    padding: 14px 18px;
+    --glitter-home-stage-gap: 12px;
+    --glitter-home-stage-padding-x: 18px;
   }
 
   .glitter-home-stage__topbar {
@@ -7123,9 +7532,9 @@ video.glitter-pool-stage__card-media-thumbnail {
 
 @media (max-height: 680px) {
   .glitter-home-stage {
-    gap: 6px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    --glitter-home-stage-gap: 6px;
+    --glitter-home-stage-padding-top: 10px;
+    --glitter-home-stage-padding-bottom: 10px;
   }
 
   .glitter-home-stage__header--weak {
