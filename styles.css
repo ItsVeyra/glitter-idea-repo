@@ -1265,6 +1265,147 @@
     inset 0 -14px 22px color-mix(in srgb, black 10%, transparent);
 }
 
+.glitter-home-stage__pool-orb-isolation-orbit {
+  position: absolute;
+  inset: var(--glitter-home-orb-shell-inset);
+  z-index: 4;
+  border-radius: 999px;
+  overflow: visible;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.22, 0.78, 0.24, 1);
+}
+
+.glitter-home-stage__pool-orb-isolation-runner {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+  will-change: transform;
+  animation: glitter-home-orb-isolation-orbit 60s linear infinite;
+  animation-play-state: paused;
+}
+
+.glitter-home-stage__pool-orb-isolation-comet {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    transparent 0deg 312deg,
+    color-mix(in srgb, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 8%, transparent) 329deg,
+    color-mix(in srgb, white 16%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 84%) 341deg,
+    color-mix(in srgb, white 42%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 58%) 350deg,
+    color-mix(in srgb, white 86%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 14%) 355deg,
+    transparent 360deg
+  );
+  -webkit-mask-image: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 5px),
+    #000 calc(100% - 3.1px) calc(100% - 0.4px),
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 5px),
+    #000 calc(100% - 3.1px) calc(100% - 0.4px),
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  filter: blur(0.82px);
+  opacity: 0.94;
+}
+
+.glitter-home-stage__pool-orb-isolation-head {
+  position: absolute;
+  left: calc(100% - 1px);
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle at 50% 50%, white 0%, color-mix(in srgb, white 78%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 22%) 44%, transparent 78%),
+    linear-gradient(135deg, color-mix(in srgb, white 97%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 3%) 0%, color-mix(in srgb, white 46%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 54%) 100%);
+  box-shadow:
+    0 0 10px color-mix(in srgb, white 58%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 42%),
+    0 0 16px color-mix(in srgb, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 18%, transparent);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1 14.3 9.7 23 12 14.3 14.3 12 23 9.7 14.3 1 12 9.7 9.7 12 1Z' fill='white'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1 14.3 9.7 23 12 14.3 14.3 12 23 9.7 14.3 1 12 9.7 9.7 12 1Z' fill='white'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  animation: glitter-home-orb-isolation-head-glint 1.8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.glitter-home-stage__pool-orb-isolation-head::before,
+.glitter-home-stage__pool-orb-isolation-head::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 84%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 16%);
+  transform: translate(-50%, -50%);
+  opacity: 0.9;
+}
+
+.glitter-home-stage__pool-orb-isolation-head::before {
+  width: 12px;
+  height: 1.2px;
+  filter: blur(0.22px);
+}
+
+.glitter-home-stage__pool-orb-isolation-head::after {
+  width: 1.2px;
+  height: 12px;
+  filter: blur(0.22px);
+}
+
+.glitter-home-stage__pool-orb--isolated .glitter-home-stage__pool-orb-isolation-orbit {
+  opacity: 1;
+}
+
+.glitter-home-stage__pool-orb--isolated .glitter-home-stage__pool-orb-isolation-runner,
+.glitter-home-stage__pool-orb--isolated .glitter-home-stage__pool-orb-isolation-head {
+  animation-play-state: running;
+}
+
+.glitter-home-stage[data-glitter-theme="obsidian-light"] .glitter-home-stage__pool-orb-isolation-comet {
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    transparent 0deg 312deg,
+    color-mix(in srgb, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 42%, transparent) 329deg,
+    color-mix(in srgb, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 72%, white 28%) 341deg,
+    color-mix(in srgb, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 92%, white 8%) 350deg,
+    color-mix(in srgb, white 32%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 68%) 355deg,
+    transparent 360deg
+  );
+  filter: blur(0.26px) saturate(1.34) contrast(1.18);
+  opacity: 1;
+}
+
+.glitter-home-stage[data-glitter-theme="obsidian-light"] .glitter-home-stage__pool-orb-isolation-head {
+  background:
+    radial-gradient(circle at 50% 50%, white 0 12%, color-mix(in srgb, white 16%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 84%) 28%, color-mix(in srgb, white 4%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 96%) 54%, transparent 74%),
+    linear-gradient(135deg, color-mix(in srgb, white 46%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 54%) 0%, color-mix(in srgb, white 4%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 96%) 100%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 2%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 98%),
+    0 0 8px color-mix(in srgb, white 10%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 90%),
+    0 0 18px color-mix(in srgb, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 34%, transparent);
+}
+
+.glitter-home-stage[data-glitter-theme="obsidian-light"] .glitter-home-stage__pool-orb-isolation-head::before,
+.glitter-home-stage[data-glitter-theme="obsidian-light"] .glitter-home-stage__pool-orb-isolation-head::after {
+  background: color-mix(in srgb, white 44%, rgb(var(--glitter-home-orb-ring-rgb, 113 136 190)) 56%);
+  opacity: 1;
+}
+
 .glitter-home-stage__pool-orb-action-corridor {
   position: absolute;
   left: 0;
@@ -1870,6 +2011,29 @@
     opacity: 0;
     border-width: var(--glitter-home-ripple-line-width-end, 0.58px);
     transform: scale(var(--glitter-home-ripple-target-scale, var(--glitter-home-ripple-scale-end, 2.56)));
+  }
+}
+
+@keyframes glitter-home-orb-isolation-orbit {
+  from {
+    transform: rotate(132deg);
+  }
+
+  to {
+    transform: rotate(492deg);
+  }
+}
+
+@keyframes glitter-home-orb-isolation-head-glint {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
