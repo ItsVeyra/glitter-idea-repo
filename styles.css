@@ -1,3 +1,4 @@
+/* 主题变量与宿主容器：把 Obsidian 主题色收口成 Glitter 自己的运行时色板。 */
 .glitter-plugin-root {
   display: flex;
 }
@@ -36,6 +37,7 @@
   --glitter-ui-accent-contrast: var(--text-on-accent, #11213e);
 }
 
+/* 首页舞台：定义首页主色、球体尺寸、边距和整屏布局变量。 */
 .glitter-home-stage {
   --glitter-space-1: 6px;
   --glitter-space-2: 10px;
@@ -290,6 +292,7 @@
   border: 1px solid color-mix(in srgb, var(--glitter-ui-border-strong) 28%, transparent);
 }
 
+/* 快速记录局部动效：加载旋转与池下拉上浮。 */
 @keyframes glitter-write-stage-loader-spin {
   from {
     transform: rotate(0deg);
@@ -493,6 +496,7 @@
   box-shadow: none;
 }
 
+/* 首次完成后的跟进引导：承接首页首条灵感保存后的后续动作推荐。 */
 .glitter-followup-guidance-view {
   position: relative;
   z-index: 1;
@@ -1991,6 +1995,7 @@
   cursor: not-allowed;
 }
 
+/* 首页水面与球体轨道动效：维持静态基调下的轻微流动感。 */
 @keyframes glitter-home-water-ripple-stream {
   0% {
     opacity: 0;
@@ -2371,6 +2376,7 @@
   display: none;
 }
 
+/* 写入与快速记录舞台：把速记主卡、正文输入、附件承载、池切换、保存反馈与退出确认收拢到同一套容器语义。 */
 .glitter-write-stage {
   position: relative;
   min-height: 560px;
@@ -2494,6 +2500,7 @@
   color: var(--glitter-ui-text-muted);
 }
 
+/* 速记主卡片与覆盖层：卡片本体保持沉浸式贴边，退出确认与空内容反馈都在此层级内局部覆盖，不挤压底部动作区。 */
 .glitter-write-stage__modal-card {
   position: relative;
   z-index: 1;
@@ -2770,6 +2777,7 @@
   gap: 14px;
 }
 
+/* 媒体缩略面板：承接图片/视频预览、空附件占位，以及根据底图明暗自动切换图标按钮对比度。 */
 .glitter-write-stage__media-thumbnail-surface {
   --glitter-media-surface-action-icon-color: color-mix(in srgb, white 96%, var(--glitter-ui-text) 4%);
   min-height: 0;
@@ -2821,6 +2829,7 @@
   outline-offset: 0;
 }
 
+/* 媒体浮层控件：页码、翻页、增替删动作直接贴在缩略图表面，用磨砂玻璃感与真实图片主题融合。 */
 .glitter-write-stage__media-surface-controls {
   position: absolute;
   inset: 0;
@@ -3039,7 +3048,7 @@
   display: block;
 }
 
-
+/* 图片放大预览层：仅在速记卡片内部临时抬起一层查看大图，不切换页面也不打断右侧输入列。 */
 .glitter-write-stage__media-preview-overlay {
   position: absolute;
   inset: 22px 22px 20px;
@@ -3269,7 +3278,7 @@
   white-space: nowrap;
 }
 
-/* AI 润色触发器与左右对照评审态样式。 */
+/* AI 润色区：正文非空后在右下角挂出纯图标+文字触发器，进入评审态后切成左右对照与中轴操作钮。 */
 .glitter-write-stage__ai-polish-row {
   margin-top: 10px;
   display: flex;
@@ -3281,6 +3290,7 @@
   display: none;
 }
 
+/* 触发器强制清空宿主默认按钮皮肤，只留下强调色文本与图标，避免回到系统按钮外观。 */
 .glitter-write-stage__body-panel button.glitter-write-stage__ai-polish-trigger,
 .glitter-write-stage__body-panel button.glitter-write-stage__ai-polish-trigger:hover,
 .glitter-write-stage__body-panel button.glitter-write-stage__ai-polish-trigger:active,
@@ -3331,6 +3341,7 @@
   color: inherit;
 }
 
+/* 评审布局保留左侧原文输入区，右侧结果区独立滚动，中间窄轴只承担采纳/重做/取消。 */
 .glitter-write-stage__ai-polish-review {
   flex: 1 1 0;
   min-height: 0;
@@ -3398,6 +3409,7 @@
   padding: 4px 0;
 }
 
+/* 中轴圆形操作钮沿用首页隔离态的扁平玻璃语义，但不展开悬停标签，避免挤占正文宽度。 */
 .glitter-write-stage button.glitter-write-stage__ai-polish-action,
 .glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action {
   width: 36px;
@@ -3517,6 +3529,7 @@
   opacity: 0.7;
 }
 
+/* 文件正文里的灵感片段与参考版 callout：统一保留圆角卡片、标题/正文/来源三段层次，避免插入后退回旧 HTML 样式。 */
 .glitter-idea-snippet,
 .callout[data-callout="glitter-idea"] {
   border: 1px solid color-mix(in srgb, var(--interactive-accent, #7e9bda) 42%, var(--background-modifier-border, #4a5f84) 58%);
@@ -3650,6 +3663,7 @@
   font-size: 0.96em;
 }
 
+/* 失效态把不可访问来源降级成警示卡片，同时保留重新搜索替换的恢复指引。 */
 .glitter-idea-snippet[data-glitter-idea-state="invalid"],
 .callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] {
   --callout-color: 214, 97, 97;
@@ -4214,6 +4228,7 @@
   box-shadow: none;
 }
 
+/* 池选择容器与统一滚动条：快速记录、池页弹层共用同一套玻璃感滚动视觉。 */
 .glitter-write-stage__pool-container {
   overflow: hidden;
   border-radius: 12px;
@@ -4560,6 +4575,7 @@
   animation: glitter-pool-scroll-indicator-pulse-light 520ms ease-in-out infinite;
 }
 
+/* 卡片区滚动指示脉冲：暗浅主题各自单独校准高光强度，让长列表时的滚动存在感足够但不刺眼。 */
 @keyframes glitter-pool-scroll-indicator-pulse {
   0%,
   100% {
@@ -4969,6 +4985,7 @@
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Ccircle cx='9' cy='10' r='1.5'/%3E%3Cpath d='m21 15-4-4-5 5-2-2-4 4'/%3E%3C/svg%3E");
 }
 
+/* 池首页：承接头部、描述区、工具栏、卡片瀑布流、弹层和预览侧板。 */
 .glitter-pool-stage {
   --glitter-pool-stage-side-padding: clamp(28px, 2.6vw, 40px);
   position: relative;
@@ -5120,6 +5137,7 @@
   color: var(--glitter-ui-text-faint);
 }
 
+/* 池概览卡片兼容空池、已有池数量与颜色侧条，让首页入口与选择操作共用同一套信息密度。 */
 .glitter-pool-stage__overview {
   display: flex;
   flex-direction: column;
@@ -5207,6 +5225,7 @@
   color: color-mix(in srgb, var(--glitter-ui-text-muted) 82%, transparent);
 }
 
+/* 首次进入池页时切到引导式分流布局，和日常浏览态共用同一舞台但改成更轻的 onboarding 节奏。 */
 .glitter-pool-stage--first-use {
   width: 100%;
   max-width: 100%;
@@ -5959,6 +5978,7 @@
   transform: rotate(45deg);
 }
 
+/* 结果区骨架：右上工具列、卡片列表与可选 Markdown 预览侧板都从这里开始分栏。 */
 .glitter-pool-stage__results {
   position: relative;
   min-width: 0;
@@ -6053,6 +6073,7 @@
   min-height: 0;
 }
 
+/* Markdown 预览侧板延续池页玻璃卡片语义，只负责容纳汇总内容与导出按钮，不与卡片区抢主层级。 */
 .glitter-pool-stage__pool-markdown-preview {
   min-width: 0;
   min-height: 0;
@@ -6130,6 +6151,7 @@
   margin-bottom: 0;
 }
 
+/* 分栏结果区在窄视口下退回单列，优先保证卡片阅读宽度，再把 Markdown 预览压到下方。 */
 @media (max-width: 1120px) {
   .glitter-pool-stage__results-split-view {
     grid-template-columns: minmax(0, 1fr);
@@ -6140,6 +6162,7 @@
   }
 }
 
+/* 工具栏与批量移动弹层共用同一菜单壳体，顶部标题和底部创建池按钮都固定在可滚动容器里。 */
 .glitter-pool-stage__toolbar-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -6245,6 +6268,7 @@
   cursor: default;
 }
 
+/* 卡片瀑布流容器：外层负责隔离态与滚动指示器，内层负责真正的 masonry 绝对定位堆叠。 */
 .glitter-pool-stage__card-grid-shell {
   position: relative;
   display: flex;
@@ -6290,6 +6314,7 @@
   }
 }
 
+/* 单卡表面负责玻璃感、搜索命中、批量选中和悬停隔离态过渡，动效都围绕这层做状态切换。 */
 .glitter-pool-stage__card-surface {
   position: relative;
   width: 100%;
@@ -6333,6 +6358,7 @@
   animation: glitter-pool-search-hit-pulse 1.6s ease;
 }
 
+/* 搜索命中脉冲只短暂提亮边框和底色，用来把导航定位到的卡片从长列表里拉出来。 */
 @keyframes glitter-pool-search-hit-pulse {
   0% {
     border-color: color-mix(in srgb, var(--glitter-ui-accent) 100%, var(--glitter-ui-border) 0%);
@@ -6373,6 +6399,7 @@
   box-shadow: none;
 }
 
+/* 批量面板悬浮在卡片区右下角，数量提示和删除/移动动作始终跟着当前选择集走。 */
 .glitter-pool-stage__batch-panel {
   position: absolute;
   right: 20px;
@@ -7986,6 +8013,7 @@ video.glitter-pool-stage__card-media-thumbnail {
 
 }
 
+/* 减弱动态效果时，统一关闭首页动画与过渡，保留可读性与操作稳定性。 */
 @media (prefers-reduced-motion: reduce) {
   .glitter-home-stage *,
   .glitter-home-stage::before,
@@ -8000,6 +8028,7 @@ video.glitter-pool-stage__card-media-thumbnail {
 
 }
 
+/* 设置页：保持和 Obsidian 原生纵向设置页一致的分组节奏。 */
 .glitter-settings-tab__header,
 .glitter-settings-tab__section {
   padding-left: 0;
