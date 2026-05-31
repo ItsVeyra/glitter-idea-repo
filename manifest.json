@@ -1,7 +1,7 @@
 {
   "id": "glitter-idea-plugin",
   "name": "Glitter",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "minAppVersion": "1.5.0",
   "description": "Save ideas in Obsidian without creating a full note first, then organize them into pools, files, or reusable snippets when needed.",
   "author": "ItsVeyra",
