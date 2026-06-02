@@ -1,6 +1,6 @@
 {
   "name": "glitter",
-  "version": "0.2.0",
+  "version": "0.1.10",
   "private": true,
   "description": "Minimal buildable source workspace for Obsidian community plugin review",
   "main": "dist/main.js",

@@ -1,7 +1,7 @@
 {
   "id": "glitter",
   "name": "Glitter",
-  "version": "0.2.0",
+  "version": "0.1.10",
   "minAppVersion": "1.5.0",
   "description": "Save ideas without creating a full note first, then organize them into pools, files, or reusable snippets when needed.",
   "author": "ItsVeyra",
