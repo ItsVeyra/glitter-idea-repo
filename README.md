@@ -108,6 +108,34 @@ Glitter 提供全局灵感速记入口，用来快速收住文本、链接、图
 2. 用新的 `manifest.json`、`main.js` 和 `styles.css` 替换旧文件；
 3. 重新加载 Obsidian，然后确认 Glitter 已正常启用。
 
+## 社区插件审核与源码
+
+本仓库根目录保留社区插件提交与安装所需的发布文件：
+
+- `manifest.json`
+- `main.js`
+- `styles.css`
+
+用于官方审核的最小可构建源码工程位于 [source/](source/)。
+
+如需在本仓库内复现源码检查，请进入 `source/` 目录后依次运行：
+
+```bash
+npm install
+npm run test
+npm run check
+npm run build
+```
+
+## AI、联网与隐私说明
+
+- Glitter 不提供开发者托管账号系统，也不要求登录开发者服务。
+- Glitter **无默认遥测**，不会自动把你的 vault 内容上传到开发者服务器。
+- 当你主动导入链接时，Glitter 会请求对应链接页面以提取标题、描述等链接信息。
+- 只有当你在设置中主动配置 `API Key`、`Base URL`、`Model`，并在界面中主动触发 **AI 润色** 时，当前文本内容才会发送到你指定的模型服务。
+- 如果你不使用链接导入，也不配置或触发 AI，Glitter 不会额外发起网络请求。
+- 除 Obsidian 正常的 vault 读写场景外，Glitter 不会主动访问 vault 外部文件。
+
 ## 常见问题与说明
 
 **Q：为什么安装的Glitter的界面效果和演示图不一样？**  
