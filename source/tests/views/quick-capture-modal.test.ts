@@ -337,7 +337,7 @@ describe("QuickCaptureModal", () => {
     return {
       app: {},
       manifest: {
-        id: "glitter-idea-plugin"
+        id: "glitter"
       },
       settings: {
         enableDesignReviewMode: false,
@@ -5669,7 +5669,7 @@ describe("QuickCaptureModal", () => {
     expect(polishTextMock).not.toHaveBeenCalled();
     expect(openSettings).toHaveBeenCalledTimes(1);
     expect(openTabById).toHaveBeenCalledTimes(1);
-    expect(openTabById).toHaveBeenCalledWith("glitter-idea-plugin");
+    expect(openTabById).toHaveBeenCalledWith("glitter");
   });
 
   it("keeps the ai polish trigger visible and routes to settings when ai is not yet globally enabled", async () => {
@@ -5719,7 +5719,7 @@ describe("QuickCaptureModal", () => {
 
     expect(polishTextMock).not.toHaveBeenCalled();
     expect(openSettings).toHaveBeenCalledTimes(1);
-    expect(openTabById).toHaveBeenCalledWith("glitter-idea-plugin");
+    expect(openTabById).toHaveBeenCalledWith("glitter");
   });
 
   it("enters ai polish reviewing state with source and result after a successful request", async () => {

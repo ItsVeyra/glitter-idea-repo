@@ -377,7 +377,7 @@ describe("GlitterMainView", () => {
         }
       },
       manifest: {
-        id: "glitter-idea-plugin"
+        id: "glitter"
       },
       activatePoolView: activatePoolViewMock,
       firstUseWorkflow: {
@@ -408,7 +408,7 @@ describe("GlitterMainView", () => {
 
     expect(openSettings).toHaveBeenCalledTimes(1);
     expect(openTabById).toHaveBeenCalledTimes(1);
-    expect(openTabById).toHaveBeenCalledWith("glitter-idea-plugin");
+    expect(openTabById).toHaveBeenCalledWith("glitter");
   });
 
   it("passes persisted home field view into the home state builder and routes pool title selection like pool select", async () => {

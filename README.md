@@ -98,7 +98,7 @@ Glitter 提供全局灵感速记入口，用来快速收住文本、链接、图
 
 ### 安装
 1. 从本仓库最新 Release 下载 Glitter 发布包；
-2. 在你的 vault 中创建文件夹：`.obsidian/plugins/glitter-idea-plugin/`；
+2. 在你的 vault 中创建文件夹：`.obsidian/plugins/glitter/`；
 3. 将发布包中的 `manifest.json`、`main.js` 和 `styles.css` 复制到这个文件夹中；
 4. 重新打开 Obsidian，或重新加载社区插件；
 5. 打开 **Settings → Community plugins**，启用 **Glitter**。
