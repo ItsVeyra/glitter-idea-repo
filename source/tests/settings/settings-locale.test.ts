@@ -24,7 +24,7 @@ import { describe, expect, it } from "vitest";
 import { getSettingsText, resolveSettingsLocale } from "../../src/settings/settings-locale";
 
 const expectedManifestDescription =
-  "Save ideas in Obsidian without creating a full note first, then organize them into pools, files, or reusable snippets when needed.";
+  "Save ideas without creating a full note first, then organize them into pools, files, or reusable snippets when needed.";
 
 const expectedChineseText = {
   pageTitle: "Glitter 设置",

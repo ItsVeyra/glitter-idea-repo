@@ -50,7 +50,8 @@ describe("public release repository contract", () => {
     const sourceManifest = readJson<Manifest>(resolve(sourceRoot, "manifest.json"));
 
     expect(rootManifest).toEqual(sourceManifest);
-    expect(rootManifest.authorUrl).toBe("https://github.com/ItsVeyra/glitter-plugin-release");
+    expect(rootManifest.authorUrl).toBe("https://github.com/ItsVeyra");
+    expect(rootManifest.description).not.toContain("Obsidian");
   });
 
   it("maps the published plugin version to its minimum Obsidian version", () => {

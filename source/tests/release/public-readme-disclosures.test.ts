@@ -23,9 +23,10 @@ const testDir = dirname(fileURLToPath(import.meta.url));
 const releaseRoot = resolve(testDir, "../../..");
 
 describe("public README review disclosures", () => {
-  it("documents the source review workspace and verification commands", () => {
+  it("documents the source review workspace, English summary, and verification commands", () => {
     const readme = readFileSync(resolve(releaseRoot, "README.md"), "utf8");
 
+    expect(readme).toContain("Glitter is a lightweight idea capture plugin");
     expect(readme).toContain("source/");
     expect(readme).toContain("npm install");
     expect(readme).toContain("npm run test");

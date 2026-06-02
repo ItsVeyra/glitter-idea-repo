@@ -1,5 +1,14 @@
 # Glitter
 
+Glitter is a lightweight idea capture plugin for saving text, links, images, and videos before they become full notes. It helps users capture ideas first, then organize them into pools, reusable snippets, files, and roam boards when needed.
+
+For community review:
+- Reviewable source is available in `source/`.
+- Verify the published source with `npm install`, `npm run test`, `npm run check`, and `npm run build` inside `source/`.
+- Glitter has no default telemetry.
+- Link import requests the target page only when the user imports a link.
+- AI polish sends the current text only when the user configures `API Key`, `Base URL`, and `Model`, then explicitly triggers AI polish.
+
 Glitter 是一款面向 Obsidian 的灵感记录插件，适合保存那些值得留下、却不一定需要立刻建成正式笔记的小点子、参考信息和灵感，内容类型涵盖文本、链接、图片与视频。它让你先把内容轻量留存，避免 vault 被大量临时笔记塞满；等真正需要沉淀时，再按需整理、深度沉淀或引用回正文。
 
 它的界面颜色、字体、配置与样式都会跟随用户安装的 Obsidian 主题，目标是在日常使用里尽量保持原生、低负担、可沉浸的体验。
