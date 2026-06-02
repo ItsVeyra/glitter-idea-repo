@@ -1,13 +1,55 @@
 # Glitter
 
-Glitter is a lightweight idea capture plugin for saving text, links, images, and videos before they become full notes. It helps users capture ideas first, then organize them into pools, reusable snippets, files, and roam boards when needed.
+Glitter is a lightweight idea capture plugin for Obsidian, designed for saving brief, fleeting thoughts before they disappear. It helps you record ideas first and decide later whether they should remain lightweight, become full notes, or be reused in your writing.
 
-For community review:
-- Reviewable source is available in `source/`.
-- Verify the published source with `npm install`, `npm run test`, `npm run check`, and `npm run build` inside `source/`.
+Instead of forcing every small idea into a Markdown file right away, Glitter lets you quickly save text, links, images, and videos as lightweight cards. When the time is right, you can come back to review and organize them, turn them into Markdown files, or reference them directly inside your notes as reusable snippets.
+
+As your ideas accumulate, Glitter also gives them a visual space to grow. With the roam board, you can bring saved cards back into view, connect them, compare them, expand them, and develop them into deeper thinking and longer-form writing.
+
+Glitter is built around a simple design philosophy: respect your taste and working habits, follow the visual language of the theme you already love, and make the plugin feel as native and unobtrusive as possible in daily use.
+
+## Features
+
+- Quickly capture text, links, images, and videos
+- Save ideas as lightweight cards before turning them into full notes
+- Organize saved ideas into thematic pools
+- Create Markdown files from ideas when they are ready to grow
+- Insert saved ideas back into note content as reusable snippets
+- Use the roam board to connect, compare, and expand ideas visually
+- Polish captured text with your own configured AI service
+
+## Installation
+
+1. Download the latest Glitter release from this repository.
+2. Create the folder `.obsidian/plugins/glitter/` in your vault.
+3. Copy `manifest.json`, `main.js`, and `styles.css` into that folder.
+4. Reload Obsidian and enable **Glitter** in **Settings → Community plugins**.
+
+## Community Review
+
+Reviewable source code is available in `source/`.
+
+To verify the published source locally, run the following commands inside `source/`:
+
+```bash
+npm install
+npm run test
+npm run check
+npm run build
+```
+
+## Privacy and Network Behavior
+
 - Glitter has no default telemetry.
-- Link import requests the target page only when the user imports a link.
-- AI polish sends the current text only when the user configures `API Key`, `Base URL`, and `Model`, then explicitly triggers AI polish.
+- Glitter does not automatically upload your vault content to developer-owned servers.
+- Link import requests the target page only when you explicitly import a link.
+- AI polish sends only the current text, and only after you configure your own `API Key`, `Base URL`, and `Model`, then explicitly trigger the AI action.
+- If you do not use link import or AI polish, Glitter does not make extra network requests for those features.
+- Outside normal vault read/write behavior through Obsidian, Glitter does not proactively access files outside your vault.
+
+## Chinese Documentation
+
+中文说明见下方。
 
 Glitter 是一款面向 Obsidian 的灵感记录插件，适合保存那些值得留下、却不一定需要立刻建成正式笔记的小点子、参考信息和灵感，内容类型涵盖文本、链接、图片与视频。它让你先把内容轻量留存，避免 vault 被大量临时笔记塞满；等真正需要沉淀时，再按需整理、深度沉淀或引用回正文。
 
