@@ -40,11 +40,11 @@ describe("public README review disclosures", () => {
     expect(readme).toContain("API Key");
     expect(readme).toContain("Base URL");
     expect(readme).toContain("Model");
-    expect(readme).toContain("无默认遥测");
-    expect(readme).toContain("不会自动把你的 vault 内容上传到开发者服务器");
-    expect(readme).toContain("主动导入链接");
-    expect(readme).toContain("请求对应链接页面");
-    expect(readme).toContain("当前文本内容才会发送到你指定的模型服务");
-    expect(readme).toContain("如果你不使用链接导入，也不配置或触发 AI，Glitter 不会额外发起网络请求");
+    expect(readme).toContain("no default telemetry");
+    expect(readme).toContain("does not automatically upload your vault content to developer servers");
+    expect(readme).toContain("actively import a link");
+    expect(readme).toContain("requests that page in order to extract the title, description, and other link information");
+    expect(readme).toContain("current text content be sent to the model service you specified");
+    expect(readme).toContain("do not use link import, and do not configure or trigger AI, Glitter will not make extra network requests");
   });
 });
