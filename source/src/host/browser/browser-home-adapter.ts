@@ -21,8 +21,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import { isReviewScenario, type ReviewScenario } from "../../review/scenarios";
 
 // 存储键与页面判断。
-const PAGE_KEY = "glitter.preview.page";
-const SCENARIO_KEY_PREFIX = "glitter.preview.scenario";
+const PAGE_KEY = "glitter-idea.preview.page";
+const SCENARIO_KEY_PREFIX = "glitter-idea.preview.scenario";
 
 // 预览适配器契约。
 export type PreviewPage = "home" | "search";

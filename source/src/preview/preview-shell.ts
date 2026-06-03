@@ -47,8 +47,8 @@ export const PREVIEW_PAGES = ["home", "search", "pool", "write", "settings"] as 
 export type PreviewPage = (typeof PREVIEW_PAGES)[number];
 
 const PREVIEW_PAGE_SET = new Set<string>(PREVIEW_PAGES);
-const STORAGE_PAGE_KEY = "glitter.preview.page";
-const STORAGE_SCENARIO_KEY_PREFIX = "glitter.preview.scenario";
+const STORAGE_PAGE_KEY = "glitter-idea.preview.page";
+const STORAGE_SCENARIO_KEY_PREFIX = "glitter-idea.preview.scenario";
 
 type AdapterPage = "home" | "search";
 type PreviewOverlayStep = "capture" | "saved-feedback" | "pool-choose" | "pool-create" | "followup-guidance";

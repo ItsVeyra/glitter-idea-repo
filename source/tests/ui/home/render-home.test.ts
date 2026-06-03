@@ -2202,7 +2202,7 @@ describe("renderHomeView", () => {
   });
 
   it("keeps the Obsidian main-view host full-height without turning the home stage into a shrink-to-fit flex item", () => {
-    const mainViewBlocks = getRuleBlocks(stylesCss, ".glitter-main-view-host");
+    const mainViewBlocks = getRuleBlocks(stylesCss, ".glitter-idea-main-view-host");
     expect(mainViewBlocks.length).toBeGreaterThan(0);
     expect(
       mainViewBlocks.some((block) => block.includes("height: 100%;") && block.includes("overflow: hidden;"))

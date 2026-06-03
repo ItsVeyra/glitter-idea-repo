@@ -19,11 +19,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
  * 负责集中维护插件标识、视图类型、默认池常量与共享文案回退规则。
  */
 // 插件标识与视图类型。
-export const PLUGIN_ID = "glitter";
-export const GLITTER_ICON_ID = "glitter-plugin-sparkles";
-export const MAIN_VIEW_TYPE = "glitter-main-view";
-export const SEARCH_VIEW_TYPE = "glitter-search-view";
-export const POOL_VIEW_TYPE = "glitter-pool-view";
+export const PLUGIN_ID = "glitter-idea";
+export const GLITTER_ICON_ID = "glitter-idea-plugin-sparkles";
+export const MAIN_VIEW_TYPE = "glitter-idea-main-view";
+export const SEARCH_VIEW_TYPE = "glitter-idea-search-view";
+export const POOL_VIEW_TYPE = "glitter-idea-pool-view";
 
 // 默认池与新建池常量。
 export const DEFAULT_POOL_ID = "pool-default";

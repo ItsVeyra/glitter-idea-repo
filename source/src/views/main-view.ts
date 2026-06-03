@@ -83,7 +83,7 @@ export class GlitterMainView extends ItemView {
   // 工作区生命周期与首页初始渲染。
   override async onOpen(): Promise<void> {
     this.isClosed = false;
-    this.contentEl?.addClass?.("glitter-main-view-host");
+    this.contentEl?.addClass?.("glitter-idea-main-view-host");
     this.renderMainShell();
     this.startThemeSync();
   }
@@ -94,7 +94,7 @@ export class GlitterMainView extends ItemView {
     this.clearSearchFeedbackTimer();
     this.stopThemeSync();
     this.themeTargetEl = null;
-    this.contentEl?.removeClass?.("glitter-main-view-host");
+    this.contentEl?.removeClass?.("glitter-idea-main-view-host");
     this.contentEl.empty();
   }
 

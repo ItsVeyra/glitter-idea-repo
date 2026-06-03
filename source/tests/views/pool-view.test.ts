@@ -453,7 +453,7 @@ describe("GlitterPoolView", () => {
   it("returns the sparkle icon for the pool view tab", () => {
     const view = new GlitterPoolView({} as any, {} as any);
 
-    expect(view.getIcon()).toBe("glitter-plugin-sparkles");
+    expect(view.getIcon()).toBe("glitter-idea-plugin-sparkles");
   });
 
   it("refreshes external idea mutations with scroll preservation and no load toast", () => {
@@ -515,10 +515,10 @@ describe("GlitterPoolView", () => {
     (view as any).contentEl = { addClass, removeClass, empty };
 
     await view.onOpen();
-    expect(addClass).toHaveBeenCalledWith("glitter-pool-view-host");
+    expect(addClass).toHaveBeenCalledWith("glitter-idea-pool-view-host");
 
     await view.onClose();
-    expect(removeClass).toHaveBeenCalledWith("glitter-pool-view-host");
+    expect(removeClass).toHaveBeenCalledWith("glitter-idea-pool-view-host");
     expect(empty).toHaveBeenCalled();
   });
 
@@ -4253,7 +4253,7 @@ describe("GlitterPoolView", () => {
     actions.onPoolSwitch("pool-other");
     await Promise.resolve();
     expect(leafSetViewState).toHaveBeenCalledWith({
-      type: "glitter-pool-view",
+      type: "glitter-idea-pool-view",
       active: true,
       state: {
         poolId: "pool-other",
@@ -8897,7 +8897,7 @@ describe("GlitterPoolView", () => {
 
     expect(leafSetViewState).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: "glitter-pool-view",
+        type: "glitter-idea-pool-view",
         active: true,
         state: expect.objectContaining({ poolId: "pool-other", mode: "browse" })
       })
@@ -9467,7 +9467,7 @@ describe("GlitterPoolView", () => {
     const view = new GlitterPoolView(
       {
         getViewState: vi.fn(() => ({
-          type: "glitter-pool-view",
+          type: "glitter-idea-pool-view",
           state: {
             poolId: "pool-product",
             resetFilters: true
@@ -9740,7 +9740,7 @@ describe("GlitterPoolView", () => {
 
     expect(enterPreventDefault).toHaveBeenCalled();
     expect(leafSetViewState).toHaveBeenCalledWith({
-      type: "glitter-pool-view",
+      type: "glitter-idea-pool-view",
       active: true,
       state: {
         poolId: "pool-6",

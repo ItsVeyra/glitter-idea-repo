@@ -564,7 +564,7 @@ export class GlitterPoolView extends ItemView {
 
   override async onOpen(): Promise<void> {
     this.isClosed = false;
-    this.contentEl?.addClass?.("glitter-pool-view-host");
+    this.contentEl?.addClass?.("glitter-idea-pool-view-host");
 
     if (canObservePoolRoamBoardVault(this.plugin.app)) {
       this.registerEvent(
@@ -607,7 +607,7 @@ export class GlitterPoolView extends ItemView {
     this.activePoolRoamHistoryModal = undefined;
     this.poolMarkdownPreviewRenderer.release();
     this.poolRoamController.destroy();
-    this.contentEl?.removeClass?.("glitter-pool-view-host");
+    this.contentEl?.removeClass?.("glitter-idea-pool-view-host");
     this.contentEl.empty();
   }
 

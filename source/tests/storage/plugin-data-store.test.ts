@@ -76,10 +76,10 @@ describe("createPluginDataStore", () => {
     const store = createPluginDataStore({
       async loadData() {
         return {
-          glitterSettings: {
+          glitterIdeaSettings: {
             enableQuickCapture: true
           },
-          glitterSnapshot: {
+          glitterIdeaSnapshot: {
             version: 999,
             ideas: [{ id: "idea-1" }],
             pools: [{ id: "pool-1" }],
@@ -106,10 +106,10 @@ describe("createPluginDataStore", () => {
     await store.save(loaded);
 
     expect(saveData).toHaveBeenCalledWith({
-      glitterSettings: {
+      glitterIdeaSettings: {
         enableQuickCapture: true
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [{ id: "idea-1" }],
         pools: [{ id: "pool-1" }],
@@ -120,10 +120,10 @@ describe("createPluginDataStore", () => {
 
   it("mutates snapshot while preserving settings", async () => {
     let persisted: unknown = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         createdIdeaEmoji: "✨"
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [],
@@ -162,12 +162,12 @@ describe("createPluginDataStore", () => {
 
   it("deep clones nested settings and snapshot data on load and save", async () => {
     let persisted: unknown = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         appearance: {
           accents: ["blue"]
         }
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [{ id: "idea-1", meta: { tags: ["initial"] } }],
         pools: [{ id: "pool-1", config: { colors: ["#4A5F84"] } }],
@@ -242,10 +242,10 @@ describe("createPluginDataStore", () => {
 
   it("serializes settings updates with snapshot mutations so neither write is lost", async () => {
     let persisted: unknown = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         mode: "light"
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [],
@@ -255,11 +255,11 @@ describe("createPluginDataStore", () => {
 
     const saveData = vi.fn(async (data: unknown) => {
       const wrapped = data as {
-        glitterSettings?: { mode?: string };
-        glitterSnapshot?: { ideas?: Array<{ id: string }> };
+        glitterIdeaSettings?: { mode?: string };
+        glitterIdeaSnapshot?: { ideas?: Array<{ id: string }> };
       };
 
-      if (wrapped.glitterSettings?.mode === "light" && wrapped.glitterSnapshot?.ideas?.length === 1) {
+      if (wrapped.glitterIdeaSettings?.mode === "light" && wrapped.glitterIdeaSnapshot?.ideas?.length === 1) {
         await new Promise((resolve) => setTimeout(resolve, 25));
       }
 

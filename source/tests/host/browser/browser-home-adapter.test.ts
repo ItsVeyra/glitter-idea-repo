@@ -62,7 +62,7 @@ describe("createBrowserHomeAdapter", () => {
   it("falls back to home page and page-specific default scenarios when persisted values are invalid", () => {
     const storage = {
       getItem(key: string): string {
-        if (key === "glitter.preview.page") {
+        if (key === "glitter-idea.preview.page") {
           return "unknown-page";
         }
         return "unknown-scenario";

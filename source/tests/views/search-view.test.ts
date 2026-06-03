@@ -71,7 +71,7 @@ describe("GlitterSearchView", () => {
   it("returns the sparkle icon for the search view tab", () => {
     const view = new GlitterSearchView({} as any, {} as any);
 
-    expect(view.getIcon()).toBe("glitter-plugin-sparkles");
+    expect(view.getIcon()).toBe("glitter-idea-plugin-sparkles");
   });
 
   it("loads runtime search state even when review mode is enabled", async () => {

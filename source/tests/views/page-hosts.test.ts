@@ -27,9 +27,9 @@ import { GlitterPoolView } from "../../src/views/pool-view";
 // 校验页面 host 与具体状态构造器、渲染器之间的装配连线。
 describe("page host wiring", () => {
   it("exposes stable main/search/pool view type IDs", () => {
-    expect(MAIN_VIEW_TYPE).toBe("glitter-main-view");
-    expect(SEARCH_VIEW_TYPE).toBe("glitter-search-view");
-    expect(POOL_VIEW_TYPE).toBe("glitter-pool-view");
+    expect(MAIN_VIEW_TYPE).toBe("glitter-idea-main-view");
+    expect(SEARCH_VIEW_TYPE).toBe("glitter-idea-search-view");
+    expect(POOL_VIEW_TYPE).toBe("glitter-idea-pool-view");
   });
 
   it("GlitterPlugin prototype exposes view activation helpers", () => {

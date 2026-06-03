@@ -207,7 +207,7 @@ describe("GlitterMainView", () => {
   it("returns the sparkle icon for the main view tab", () => {
     const view = new GlitterMainView({} as any, {} as any);
 
-    expect(view.getIcon()).toBe("glitter-plugin-sparkles");
+    expect(view.getIcon()).toBe("glitter-idea-plugin-sparkles");
   });
 
   it("marks the main view host as a non-scrolling full-height shell on open and removes it on close", async () => {
@@ -242,10 +242,10 @@ describe("GlitterMainView", () => {
 
     try {
       await view.onOpen();
-      expect(addClass).toHaveBeenCalledWith("glitter-main-view-host");
+      expect(addClass).toHaveBeenCalledWith("glitter-idea-main-view-host");
 
       await view.onClose();
-      expect(removeClass).toHaveBeenCalledWith("glitter-main-view-host");
+      expect(removeClass).toHaveBeenCalledWith("glitter-idea-main-view-host");
       expect(empty).toHaveBeenCalled();
     } finally {
       themeObserver.restore();

@@ -76,11 +76,11 @@ describe("view command registration", () => {
     const activateMainView = vi.fn(async () => undefined);
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         openMainViewOnNextLoad: true
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [],
@@ -129,26 +129,26 @@ describe("view command registration", () => {
     expect(activateMainView).toHaveBeenCalledTimes(1);
     expect(plugin.registerMarkdownPostProcessor).toHaveBeenCalledTimes(1);
     expect(addIcon).toHaveBeenCalledWith(
-      "glitter-plugin-sparkles",
+      "glitter-idea-plugin-sparkles",
       expect.stringContaining("font-size=\"78\"")
     );
     expect(addIcon).toHaveBeenCalledWith(
-      "glitter-plugin-sparkles",
+      "glitter-idea-plugin-sparkles",
       expect.stringContaining("✨")
     );
     expect(addRibbonIcon).toHaveBeenCalledWith(
-      "glitter-plugin-sparkles",
+      "glitter-idea-plugin-sparkles",
       "打开 Glitter",
       expect.any(Function)
     );
     expect(savePluginSettingsSpy).toHaveBeenCalledTimes(1);
     expect(loadData).toHaveBeenCalled();
     expect(saveData).toHaveBeenCalledWith({
-      glitterSettings: {
+      glitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         openMainViewOnNextLoad: false
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -168,11 +168,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: true
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [
           {
@@ -264,11 +264,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: false
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [
           {
@@ -326,7 +326,7 @@ describe("view command registration", () => {
     expect(loadData).toHaveBeenCalled();
     expect(saveData).toHaveBeenCalledWith(
       expect.objectContaining({
-        glitterSettings: expect.objectContaining({
+        glitterIdeaSettings: expect.objectContaining({
           hasCompletedFirstUse: true
         })
       })
@@ -338,11 +338,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: false
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -400,11 +400,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterSettings: {
+      glitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: false
       },
-      glitterSnapshot: {
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -470,8 +470,8 @@ describe("view command registration", () => {
 
     plugin.settings = DEFAULT_SETTINGS;
     plugin.loadData = vi.fn(async () => ({
-      glitterSettings: DEFAULT_SETTINGS,
-      glitterSnapshot: {
+      glitterIdeaSettings: DEFAULT_SETTINGS,
+      glitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [],
@@ -507,7 +507,7 @@ describe("view command registration", () => {
     await plugin.onload();
 
     expect(addRibbonIcon).toHaveBeenCalledWith(
-      "glitter-plugin-sparkles",
+      "glitter-idea-plugin-sparkles",
       "打开 Glitter",
       expect.any(Function)
     );

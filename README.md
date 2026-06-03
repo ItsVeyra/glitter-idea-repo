@@ -103,7 +103,7 @@ While writing notes, you can insert saved ideas back into the note body for quot
 
 ### Installation
 1. Download the latest Glitter release package from this repository;
-2. Create the folder `.obsidian/plugins/glitter/` in your vault;
+2. Create the folder `.obsidian/plugins/glitter-idea/` in your vault;
 3. Copy `manifest.json`, `main.js`, and `styles.css` from the release package into that folder;
 4. Reopen Obsidian, or reload community plugins;
 5. Open **Settings → Community plugins** and enable **Glitter**.

@@ -20,8 +20,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 // 数据结构与存储契约。
 const SNAPSHOT_VERSION = 1;
-const SETTINGS_KEY = "glitterSettings";
-const SNAPSHOT_KEY = "glitterSnapshot";
+const SETTINGS_KEY = "glitterIdeaSettings";
+const SNAPSHOT_KEY = "glitterIdeaSnapshot";
 
 export interface PluginDataSnapshot<TIdea = unknown, TPool = unknown> {
   version: number;
