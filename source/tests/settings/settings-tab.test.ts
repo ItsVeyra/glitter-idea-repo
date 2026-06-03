@@ -1020,8 +1020,8 @@ describe("GlitterSettingTab", () => {
         expect.objectContaining({ tag: "span", text: "GitHub: " }),
         expect.objectContaining({
           tag: "a",
-          text: "https://github.com/ItsVeyra/glitter-plugin-release",
-          href: "https://github.com/ItsVeyra/glitter-plugin-release",
+          text: "https://github.com/ItsVeyra/glitter-plugin-repo",
+          href: "https://github.com/ItsVeyra/glitter-plugin-repo",
           cls: "external-link"
         })
       ])
@@ -1094,8 +1094,8 @@ describe("GlitterSettingTab", () => {
         expect.objectContaining({ tag: "span", text: "GitHub: " }),
         expect.objectContaining({
           tag: "a",
-          text: "https://github.com/ItsVeyra/glitter-plugin-release",
-          href: "https://github.com/ItsVeyra/glitter-plugin-release",
+          text: "https://github.com/ItsVeyra/glitter-plugin-repo",
+          href: "https://github.com/ItsVeyra/glitter-plugin-repo",
           cls: "external-link"
         })
       ])
