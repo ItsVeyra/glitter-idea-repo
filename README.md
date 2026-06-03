@@ -8,168 +8,122 @@ As your ideas accumulate, Glitter also gives them a visual space to grow. With t
 
 Glitter is built around a simple design philosophy: respect your taste and working habits, follow the visual language of the theme you already love, and make the plugin feel as native and unobtrusive as possible in daily use.
 
-## Features
 
-- Quickly capture text, links, images, and videos
-- Save ideas as lightweight cards before turning them into full notes
-- Organize saved ideas into thematic pools
-- Create Markdown files from ideas when they are ready to grow
-- Insert saved ideas back into note content as reusable snippets
-- Use the roam board to connect, compare, and expand ideas visually
-- Polish captured text with your own configured AI service
+## Why Use Glitter
 
-## Installation
+At the core of Glitter's design is not making every idea immediately conform to Obsidian's file structure, but giving inspiration a lighter landing place before it becomes a formal note.
 
-1. Download the latest Glitter release from this repository.
-2. Create the folder `.obsidian/plugins/glitter/` in your vault.
-3. Copy `manifest.json`, `main.js`, and `styles.css` into that folder.
-4. Reload Obsidian and enable **Glitter** in **Settings → Community plugins**.
+It tries to separate two things that are often tied together: **worth keeping**, and **worth turning into a file right away**. You can save an idea first, then decide whether to categorize it, create a Markdown file for it, or insert it back into your note to keep writing. This both reduces the large number of temporary files created in the vault for quick capture, and makes truly important ideas easier to revisit, reuse, and develop.
 
-## Community Review
+## Core Capabilities
 
-Reviewable source code is available in `source/`.
+### 1. Quick Capture
+Glitter provides a global quick capture entry for quickly holding onto text, links, images, and videos. For many usage scenarios, it is the first step in "keeping the content before it slips away."
 
-To verify the published source locally, run the following commands inside `source/`:
+### 2. Roam Board
+The roam board is as important as quick capture. It is not just a simple whiteboard add-on page, but a visual space that brings saved ideas back for further organization: you can drag source ideas onto the roam board, continue arranging, connecting, comparing, and grouping them on the canvas, and keep expanding around a theme.
 
-```bash
-npm install
-npm run test
-npm run check
-npm run build
-```
+Source blocks on the roam board display the real content directly, instead of collapsing into plain text descriptions:
+- Text and link ideas show their corresponding titles, descriptions, and source information;
+- Image and video ideas display the media content directly;
+- Multi-image ideas are grouped into the same source block while preserving the ability to keep connecting and organizing them;
+- Roam history keeps previously created boards so you can continue revisiting, batch-organizing, and extending the workflow;
+- When an original idea is edited or deleted, the corresponding source block on the roam board stays in sync as much as possible.
 
-## Privacy and Network Behavior
+### 3. Pools and Card Organization
+Saved ideas enter their corresponding pools and continue to be managed as cards. You can organize them around themes, projects, stages, or any custom structure that fits your workflow.
 
-- Glitter has no default telemetry.
-- Glitter does not automatically upload your vault content to developer-owned servers.
-- Link import requests the target page only when you explicitly import a link.
-- AI polish sends only the current text, and only after you configure your own `API Key`, `Base URL`, and `Model`, then explicitly trigger the AI action.
-- If you do not use link import or AI polish, Glitter does not make extra network requests for those features.
-- Outside normal vault read/write behavior through Obsidian, Glitter does not proactively access files outside your vault.
+The home page now supports two idea field views: **Fulfillment** and **Ripple**. They only switch the presentation of the underlying pools / fields, without changing the fixed action areas such as the home title, search, settings, status filters, create pool, and idea quick capture.
 
-## Chinese Documentation
+### 4. Snippet Insertion and Write-Back
+When an idea is ready to enter the writing stage, Glitter lets you insert saved content back into the note body, allowing the flow of "collect first, write later" to close naturally.
 
-中文说明见下方。
+### 5. AI Polish
+For text you have already written, Glitter can also call a model you configure yourself to perform a real rewrite and polish pass, helping you continue refining and deepening the expression.
 
-Glitter 是一款面向 Obsidian 的灵感记录插件，适合保存那些值得留下、却不一定需要立刻建成正式笔记的小点子、参考信息和灵感，内容类型涵盖文本、链接、图片与视频。它让你先把内容轻量留存，避免 vault 被大量临时笔记塞满；等真正需要沉淀时，再按需整理、深度沉淀或引用回正文。
+## Quick Start
 
-它的界面颜色、字体、配置与样式都会跟随用户安装的 Obsidian 主题，目标是在日常使用里尽量保持原生、低负担、可沉浸的体验。
+### First Use
+1. After enabling the Glitter plugin in Obsidian, click **Open Glitter Home** in the Glitter settings page, or find the default **✨** icon in the left sidebar to enter the plugin home page.  
+   ![Enable Plugin](assets/images/enable-plugin.png)
+2. Follow the plugin's **first-use flow** to complete the creation of your first idea.  
+   ![First-use Flow](assets/gifs/first-use-flow.gif)
 
-## 为什么使用 Glitter
+### Usage
 
-Glitter 的设计核心，不是让每个想法都立刻服从 Obsidian 的文件结构，而是在“正式笔记”之前，先给灵感一个更轻的落点。
+#### 1. Quick Capture
+Click **Idea Quick Capture**, enter the relevant content in the window, and save to record an idea.
+- **Plain text**: follows the principle of prioritizing the content body, with the default title using a timestamp.  
+  ![Plain Text Quick Capture](assets/gifs/plain-text-quick-capture.gif)
+- **Link**: after pasting a link, Glitter can automatically recognize it and fill in the basic information.  
+  ![Link Quick Capture](assets/gifs/link-quick-capture.gif)
+- **Images and videos**: add media files as attachments, or paste an image directly from the clipboard; after saving, media files are stored by default in the vault path `/Glitter/images`.  
+  ![Image Quick Capture](assets/gifs/image-quick-capture.gif)
+- **AI Polish**: once the body is not empty, you can trigger AI Polish. After enabling the feature in settings and filling in your own API Key, Base URL, and Model, you can run a real optimization and moderate expansion pass on the current text. The polish interface keeps the original text, shows the result on the right, and supports retry, cancel, and apply.
+- **Create file**: by default, an idea exists inside the plugin as a card, but you can also check "Save idea and create file" while creating it, so saving the idea also generates a note file.
+- **Hotkey**: defaults to `Mod (Command/Ctrl) + Shift + J`, and can be changed in settings.
 
-它想拆开两件常被绑在一起的事：**值得留下来**，和 **值得立刻建文件**。你可以先把灵感保存下来，再决定是否分类、是否创建 Markdown 文件、是否插回正文继续写。这样既能减少 vault 里为了速记而产生的大量临时文件，也能让真正重要的灵感更容易被回看、复用和沉淀。
+#### 2. Roam Board
+When you need to continue organizing, branching, or comparing existing ideas around a theme, you can bring the content into the **Roam Board**.
+- Supports placing saved ideas onto the board and continuing to drag, arrange, and connect them;
+- Source blocks directly present text, links, images, and videos, so you do not need to keep returning to the card page to review them;
+- Multi-image ideas are grouped inside the same source block for easier observation as a set;
+- Roam history records created boards so you can continue organizing, revisiting, and batch-managing them;
+- When the original idea content is updated, the source block refreshes with it, preventing the canvas content from drifting out of date over time.
 
-## 核心能力
+#### 3. Pools
+Pools are Glitter's idea categorization feature, displayed on the home page as circular ripple forms.
+- **View switching**: click **Switch View** at the top of the home page to switch between the **Fulfillment** and **Ripple** idea fields; the former is more stable and aggregated, while the latter emphasizes depth, title connections, and ripple relationships;
+- **Create pool**: click **Create Pool**, enter the pool name and description, and save to create a new idea category;
+- **Other creation paths**: **Switch Pool** inside the quick capture window can also create a new pool directly;
+- **Pool style rules**: by default, the pool with the largest number of ideas is placed at the center of the interface; the solid or dashed state of the center outline is randomly generated by default;
+- **Pool editing**: hovering over a pool for 3 seconds triggers **Pool Isolated Mode**. The buttons on the right can then be used in order for **Edit Pool Name** and **Delete Pool Category**; on the pool home page, clicking the pool name and description also enables in-place editing.
 
-### 1. 灵感速记
-Glitter 提供全局灵感速记入口，用来快速收住文本、链接、图片与视频。对于很多使用场景来说，它是“先留住内容”的第一步。
+#### 4. Idea Cards
+After content is saved, a card for that idea is created in the corresponding pool.
+- **Card management**: the card more menu supports actions such as edit, move, delete, create/open file, and view insertion locations in the note body;
+- **Card display states**: long text content is automatically collapsed; for ideas that have already been created as standalone note files, the color of the top-left content type icon changes to the accent color that follows the current Obsidian theme;
+- **Filter, organize, and view**: the top-right of the card area on the pool home page provides the relevant feature buttons.  
+  - Ideas can be filtered by **idea status**, **content type**, **creation time**, and more;  
+  - Supports viewing in Markdown reading mode, as well as exporting the whole set as a `.md` note file;  
+    ![Markdown Export](assets/images/markdown-export.png)  
+  - Supports bulk moving and deleting idea cards, and the bulk move modal can also create a new pool directly.
 
-### 2. 灵感漫游
-灵感漫游是与灵感速记同等级的重要能力。它不是简单的白板附加页，而是把已经保存的灵感重新带回可视化整理空间：你可以把来源灵感拖入漫游白板，在画布里继续排布、连接、比较、归纳，并围绕一个主题持续扩展。
+#### 5. Snippet Insertion
+While writing notes, you can insert saved ideas back into the note body for quoting, expanding, and continuing the writing process.
+- In the note body, right-click and find Glitter, then choose **Insert Idea Snippet**;
+- Hotkey: `Mod (Command/Ctrl) + Shift + I`;
+- ![Snippet Insertion](assets/images/snippet-insertion.png)
 
-漫游里的来源块会直接展示真实内容，而不是退化成一条普通文本说明：
-- 文本与链接灵感会显示对应标题、说明与来源信息；
-- 图片与视频灵感会直接显示媒体内容；
-- 多图灵感会以同一个来源块聚合展示，并保留继续连接与整理的能力；
-- 漫游历史会保存已经创建过的白板，方便继续回看、批量整理与延续工作流；
-- 当原始灵感被编辑或删除时，漫游里的来源块也会尽量保持同步。
+#### 6. Other
+- The home page **Switch View** is now available, allowing you to browse between the **Fulfillment** and **Ripple** home idea fields;
+- Card sharing is still being planned.
 
-### 3. 池与卡片整理
-保存后的灵感会进入对应灵感池，并以卡片形式持续管理。你可以围绕主题、项目、阶段或任何自定义方式组织这些内容。
+## Installation and Updates
 
-首页已支持两种灵感场浏览视图：【圆满】与【涟漪】。它们只切换底层灵感池 / 灵感场的表现方式，不会改变首页标题、搜索、设置、状态筛选、新建池与灵感速记等固定操作区。
+### Installation
+1. Download the latest Glitter release package from this repository;
+2. Create the folder `.obsidian/plugins/glitter/` in your vault;
+3. Copy `manifest.json`, `main.js`, and `styles.css` from the release package into that folder;
+4. Reopen Obsidian, or reload community plugins;
+5. Open **Settings → Community plugins** and enable **Glitter**.
 
-### 4. 片段插入与回写
-当灵感真正进入写作阶段时，Glitter 支持把已保存内容重新插入笔记正文，让“先收集、后成文”的过程自然闭环。
+### Update
+1. Download the latest version of the Glitter release package;
+2. Replace the old `manifest.json`, `main.js`, and `styles.css` with the new ones;
+3. Reload Obsidian, then confirm that Glitter is enabled and working normally.
 
-### 5. AI 润色
-对于已经写下来的正文，Glitter 还支持调用你自己配置的模型做一轮真实改写与润色，用于继续整理与深化表达。
+## Community Plugin Review and Source
 
-## 快速上手
-
-### 首次使用
-1. 在 Obsidian 中启用 Glitter 插件后，可在 Glitter 设置页里点击**打开 Glitter 首页**，或在 Obsidian 左侧功能区里找到默认启用的 **✨** 图标，进入插件首页。  
-   ![开启插件](assets/images/开启插件.png)
-2. 跟随插件的**首次流程**，完成第一条灵感的创建。  
-   ![首次流程](assets/gifs/首次流程.gif)
-
-### 使用过程
-
-#### 1. 灵感速记
-点击**灵感速记**，在窗口内输入对应内容后保存，即可完成一条灵感的录入。
-- **纯文本**：遵循内容主体优先原则，默认标题为时间戳。  
-  ![纯文本速记](assets/gifs/纯文本.gif)
-- **链接**：粘贴链接后可自动识别并补全基础信息。  
-  ![链接速记](assets/gifs/链接.gif)
-- **图片和视频**：在附件中添加媒体文件，或直接粘贴剪切板图像；保存后媒体文件会默认存入仓库路径 `/Glitter/images`。  
-  ![图片速记](assets/gifs/图片.gif)
-- **AI 润色**：正文非空后可触发 AI 润色；在设置页中开启对应功能并填写自己的 API Key、Base URL、Model 后，即可对当前文本做一轮真实优化与适度扩写。润色界面会保留原文，并在右侧显示结果，支持重做、取消与采纳。
-- **新建文件**：默认灵感在插件内以卡片形式存在，但你也可以在创建灵感时勾选“保存灵感并创建文件”，让它在保存的同时生成一篇笔记文件。
-- **快捷键**：默认 `Mod (Command/Ctrl) + Shift + J`，可在设置页中修改。
-
-#### 2. 灵感漫游
-当你需要围绕一个主题继续整理、发散或比较已有灵感时，可以把内容带入**灵感漫游**白板。
-- 支持把已保存灵感挂入白板并继续拖拽、排布与连接；
-- 来源块会直接呈现文本、链接、图片与视频，不需要回到卡片页反复查看；
-- 多图灵感会在同一个来源块内聚合展示，方便整组观察；
-- 漫游历史会记录已创建的白板，方便继续整理、回看与批量管理；
-- 当原始灵感内容更新时，来源块也会跟随刷新，避免画布内容长期失真。
-
-#### 3. 池
-池是 Glitter 的灵感分类功能，在首页以圆圈涟漪样式呈现。
-- **视图切换**：点击首页顶部的**切换视图**，可在【圆满】与【涟漪】两种灵感场之间切换；前者更稳定聚合，后者更强调纵深感、标题连接与涟漪关系；
-- **新建池**：点击**新建池**，输入池分类名称及描述后保存，即可完成一个灵感分类的建立；
-- **其它新建路径**：灵感速记窗口中的**切换池**也可以直接新建池；
-- **池样式规则**：默认灵感数量最多的池位于界面中心；池中心描边的虚实状态默认随机生成；
-- **池编辑**：鼠标停留在池上方 3 秒会触发“池独立模式”，右侧按钮可依次进行**池名称编辑**、**池分类删除**；在池首页内单击池名称和池描述，也可以触发原位内容更改。
-
-#### 4. 灵感卡片
-内容保存后，会在对应池内生成属于这个灵感的卡片。
-- **卡片管理**：在卡片更多菜单里可进行编辑、移动、删除、创建为文件/打开文件、查看插入正文位置等操作；
-- **卡片呈现状态**：文本内容过长时会自动折叠；已经创建为独立笔记文件的灵感，卡片左上角“内容类型图标”的颜色会切换为跟随 Obsidian 主题设置的强调色；
-- **筛选、整理与查看**：池首页内卡片区域右上角提供对应功能按钮。  
-  - 可按“灵感状态”“内容类型”“创建时间”等方式筛选灵感；  
-  - 支持 Markdown 阅读视图查看，以及整体作为 `.md` 笔记文件导出；  
-    ![Markdown 导出](assets/images/MD文件.png)  
-  - 支持批量移动、删除灵感卡片，且批量移动弹窗内可直接新建池。
-
-#### 5. 片段插入
-写笔记时，可以把已有灵感插入正文，方便引用、延展和继续写作。
-- 在笔记正文内右键找到 Glitter，选择**插入灵感片段**；
-- 快捷键：`Mod (Command/Ctrl) + Shift + I`；
-- ![片段插入](assets/images/片段插入.png)
-
-#### 6. 其他
-- 首页“切换视图”现已可用，可在【圆满】与【涟漪】两种首页灵感场之间切换浏览；
-- 卡片分享功能仍在规划中。
-
-## 安装与更新
-
-### 安装
-1. 从本仓库最新 Release 下载 Glitter 发布包；
-2. 在你的 vault 中创建文件夹：`.obsidian/plugins/glitter/`；
-3. 将发布包中的 `manifest.json`、`main.js` 和 `styles.css` 复制到这个文件夹中；
-4. 重新打开 Obsidian，或重新加载社区插件；
-5. 打开 **Settings → Community plugins**，启用 **Glitter**。
-
-### 更新
-1. 下载最新版本的 Glitter 发布包；
-2. 用新的 `manifest.json`、`main.js` 和 `styles.css` 替换旧文件；
-3. 重新加载 Obsidian，然后确认 Glitter 已正常启用。
-
-## 社区插件审核与源码
-
-本仓库根目录保留社区插件提交与安装所需的发布文件：
+The repository root keeps the release files required for community plugin submission and installation:
 
 - `manifest.json`
 - `main.js`
 - `styles.css`
 
-用于官方审核的最小可构建源码工程位于 [source/](source/)。
+The minimal buildable source workspace used for official review is located in [source/](source/).
 
-如需在本仓库内复现源码检查，请进入 `source/` 目录后依次运行：
+To reproduce the source verification inside this repository, enter the `source/` directory and run:
 
 ```bash
 npm install
@@ -178,37 +132,37 @@ npm run check
 npm run build
 ```
 
-## AI、联网与隐私说明
+## AI, Network, and Privacy
 
-- Glitter 不提供开发者托管账号系统，也不要求登录开发者服务。
-- Glitter **无默认遥测**，不会自动把你的 vault 内容上传到开发者服务器。
-- 当你主动导入链接时，Glitter 会请求对应链接页面以提取标题、描述等链接信息。
-- 只有当你在设置中主动配置 `API Key`、`Base URL`、`Model`，并在界面中主动触发 **AI 润色** 时，当前文本内容才会发送到你指定的模型服务。
-- 如果你不使用链接导入，也不配置或触发 AI，Glitter 不会额外发起网络请求。
-- 除 Obsidian 正常的 vault 读写场景外，Glitter 不会主动访问 vault 外部文件。
+- Glitter does not provide a developer-hosted account system, and does not require you to log in to a developer service.
+- Glitter has **no default telemetry** and does not automatically upload your vault content to developer servers.
+- When you actively import a link, Glitter requests that page in order to extract the title, description, and other link information.
+- Only when you actively configure `API Key`, `Base URL`, and `Model` in settings and actively trigger **AI Polish** in the interface will the current text content be sent to the model service you specified.
+- If you do not use link import, and do not configure or trigger AI, Glitter will not make extra network requests.
+- Outside of Obsidian's normal vault read/write behavior, Glitter does not proactively access files outside your vault.
 
-## 常见问题与说明
+## FAQ
 
-**Q：为什么安装的Glitter的界面效果和演示图不一样？**  
-A：因为UI效果取决于用户安装的主题。Glitter力求实现融入Obsidian生态，尊重用户审美与布局习惯，不在视觉上抢夺用户已经建立起来的使用场景。
+**Q: Why does the installed Glitter interface look different from the demo images?**  
+A: Because the UI depends on the theme installed by the user. Glitter aims to blend into the Obsidian ecosystem, respect the user's taste and layout habits, and avoid visually competing with the environment the user has already built.
 
-**Q：Glitter 适合记录哪些内容？**  
-A：适合快速记录文本、链接、图片和视频等内容；如果你粘贴的是链接，Glitter 还可以自动识别并补全相关信息。
+**Q: What kinds of content is Glitter suitable for recording?**  
+A: It is suitable for quickly recording text, links, images, videos, and more. If what you paste is a link, Glitter can also automatically recognize it and fill in the related information.
 
-**Q：灵感漫游适合在什么阶段使用？**  
-A：当你已经积累了一批灵感，需要围绕主题继续比较、关联、发散和整理时，灵感漫游会比单纯翻卡片更高效。它适合承担“进入结构化整理之前”的视觉工作台角色。
+**Q: At what stage is the roam board most suitable to use?**  
+A: When you have already accumulated a batch of ideas and need to continue comparing, associating, branching, and organizing them around a theme, the roam board is more efficient than simply flipping through cards. It is well suited to being the visual workspace before you move into structured organization.
 
-**Q：Glitter 自带 AI 模型吗？**  
-A：不自带。AI 润色功能需要你在设置页中自行填写 API Key、Base URL 和模型名，然后由插件直接连接你配置的模型。
+**Q: Does Glitter come with its own AI model?**  
+A: No. The AI Polish feature requires you to fill in your own API Key, Base URL, and model name in settings, and the plugin then connects directly to the model service you configured.
 
-**Q：每条灵感都会自动创建一个 Markdown 文件吗？**  
-A：不会。是否创建文件是可选的，你可以按自己的整理方式决定。
+**Q: Does every idea automatically create a Markdown file?**  
+A: No. Whether to create a file is optional, and you can decide according to your own organization style.
 
-**Q：Pool（灵感池）是做什么的？**  
-A：灵感池是用来分组整理灵感的。你可以按主题、项目、写作阶段或任何适合自己的方式来分类。
+**Q: What is a Pool?**  
+A: A pool is used to group and organize ideas. You can classify them by theme, project, writing stage, or any other method that suits you.
 
-**Q：我可以把已经保存的灵感重新放回笔记正文吗？**  
-A：可以。Glitter 支持把灵感作为片段插入笔记正文，方便在写作时继续展开和引用。
+**Q: Can I put a saved idea back into the note body?**  
+A: Yes. Glitter supports inserting ideas into the note body as snippets, making it easier to continue expanding and referencing them while writing.
 
-**Q：这个插件后续还会继续更新什么功能？**  
-A：后续仍会围绕灵感速记、灵感漫游、卡片分享、气泡数据图表，以及插件视图中的细节动态体验继续完善。
+**Q: What features will this plugin continue to update in the future?**  
+A: Future updates will continue improving idea quick capture, the roam board, card sharing, bubble data charts, and the finer dynamic interaction details inside the plugin views.
