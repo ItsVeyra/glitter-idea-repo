@@ -166,3 +166,6 @@ A: Yes. Glitter supports inserting ideas into the note body as snippets, making 
 
 **Q: What features will this plugin continue to update in the future?**  
 A: Future updates will continue improving idea quick capture, the roam board, card sharing, bubble data charts, and the finer dynamic interaction details inside the plugin views.
+
+
+![alt text](assets/images/star.png)
