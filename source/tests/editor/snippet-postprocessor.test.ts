@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 /**
  * 保护灵感片段后处理对 callout 与链接的增强相关行为，避免后续重构时出现静默回退。
  */
@@ -66,9 +50,13 @@ class FakeSnippetElement {
 
   private readonly listeners = new Map<string, FakeListener[]>();
 
-  constructor(ideaId?: string) {
+  constructor(ideaId?: string, options: { legacyDataset?: boolean } = {}) {
     if (ideaId) {
-      this.dataset.glitterIdeaId = ideaId;
+      if (options.legacyDataset) {
+        this.dataset.glitterIdeaId = ideaId;
+      } else {
+        this.dataset.glitterideaId = ideaId;
+      }
     }
   }
 
@@ -148,6 +136,19 @@ describe("enhanceGlitterSnippets", () => {
     expect(snippet.attributes.role).toBe("button");
   });
 
+  it("keeps legacy glitter-idea dataset markers interactive", async () => {
+    const snippet = new FakeSnippetElement("idea-legacy", { legacyDataset: true });
+    const container = new FakeContainer([snippet]);
+
+    const onSnippetClick = vi.fn();
+    await enhanceGlitterSnippets(container as any, onSnippetClick);
+
+    snippet.click();
+    expect(onSnippetClick).toHaveBeenCalledWith("idea-legacy");
+    expect(snippet.dataset.glitterideaId).toBe("idea-legacy");
+    expect(snippet.dataset.glitterIdeaId).toBeUndefined();
+  });
+
   it("activates snippet click on Enter key", async () => {
     const snippet = new FakeSnippetElement("idea-1");
     const container = new FakeContainer([snippet]);
@@ -218,7 +219,7 @@ describe("enhanceGlitterSnippets", () => {
     snippet.click();
 
     expect(resolveIdeaExists).toHaveBeenCalledWith("idea-1");
-    expect(snippet.dataset.glitterIdeaState).toBe("invalid");
+    expect(snippet.dataset.glitterideaState).toBe("invalid");
     expect(snippet.attributes["aria-disabled"]).toBe("true");
     expect(snippet.tabIndex).toBe(-1);
     expect(onSnippetClick).toHaveBeenCalledTimes(1);
@@ -234,8 +235,8 @@ describe("enhanceGlitterSnippets", () => {
     await enhanceGlitterSnippets(container as any, onSnippetClick, resolveIdeaExists);
 
     expect(resolveIdeaExists).toHaveBeenCalledWith("idea-callout");
-    expect(snippet.dataset.glitterIdeaId).toBe("idea-callout");
-    expect(snippet.dataset.glitterIdeaState).toBe("invalid");
+    expect(snippet.dataset.glitterideaId).toBe("idea-callout");
+    expect(snippet.dataset.glitterideaState).toBe("invalid");
     expect(snippet.attributes["aria-disabled"]).toBe("true");
     snippet.click();
     expect(onSnippetClick).not.toHaveBeenCalled();

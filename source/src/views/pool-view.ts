@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 import { ItemView, Menu, TFile, WorkspaceLeaf, type ViewStateResult } from "obsidian";
 import {
   formatPoolRoamBoardDisplayName,
@@ -2418,7 +2402,9 @@ export class GlitterPoolView extends ItemView {
     try {
       const containerEl = (leaf as { view?: { containerEl?: { querySelector?: (selector: string) => HTMLElement | null } } })
         .view?.containerEl;
-      const marker = containerEl?.querySelector?.(`[data-glitter-idea-id="${ideaId}"]`);
+      const marker = containerEl?.querySelector?.(
+        `[data-glitteridea-id="${ideaId}"], [data-glitter-idea-id="${ideaId}"]`
+      );
       marker?.scrollIntoView({
         block: "center",
         behavior: "smooth"

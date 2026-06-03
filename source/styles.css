@@ -6,16 +6,16 @@
 .glitter-plugin-root,
 .glitter-quick-capture-modal-host,
 .glitter-pool-modal-host,
-.glitter-idea-edit-modal-host,
-.glitter-idea-picker-modal-host,
+.GlitterIdea-edit-modal-host,
+.GlitterIdea-picker-modal-host,
 .glitter-snippet-locations-modal-host,
 .glitter-pool-roam-history-modal-host,
 .glitter-pool-roam-board-modal-host,
 .glitter-followup-guidance-modal-host,
 .glitter-quick-capture-modal,
 .glitter-pool-modal,
-.glitter-idea-edit-modal,
-.glitter-idea-picker-modal,
+.GlitterIdea-edit-modal,
+.GlitterIdea-picker-modal,
 .glitter-snippet-locations-modal,
 .glitter-pool-roam-history-modal,
 .glitter-pool-roam-board-modal,
@@ -2675,8 +2675,8 @@
 
 .glitter-quick-capture-modal-host,
 .glitter-pool-modal-host,
-.glitter-idea-edit-modal-host,
-.glitter-idea-picker-modal-host,
+.GlitterIdea-edit-modal-host,
+.GlitterIdea-picker-modal-host,
 .glitter-snippet-locations-modal-host,
 .glitter-pool-roam-history-modal-host,
 .glitter-pool-roam-board-modal-host {
@@ -2709,8 +2709,8 @@
 
 .glitter-quick-capture-modal,
 .glitter-pool-modal,
-.glitter-idea-edit-modal,
-.glitter-idea-picker-modal,
+.GlitterIdea-edit-modal,
+.GlitterIdea-picker-modal,
 .glitter-snippet-locations-modal,
 .glitter-pool-roam-history-modal,
 .glitter-pool-roam-board-modal {
@@ -2749,7 +2749,7 @@
 
 .glitter-quick-capture-modal:not(.glitter-quick-capture-modal--first-use),
 .glitter-pool-modal.glitter-pool-modal--create,
-.glitter-idea-edit-modal {
+.GlitterIdea-edit-modal {
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 58%, transparent);
   border-radius: 16px;
@@ -2835,8 +2835,8 @@
 
 .glitter-quick-capture-modal-host .modal-bg,
 .glitter-pool-modal-host .modal-bg,
-.glitter-idea-edit-modal-host .modal-bg,
-.glitter-idea-picker-modal-host .modal-bg,
+.GlitterIdea-edit-modal-host .modal-bg,
+.GlitterIdea-picker-modal-host .modal-bg,
 .glitter-snippet-locations-modal-host .modal-bg,
 .glitter-pool-roam-history-modal-host .modal-bg,
 .glitter-pool-roam-board-modal-host .modal-bg {
@@ -2907,20 +2907,20 @@
 
 .modal-content.glitter-quick-capture-modal__content,
 .modal-content.glitter-pool-modal__content,
-.modal-content.glitter-idea-edit-modal__content,
-.modal-content.glitter-idea-picker-modal__content,
+.modal-content.GlitterIdea-edit-modal__content,
+.modal-content.GlitterIdea-picker-modal__content,
 .modal-content.glitter-snippet-locations-modal__content,
 .modal-content.glitter-pool-roam-history-modal__content,
 .modal-content.glitter-pool-roam-board-modal__content,
 .glitter-quick-capture-modal-host .modal-bg,
 .glitter-pool-modal-host .modal-bg,
-.glitter-idea-edit-modal-host .modal-bg,
-.glitter-idea-picker-modal-host .modal-bg,
+.GlitterIdea-edit-modal-host .modal-bg,
+.GlitterIdea-picker-modal-host .modal-bg,
 .glitter-snippet-locations-modal-host .modal-bg,
 .modal-container.glitter-quick-capture-modal-host,
 .modal-container.glitter-pool-modal-host,
-.modal-container.glitter-idea-edit-modal-host,
-.modal-container.glitter-idea-picker-modal-host,
+.modal-container.GlitterIdea-edit-modal-host,
+.modal-container.GlitterIdea-picker-modal-host,
 .modal-container.glitter-snippet-locations-modal-host,
 .modal-container.glitter-pool-roam-history-modal-host,
 .modal-container.glitter-pool-roam-board-modal-host {
@@ -2939,15 +2939,15 @@
 
 .modal-content.glitter-quick-capture-modal__content,
 .modal-content.glitter-pool-modal__content,
-.modal-content.glitter-idea-edit-modal__content,
-.modal-content.glitter-idea-picker-modal__content,
+.modal-content.GlitterIdea-edit-modal__content,
+.modal-content.GlitterIdea-picker-modal__content,
 .modal-content.glitter-snippet-locations-modal__content,
 .modal-content.glitter-pool-roam-history-modal__content,
 .modal-content.glitter-pool-roam-board-modal__content,
 .modal-container.glitter-quick-capture-modal-host,
 .modal-container.glitter-pool-modal-host,
-.modal-container.glitter-idea-edit-modal-host,
-.modal-container.glitter-idea-picker-modal-host,
+.modal-container.GlitterIdea-edit-modal-host,
+.modal-container.GlitterIdea-picker-modal-host,
 .modal-container.glitter-snippet-locations-modal-host,
 .modal-container.glitter-pool-roam-history-modal-host,
 .modal-container.glitter-pool-roam-board-modal-host {
@@ -2963,8 +2963,8 @@
 
 .modal-content.glitter-quick-capture-modal__content,
 .modal-content.glitter-pool-modal__content,
-.modal-content.glitter-idea-edit-modal__content,
-.modal-content.glitter-idea-picker-modal__content,
+.modal-content.GlitterIdea-edit-modal__content,
+.modal-content.GlitterIdea-picker-modal__content,
 .modal-content.glitter-snippet-locations-modal__content,
 .modal-content.glitter-pool-roam-history-modal__content,
 .modal-content.glitter-pool-roam-board-modal__content {
@@ -2976,7 +2976,7 @@
 
 .glitter-quick-capture-modal:not(.glitter-quick-capture-modal--first-use) .glitter-quick-capture-modal__content,
 .glitter-pool-modal.glitter-pool-modal--create .glitter-pool-modal__content,
-.glitter-idea-edit-modal .glitter-idea-edit-modal__content {
+.GlitterIdea-edit-modal .GlitterIdea-edit-modal__content {
   height: auto;
 }
 
@@ -2997,8 +2997,8 @@
 
 .modal.glitter-quick-capture-modal > .modal-header,
 .modal.glitter-pool-modal > .modal-header,
-.modal.glitter-idea-edit-modal > .modal-header,
-.modal.glitter-idea-picker-modal > .modal-header,
+.modal.GlitterIdea-edit-modal > .modal-header,
+.modal.GlitterIdea-picker-modal > .modal-header,
 .modal.glitter-snippet-locations-modal > .modal-header,
 .modal.glitter-pool-roam-history-modal > .modal-header,
 .modal.glitter-pool-roam-board-modal > .modal-header {
@@ -3011,8 +3011,8 @@
 
 .glitter-quick-capture-modal .modal-close-button,
 .glitter-pool-modal .modal-close-button,
-.glitter-idea-edit-modal .modal-close-button,
-.glitter-idea-picker-modal .modal-close-button,
+.GlitterIdea-edit-modal .modal-close-button,
+.GlitterIdea-picker-modal .modal-close-button,
 .glitter-snippet-locations-modal .modal-close-button,
 .glitter-pool-roam-history-modal .modal-close-button,
 .glitter-pool-roam-board-modal .modal-close-button {
@@ -3566,7 +3566,7 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action {
   position: relative;
   width: 30px;
   height: 30px;
@@ -3596,7 +3596,7 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action::before,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action::before {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -3615,7 +3615,7 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action .glitter-write-stage__icon,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action .glitter-write-stage__icon {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action .glitter-write-stage__icon {
   position: relative;
   z-index: 1;
 }
@@ -3633,8 +3633,8 @@
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):hover,
 .glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):focus-visible,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):focus-visible {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover,
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):focus-visible {
   color: var(--glitter-ui-accent);
   border-color: color-mix(in srgb, var(--glitter-ui-accent) 68%, white 20%);
   background:
@@ -3649,12 +3649,12 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):hover,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover {
   transform: translateY(-1px);
 }
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover {
   color: var(--text-error, #ff6b6b);
   border-color: color-mix(in srgb, var(--text-error, #ff6b6b) 68%, white 20%);
   background:
@@ -3669,7 +3669,7 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action:disabled::before,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:disabled::before {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:disabled::before {
   opacity: 0;
 }
 
@@ -3681,7 +3681,7 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__media-surface-action:disabled,
-.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:disabled {
+.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:disabled {
   border-color: color-mix(in srgb, var(--glitter-ui-border-strong) 28%, transparent);
   background: color-mix(in srgb, var(--glitter-ui-bg) 42%, transparent);
   box-shadow: none;
@@ -4058,7 +4058,7 @@
 
 /* 中轴圆形操作钮沿用首页隔离态的扁平玻璃语义，但不展开悬停标签，避免挤占正文宽度。 */
 .glitter-write-stage button.glitter-write-stage__ai-polish-action,
-.glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action {
+.GlitterIdea-edit-modal button.glitter-write-stage__ai-polish-action {
   width: 36px;
   min-width: 36px;
   height: 36px;
@@ -4090,7 +4090,7 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__ai-polish-action .glitter-write-stage__icon,
-.glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action .glitter-write-stage__icon {
+.GlitterIdea-edit-modal button.glitter-write-stage__ai-polish-action .glitter-write-stage__icon {
   color: inherit;
   position: relative;
   z-index: 1;
@@ -4099,8 +4099,8 @@
 
 .glitter-write-stage button.glitter-write-stage__ai-polish-action:not(:disabled):hover,
 .glitter-write-stage button.glitter-write-stage__ai-polish-action:not(:disabled):focus-visible,
-.glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):hover,
-.glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):focus-visible {
+.GlitterIdea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):hover,
+.GlitterIdea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):focus-visible {
   color: var(--glitter-ui-accent);
   border-color: color-mix(in srgb, var(--glitter-ui-accent) 38%, var(--glitter-ui-border) 62%);
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 96%, var(--glitter-ui-accent) 4%);
@@ -4111,18 +4111,18 @@
 }
 
 .glitter-write-stage button.glitter-write-stage__ai-polish-action:not(:disabled):hover,
-.glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):hover {
+.GlitterIdea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):hover {
   transform: translateY(-1px);
 }
 
 .glitter-write-stage button.glitter-write-stage__ai-polish-action:not(:disabled):focus-visible,
-.glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):focus-visible {
+.GlitterIdea-edit-modal button.glitter-write-stage__ai-polish-action:not(:disabled):focus-visible {
   outline: 2px solid color-mix(in srgb, var(--glitter-ui-accent) 72%, white 28%);
   outline-offset: 2px;
 }
 
 .glitter-write-stage button.glitter-write-stage__ai-polish-action:disabled,
-.glitter-idea-edit-modal button.glitter-write-stage__ai-polish-action:disabled {
+.GlitterIdea-edit-modal button.glitter-write-stage__ai-polish-action:disabled {
   opacity: 0.48;
   color: color-mix(in srgb, var(--glitter-ui-text-muted) 84%, transparent);
   cursor: default;
@@ -4177,14 +4177,18 @@
 }
 
 /* 文件正文里的灵感片段与参考版 callout：统一保留圆角卡片、标题/正文/来源三段层次，避免插入后退回旧 HTML 样式。 */
+.GlitterIdea-snippet,
 .glitter-idea-snippet,
-.callout[data-callout="glitter-idea"] {
+.callout[data-callout="GlitterIdea"],
+.callout[data-callout="glitter-idea"],
+.callout[data-callout="glitteridea"] {
   border: 1px solid color-mix(in srgb, var(--interactive-accent, #7e9bda) 42%, var(--background-modifier-border, #4a5f84) 58%);
   border-radius: 28px;
   background: color-mix(in srgb, var(--background-primary, #162034) 90%, var(--background-secondary, #1f2a40) 10%);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--interactive-accent, #7e9bda) 24%, transparent);
 }
 
+.GlitterIdea-snippet,
 .glitter-idea-snippet {
   display: grid;
   gap: 18px;
@@ -4192,12 +4196,16 @@
   cursor: pointer;
 }
 
+.GlitterIdea-snippet__title,
+.GlitterIdea-snippet__body,
+.GlitterIdea-snippet__source,
 .glitter-idea-snippet__title,
 .glitter-idea-snippet__body,
 .glitter-idea-snippet__source {
   margin: 0;
 }
 
+.GlitterIdea-snippet__title,
 .glitter-idea-snippet__title {
   color: var(--text-normal, #dce5ff);
   font-size: var(--h6-size);
@@ -4205,12 +4213,14 @@
   font-weight: var(--h6-weight);
 }
 
+.GlitterIdea-snippet__body,
 .glitter-idea-snippet__body {
   color: var(--text-muted, #9fb0d3);
   font-size: max(12px, calc(var(--font-text-size) - 1px));
   line-height: var(--line-height-normal);
 }
 
+.GlitterIdea-snippet__source,
 .glitter-idea-snippet__source {
   color: var(--link-color, #8ebeff);
   font-size: max(11px, calc(var(--font-text-size) - 2px));
@@ -4218,6 +4228,7 @@
   word-break: break-word;
 }
 
+.GlitterIdea-snippet__media,
 .glitter-idea-snippet__media {
   display: block;
   width: 100%;
@@ -4227,11 +4238,14 @@
   background: color-mix(in srgb, var(--background-secondary, #162034) 88%, black 12%);
 }
 
+.GlitterIdea-snippet__media--video,
 .glitter-idea-snippet__media--video {
   max-height: 420px;
 }
 
-.callout[data-callout="glitter-idea"] {
+.callout[data-callout="GlitterIdea"],
+.callout[data-callout="glitter-idea"],
+.callout[data-callout="glitteridea"] {
   --callout-color: 126, 155, 218;
   --callout-icon: lucide-sparkles;
   margin: 0;
@@ -4240,20 +4254,30 @@
   cursor: pointer;
 }
 
+.callout[data-callout="GlitterIdea"] .callout-icon,
+.callout[data-callout="GlitterIdea"] .callout-fold,
 .callout[data-callout="glitter-idea"] .callout-icon,
-.callout[data-callout="glitter-idea"] .callout-fold {
+.callout[data-callout="glitter-idea"] .callout-fold,
+.callout[data-callout="glitteridea"] .callout-icon,
+.callout[data-callout="glitteridea"] .callout-fold {
   display: none;
 }
 
-.callout[data-callout="glitter-idea"] .callout-title {
+.callout[data-callout="GlitterIdea"] .callout-title,
+.callout[data-callout="glitter-idea"] .callout-title,
+.callout[data-callout="glitteridea"] .callout-title {
   padding: 22px 28px 0;
   gap: 0;
   background: transparent;
   border-bottom: none;
 }
 
+.callout[data-callout="GlitterIdea"] .callout-title-inner,
+.callout[data-callout="GlitterIdea"] .callout-title-inner a,
 .callout[data-callout="glitter-idea"] .callout-title-inner,
-.callout[data-callout="glitter-idea"] .callout-title-inner a {
+.callout[data-callout="glitter-idea"] .callout-title-inner a,
+.callout[data-callout="glitteridea"] .callout-title-inner,
+.callout[data-callout="glitteridea"] .callout-title-inner a {
   color: var(--text-normal, #dce5ff);
   font-size: var(--h6-size);
   line-height: var(--h6-line-height);
@@ -4264,48 +4288,76 @@
   word-break: break-word;
 }
 
-.callout[data-callout="glitter-idea"] .callout-content {
+.callout[data-callout="GlitterIdea"] .callout-content,
+.callout[data-callout="glitter-idea"] .callout-content,
+.callout[data-callout="glitteridea"] .callout-content {
   display: grid;
   gap: 18px;
   padding: 20px 28px 22px;
   background: transparent;
 }
 
-.callout[data-callout="glitter-idea"] .callout-content > * {
+.callout[data-callout="GlitterIdea"] .callout-content > *,
+.callout[data-callout="glitter-idea"] .callout-content > *,
+.callout[data-callout="glitteridea"] .callout-content > * {
   margin: 0;
 }
 
-.callout[data-callout="glitter-idea"] .callout-content > p {
+.callout[data-callout="GlitterIdea"] .callout-content > p,
+.callout[data-callout="glitter-idea"] .callout-content > p,
+.callout[data-callout="glitteridea"] .callout-content > p {
   color: var(--text-muted, #9fb0d3);
   font-size: max(12px, calc(var(--font-text-size) - 1px));
   line-height: var(--line-height-normal);
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content .tag,
+.callout[data-callout="GlitterIdea"] .callout-content a.tag,
+.callout[data-callout="GlitterIdea"] .callout-content .internal-link[href^="#"],
 .callout[data-callout="glitter-idea"] .callout-content .tag,
 .callout[data-callout="glitter-idea"] .callout-content a.tag,
-.callout[data-callout="glitter-idea"] .callout-content .internal-link[href^="#"] {
+.callout[data-callout="glitter-idea"] .callout-content .internal-link[href^="#"],
+.callout[data-callout="glitteridea"] .callout-content .tag,
+.callout[data-callout="glitteridea"] .callout-content a.tag,
+.callout[data-callout="glitteridea"] .callout-content .internal-link[href^="#"] {
   font-size: max(12px, calc(var(--font-text-size) - 1px));
   line-height: var(--line-height-normal);
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content > p:has(> a[href^="http"]),
+.callout[data-callout="GlitterIdea"] .callout-content > p:has(> .external-link),
 .callout[data-callout="glitter-idea"] .callout-content > p:has(> a[href^="http"]),
-.callout[data-callout="glitter-idea"] .callout-content > p:has(> .external-link) {
+.callout[data-callout="glitter-idea"] .callout-content > p:has(> .external-link),
+.callout[data-callout="glitteridea"] .callout-content > p:has(> a[href^="http"]),
+.callout[data-callout="glitteridea"] .callout-content > p:has(> .external-link) {
   font-size: max(11px, calc(var(--font-text-size) - 2px));
   line-height: var(--line-height-tight);
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content > p a[href^="http"],
+.callout[data-callout="GlitterIdea"] .callout-content > p .external-link,
 .callout[data-callout="glitter-idea"] .callout-content > p a[href^="http"],
-.callout[data-callout="glitter-idea"] .callout-content > p .external-link {
+.callout[data-callout="glitter-idea"] .callout-content > p .external-link,
+.callout[data-callout="glitteridea"] .callout-content > p a[href^="http"],
+.callout[data-callout="glitteridea"] .callout-content > p .external-link {
   color: var(--link-color, #8ebeff);
   font-size: max(11px, calc(var(--font-text-size) - 2px));
   line-height: var(--line-height-tight);
   word-break: break-word;
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content > p:last-child,
+.callout[data-callout="GlitterIdea"] .callout-content > p:last-child a,
+.callout[data-callout="GlitterIdea"] .callout-content > p:only-child,
+.callout[data-callout="GlitterIdea"] .callout-content > p:only-child a,
 .callout[data-callout="glitter-idea"] .callout-content > p:last-child,
 .callout[data-callout="glitter-idea"] .callout-content > p:last-child a,
 .callout[data-callout="glitter-idea"] .callout-content > p:only-child,
-.callout[data-callout="glitter-idea"] .callout-content > p:only-child a {
+.callout[data-callout="glitter-idea"] .callout-content > p:only-child a,
+.callout[data-callout="glitteridea"] .callout-content > p:last-child,
+.callout[data-callout="glitteridea"] .callout-content > p:last-child a,
+.callout[data-callout="glitteridea"] .callout-content > p:only-child,
+.callout[data-callout="glitteridea"] .callout-content > p:only-child a {
   color: color-mix(in srgb, var(--text-muted, #9fb0d3) 92%, transparent);
   font-size: 0.96em;
 }
@@ -4397,42 +4449,63 @@
 }
 
 /* 失效态把不可访问来源降级成警示卡片，同时保留重新搜索替换的恢复指引。 */
-.glitter-idea-snippet[data-glitter-idea-state="invalid"],
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"],
+.glitter-idea-snippet[data-glitteridea-state="invalid"],
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"],
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"],
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] {
   --callout-color: 214, 97, 97;
   cursor: default;
 }
 
-.glitter-idea-snippet[data-glitter-idea-state="invalid"] {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"],
+.glitter-idea-snippet[data-glitteridea-state="invalid"] {
   gap: 12px;
 }
 
-.glitter-idea-snippet[data-glitter-idea-state="invalid"] .glitter-idea-snippet__title,
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] .callout-title-inner,
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] .callout-title-inner a {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"] .GlitterIdea-snippet__title,
+.glitter-idea-snippet[data-glitteridea-state="invalid"] .glitter-idea-snippet__title,
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"] .callout-title-inner,
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"] .callout-title-inner a,
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"] .callout-title-inner,
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"] .callout-title-inner a,
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] .callout-title-inner,
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] .callout-title-inner a {
   color: var(--text-error, #ff8f97);
 }
 
-.glitter-idea-snippet[data-glitter-idea-state="invalid"] .glitter-idea-snippet__title::after,
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] .callout-title-inner::after {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"] .GlitterIdea-snippet__title::after,
+.glitter-idea-snippet[data-glitteridea-state="invalid"] .glitter-idea-snippet__title::after,
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"] .callout-title-inner::after,
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"] .callout-title-inner::after,
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] .callout-title-inner::after {
   content: "（已失效）";
   margin-left: 0.22em;
   color: inherit;
 }
 
-.glitter-idea-snippet[data-glitter-idea-state="invalid"] .glitter-idea-snippet__body,
-.glitter-idea-snippet[data-glitter-idea-state="invalid"] .glitter-idea-snippet__source,
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] .callout-content > * {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"] .GlitterIdea-snippet__body,
+.GlitterIdea-snippet[data-glitteridea-state="invalid"] .GlitterIdea-snippet__source,
+.glitter-idea-snippet[data-glitteridea-state="invalid"] .glitter-idea-snippet__body,
+.glitter-idea-snippet[data-glitteridea-state="invalid"] .glitter-idea-snippet__source,
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"] .callout-content > *,
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"] .callout-content > *,
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] .callout-content > * {
   color: color-mix(in srgb, var(--text-muted, #9fb0d3) 96%, transparent);
 }
 
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] .callout-content {
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"] .callout-content,
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"] .callout-content,
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] .callout-content {
   gap: 10px;
   padding-top: 14px;
 }
 
-.glitter-idea-snippet[data-glitter-idea-state="invalid"]::before,
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] .callout-content::before {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"]::before,
+.glitter-idea-snippet[data-glitteridea-state="invalid"]::before,
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"] .callout-content::before,
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"] .callout-content::before,
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] .callout-content::before {
   content: "原链接不可访问或已变更";
   display: block;
   color: color-mix(in srgb, var(--text-muted, #9fb0d3) 96%, transparent);
@@ -4440,15 +4513,19 @@
   line-height: var(--line-height-normal);
 }
 
-.glitter-idea-snippet[data-glitter-idea-state="invalid"] .glitter-idea-snippet__source[data-glitter-invalid-source="true"],
-.callout[data-callout="glitter-idea"][data-glitter-idea-state="invalid"] .callout-content > [data-glitter-invalid-source="true"] {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"] .GlitterIdea-snippet__source[data-glitter-invalid-source="true"],
+.glitter-idea-snippet[data-glitteridea-state="invalid"] .glitter-idea-snippet__source[data-glitter-invalid-source="true"],
+.callout[data-callout="GlitterIdea"][data-glitteridea-state="invalid"] .callout-content > [data-glitter-invalid-source="true"],
+.callout[data-callout="glitter-idea"][data-glitteridea-state="invalid"] .callout-content > [data-glitter-invalid-source="true"],
+.callout[data-callout="glitteridea"][data-glitteridea-state="invalid"] .callout-content > [data-glitter-invalid-source="true"] {
   color: color-mix(in srgb, var(--text-warning, #ffbe85) 88%, var(--text-normal, #dce5ff) 12%);
   font-size: max(11px, calc(var(--font-text-size) - 2px));
   line-height: var(--line-height-normal);
   word-break: break-word;
 }
 
-.glitter-idea-snippet[data-glitter-idea-state="invalid"]:not(:has(.glitter-idea-snippet__source))::after {
+.GlitterIdea-snippet[data-glitteridea-state="invalid"]:not(:has(.GlitterIdea-snippet__source))::after,
+.glitter-idea-snippet[data-glitteridea-state="invalid"]:not(:has(.glitter-idea-snippet__source))::after {
   content: "⚠ 来自 Glitter · 请重新搜索并替换该片段";
   display: inline-flex;
   align-items: center;
@@ -4458,8 +4535,12 @@
   line-height: var(--line-height-normal);
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content img,
+.callout[data-callout="GlitterIdea"] .callout-content .image-embed,
 .callout[data-callout="glitter-idea"] .callout-content img,
-.callout[data-callout="glitter-idea"] .callout-content .image-embed {
+.callout[data-callout="glitter-idea"] .callout-content .image-embed,
+.callout[data-callout="glitteridea"] .callout-content img,
+.callout[data-callout="glitteridea"] .callout-content .image-embed {
   display: block;
   width: auto;
   max-width: 100%;
@@ -4471,13 +4552,21 @@
   box-shadow: none;
 }
 
-.callout[data-callout="glitter-idea"] .callout-content .image-embed {
+.callout[data-callout="GlitterIdea"] .callout-content .image-embed,
+.callout[data-callout="glitter-idea"] .callout-content .image-embed,
+.callout[data-callout="glitteridea"] .callout-content .image-embed {
   width: fit-content;
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content video,
+.callout[data-callout="GlitterIdea"] .callout-content .internal-embed:not(.image-embed),
+.callout[data-callout="GlitterIdea"] .callout-content .video-embed,
 .callout[data-callout="glitter-idea"] .callout-content video,
 .callout[data-callout="glitter-idea"] .callout-content .internal-embed:not(.image-embed),
-.callout[data-callout="glitter-idea"] .callout-content .video-embed {
+.callout[data-callout="glitter-idea"] .callout-content .video-embed,
+.callout[data-callout="glitteridea"] .callout-content video,
+.callout[data-callout="glitteridea"] .callout-content .internal-embed:not(.image-embed),
+.callout[data-callout="glitteridea"] .callout-content .video-embed {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -4488,36 +4577,49 @@
   box-shadow: none;
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content .markdown-embed-link,
+.callout[data-callout="GlitterIdea"] .callout-content .external-link,
 .callout[data-callout="glitter-idea"] .callout-content .markdown-embed-link,
-.callout[data-callout="glitter-idea"] .callout-content .external-link {
+.callout[data-callout="glitter-idea"] .callout-content .external-link,
+.callout[data-callout="glitteridea"] .callout-content .markdown-embed-link,
+.callout[data-callout="glitteridea"] .callout-content .external-link {
   background-image: none;
   padding-right: 0;
 }
 
+.callout[data-callout="GlitterIdea"]:focus,
 .callout[data-callout="glitter-idea"]:focus,
+.callout[data-callout="glitteridea"]:focus,
+.GlitterIdea-snippet:focus,
 .glitter-idea-snippet:focus {
   outline: 2px solid color-mix(in srgb, var(--interactive-accent, #7e9bda) 76%, white 24%);
   outline-offset: 2px;
 }
 
+.callout[data-callout="GlitterIdea"] .callout-content a:hover,
+.callout[data-callout="GlitterIdea"] .callout-title-inner a:hover,
 .callout[data-callout="glitter-idea"] .callout-content a:hover,
-.callout[data-callout="glitter-idea"] .callout-title-inner a:hover {
+.callout[data-callout="glitter-idea"] .callout-title-inner a:hover,
+.callout[data-callout="glitteridea"] .callout-content a:hover,
+.callout[data-callout="glitteridea"] .callout-title-inner a:hover {
   opacity: 0.92;
 }
 
-.callout[data-callout="glitter-idea"] .callout-content video {
+.callout[data-callout="GlitterIdea"] .callout-content video,
+.callout[data-callout="glitter-idea"] .callout-content video,
+.callout[data-callout="glitteridea"] .callout-content video {
   max-height: 420px;
 }
 
-.glitter-idea-picker-modal__surface {
+.GlitterIdea-picker-modal__surface {
   gap: 12px;
 }
 
-.glitter-idea-picker-modal__title {
+.GlitterIdea-picker-modal__title {
   color: var(--glitter-ui-text);
 }
 
-.glitter-idea-picker-modal__close.glitter-write-stage__close-button {
+.GlitterIdea-picker-modal__close.glitter-write-stage__close-button {
   width: 32px;
   height: 32px;
   border: none;
@@ -4526,7 +4628,7 @@
   box-shadow: none;
 }
 
-.glitter-idea-picker-modal__query {
+.GlitterIdea-picker-modal__query {
   width: 100%;
   box-sizing: border-box;
   min-height: 42px;
@@ -4541,19 +4643,19 @@
   box-shadow: none;
 }
 
-.glitter-idea-picker-modal__section-title {
+.GlitterIdea-picker-modal__section-title {
   font-size: 13px;
   line-height: 1.4;
   font-weight: 600;
   color: var(--text-muted, #9fb0d3);
 }
 
-.glitter-idea-picker-modal__results {
+.GlitterIdea-picker-modal__results {
   display: grid;
   gap: 12px;
 }
 
-.glitter-idea-picker-modal__empty {
+.GlitterIdea-picker-modal__empty {
   padding: 18px 12px;
   border-radius: 12px;
   border: 1px dashed color-mix(in srgb, var(--background-modifier-border, #4a5f84) 60%, transparent);
@@ -4561,7 +4663,7 @@
   text-align: center;
 }
 
-.glitter-idea-picker-modal__result {
+.GlitterIdea-picker-modal__result {
   position: relative;
   display: grid;
   gap: 8px;
@@ -4579,14 +4681,14 @@
   transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
 }
 
-.glitter-idea-picker-modal__result:hover,
-.glitter-idea-picker-modal__result--active {
+.GlitterIdea-picker-modal__result:hover,
+.GlitterIdea-picker-modal__result--active {
   border-color: color-mix(in srgb, var(--interactive-accent, #6ca4ff) 58%, var(--background-modifier-border, #4a5f84));
   background: color-mix(in srgb, var(--interactive-accent, #6ca4ff) 12%, var(--background-secondary-alt, #222b3b));
   transform: translateY(-1px);
 }
 
-.glitter-idea-picker-modal__result-header {
+.GlitterIdea-picker-modal__result-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -4594,14 +4696,14 @@
   min-width: 0;
 }
 
-.glitter-idea-picker-modal__result-content {
+.GlitterIdea-picker-modal__result-content {
   min-width: 0;
   overflow: hidden;
   display: grid;
   gap: 4px;
 }
 
-.glitter-idea-picker-modal__result-title {
+.GlitterIdea-picker-modal__result-title {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4610,7 +4712,7 @@
   line-height: 1.4;
 }
 
-.glitter-idea-picker-modal__result-action {
+.GlitterIdea-picker-modal__result-action {
   position: absolute;
   right: 14px;
   top: 50%;
@@ -4632,7 +4734,7 @@
   -webkit-appearance: none;
 }
 
-.glitter-idea-picker-modal .glitter-idea-picker-modal__query {
+.GlitterIdea-picker-modal .GlitterIdea-picker-modal__query {
   border: 1px solid color-mix(in srgb, var(--background-modifier-border, #4a5f84) 72%, transparent) !important;
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 94%, black 6%) !important;
   appearance: none !important;
@@ -4641,7 +4743,7 @@
   box-shadow: none !important;
 }
 
-.glitter-idea-picker-modal .glitter-idea-picker-modal__result-action {
+.GlitterIdea-picker-modal .GlitterIdea-picker-modal__result-action {
   padding: 0;
   border: none !important;
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 94%, black 6%) !important;
@@ -4651,9 +4753,9 @@
   -webkit-appearance: none !important;
 }
 
-.glitter-idea-picker-modal .glitter-idea-picker-modal__result-action:hover,
-.glitter-idea-picker-modal .glitter-idea-picker-modal__result-action:focus-visible,
-.glitter-idea-picker-modal .glitter-idea-picker-modal__result-action:active {
+.GlitterIdea-picker-modal .GlitterIdea-picker-modal__result-action:hover,
+.GlitterIdea-picker-modal .GlitterIdea-picker-modal__result-action:focus-visible,
+.GlitterIdea-picker-modal .GlitterIdea-picker-modal__result-action:active {
   border: none !important;
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 94%, black 6%) !important;
   background-image: none !important;
@@ -4661,12 +4763,12 @@
   outline: none;
 }
 
-.glitter-idea-picker-modal__result-meta {
+.GlitterIdea-picker-modal__result-meta {
   display: none;
 }
 
-.glitter-idea-picker-modal__result-pool,
-.glitter-idea-picker-modal__result-status {
+.GlitterIdea-picker-modal__result-pool,
+.GlitterIdea-picker-modal__result-status {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
@@ -4676,17 +4778,17 @@
   line-height: 1.4;
 }
 
-.glitter-idea-picker-modal__result-pool {
+.GlitterIdea-picker-modal__result-pool {
   background: color-mix(in srgb, var(--background-secondary, #162034) 92%, transparent);
   color: var(--text-faint, #b6c4df);
 }
 
-.glitter-idea-picker-modal__result-status {
+.GlitterIdea-picker-modal__result-status {
   background: color-mix(in srgb, var(--interactive-accent, #6ca4ff) 12%, transparent);
   color: var(--text-muted, #c4d3ef);
 }
 
-.glitter-idea-picker-modal__result-body {
+.GlitterIdea-picker-modal__result-body {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -8803,7 +8905,7 @@ video.glitter-pool-stage__card-media-thumbnail {
   overflow: hidden;
 }
 
-.glitter-idea-edit-modal {
+.GlitterIdea-edit-modal {
   width: min(576px, calc(100% - 28px));
   max-width: min(576px, calc(100% - 28px));
   min-width: min(576px, calc(100% - 28px));
@@ -8811,7 +8913,7 @@ video.glitter-pool-stage__card-media-thumbnail {
   max-height: calc(100% - 28px);
 }
 
-.glitter-idea-edit-modal__surface {
+.GlitterIdea-edit-modal__surface {
   position: relative;
   z-index: 1;
   box-sizing: border-box;
@@ -8831,13 +8933,13 @@ video.glitter-pool-stage__card-media-thumbnail {
   overflow: hidden;
 }
 
-.glitter-idea-edit-modal__header {
+.GlitterIdea-edit-modal__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 }
 
-.glitter-idea-edit-modal__heading {
+.GlitterIdea-edit-modal__heading {
   margin: 0;
   font-size: 20px;
   line-height: 1.2;
@@ -8845,13 +8947,13 @@ video.glitter-pool-stage__card-media-thumbnail {
   color: var(--glitter-ui-text);
 }
 
-.glitter-idea-edit-modal__close,
-.glitter-idea-edit-modal__close-button {
+.GlitterIdea-edit-modal__close,
+.GlitterIdea-edit-modal__close-button {
   line-height: 1;
 }
 
-.glitter-idea-edit-modal__close.glitter-write-stage__close-button,
-.glitter-idea-edit-modal__close-button.glitter-write-stage__close-button {
+.GlitterIdea-edit-modal__close.glitter-write-stage__close-button,
+.GlitterIdea-edit-modal__close-button.glitter-write-stage__close-button {
   border: none;
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 88%, transparent);
   box-shadow: none;
@@ -9553,14 +9655,14 @@ video.glitter-pool-stage__card-media-thumbnail {
   word-break: break-all;
 }
 
-.glitter-idea-edit-modal__fields {
+.GlitterIdea-edit-modal__fields {
   margin-top: 16px;
   display: grid;
   gap: 12px;
 }
 
-.glitter-idea-edit-modal__title,
-.glitter-idea-edit-modal__body {
+.GlitterIdea-edit-modal__title,
+.GlitterIdea-edit-modal__body {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 76%, transparent);
@@ -9570,14 +9672,14 @@ video.glitter-pool-stage__card-media-thumbnail {
   box-shadow: none !important;
 }
 
-.glitter-idea-edit-modal__title {
+.GlitterIdea-edit-modal__title {
   min-height: 40px;
   padding: 0 12px;
   margin: 0;
   font-size: 13px;
 }
 
-.glitter-idea-edit-modal .glitter-idea-edit-modal__title {
+.GlitterIdea-edit-modal .GlitterIdea-edit-modal__title {
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 86%, transparent) !important;
   background-image: none !important;
   box-shadow: none !important;
@@ -9585,7 +9687,7 @@ video.glitter-pool-stage__card-media-thumbnail {
   -webkit-appearance: none;
 }
 
-.glitter-idea-edit-modal .glitter-idea-edit-modal__body:not(.glitter-write-stage__textarea--panel-blend) {
+.GlitterIdea-edit-modal .GlitterIdea-edit-modal__body:not(.glitter-write-stage__textarea--panel-blend) {
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 86%, transparent) !important;
   background-image: none !important;
   box-shadow: none !important;
@@ -9593,32 +9695,32 @@ video.glitter-pool-stage__card-media-thumbnail {
   -webkit-appearance: none;
 }
 
-.glitter-idea-edit-modal__title:focus,
-.glitter-idea-edit-modal__title:focus-visible,
-.glitter-idea-edit-modal__body:focus,
-.glitter-idea-edit-modal__body:focus-visible {
+.GlitterIdea-edit-modal__title:focus,
+.GlitterIdea-edit-modal__title:focus-visible,
+.GlitterIdea-edit-modal__body:focus,
+.GlitterIdea-edit-modal__body:focus-visible {
   outline: none;
   border-color: var(--glitter-ui-accent);
   box-shadow: none !important;
 }
 
-.glitter-idea-edit-modal .glitter-idea-edit-modal__title--link {
+.GlitterIdea-edit-modal .GlitterIdea-edit-modal__title--link {
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 88%, transparent) !important;
 }
 
-.glitter-idea-edit-modal__body {
+.GlitterIdea-edit-modal__body {
   min-height: 180px;
   padding: 12px;
   resize: vertical;
 }
 
-.glitter-idea-edit-modal__media-layout {
+.GlitterIdea-edit-modal__media-layout {
   min-height: 248px;
   grid-template-columns: minmax(176px, 38%) minmax(0, 1fr);
   gap: 14px;
 }
 
-.glitter-idea-edit-modal__link-body-panel {
+.GlitterIdea-edit-modal__link-body-panel {
   margin-top: 0;
   min-height: 180px;
   border: none;
@@ -9626,20 +9728,20 @@ video.glitter-pool-stage__card-media-thumbnail {
   box-shadow: none;
 }
 
-.glitter-idea-edit-modal__link-body-panel:focus-within {
+.GlitterIdea-edit-modal__link-body-panel:focus-within {
   outline: 1px solid color-mix(in srgb, var(--glitter-ui-border-strong) 64%, transparent);
   outline-offset: 0;
   box-shadow: none;
 }
 
-.glitter-idea-edit-modal__link-body-panel .glitter-write-stage__link-attachment-row,
-.glitter-idea-edit-modal__attachment-item {
+.GlitterIdea-edit-modal__link-body-panel .glitter-write-stage__link-attachment-row,
+.GlitterIdea-edit-modal__attachment-item {
   border-color: transparent;
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 82%, transparent);
   box-shadow: none;
 }
 
-.glitter-idea-edit-modal__source-inline-input {
+.GlitterIdea-edit-modal__source-inline-input {
   min-width: 0;
   flex: 1 1 auto;
   border: none;
@@ -9654,8 +9756,8 @@ video.glitter-pool-stage__card-media-thumbnail {
   -webkit-appearance: none;
 }
 
-.glitter-idea-edit-modal__media-editor-shell .glitter-idea-edit-modal__body.glitter-write-stage__textarea--panel-blend,
-.glitter-idea-edit-modal__link-body-panel .glitter-idea-edit-modal__body.glitter-write-stage__textarea--panel-blend {
+.GlitterIdea-edit-modal__media-editor-shell .GlitterIdea-edit-modal__body.glitter-write-stage__textarea--panel-blend,
+.GlitterIdea-edit-modal__link-body-panel .GlitterIdea-edit-modal__body.glitter-write-stage__textarea--panel-blend {
   border: none;
   border-radius: 0;
   background: transparent;
@@ -9664,7 +9766,7 @@ video.glitter-pool-stage__card-media-thumbnail {
 }
 
 
-.glitter-idea-edit-modal__footer {
+.GlitterIdea-edit-modal__footer {
   margin-top: 18px;
   display: flex;
   align-items: center;
@@ -9673,7 +9775,7 @@ video.glitter-pool-stage__card-media-thumbnail {
   flex-wrap: wrap;
 }
 
-.glitter-idea-edit-modal .glitter-idea-edit-modal__button {
+.GlitterIdea-edit-modal .GlitterIdea-edit-modal__button {
   min-height: 34px;
   border-radius: 9px;
   padding: 0 14px;
@@ -9685,20 +9787,20 @@ video.glitter-pool-stage__card-media-thumbnail {
   box-shadow: none !important;
 }
 
-.glitter-idea-edit-modal .glitter-idea-edit-modal__button:focus-visible,
-.glitter-idea-edit-modal .glitter-idea-edit-modal__button:active {
+.GlitterIdea-edit-modal .GlitterIdea-edit-modal__button:focus-visible,
+.GlitterIdea-edit-modal .GlitterIdea-edit-modal__button:active {
   background-image: none !important;
   box-shadow: none !important;
 }
 
-.glitter-idea-edit-modal__button--ghost,
-.glitter-idea-edit-modal__button--save[data-dirty="false"] {
+.GlitterIdea-edit-modal__button--ghost,
+.GlitterIdea-edit-modal__button--save[data-dirty="false"] {
   border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 76%, transparent);
   background: color-mix(in srgb, var(--glitter-ui-bg-alt) 82%, transparent);
   color: var(--glitter-ui-text);
 }
 
-.glitter-idea-edit-modal__button--save[data-dirty="true"] {
+.GlitterIdea-edit-modal__button--save[data-dirty="true"] {
   border: 1px solid color-mix(in srgb, var(--glitter-ui-accent) 48%, transparent);
   background: var(--glitter-ui-accent);
   color: var(--glitter-ui-accent-contrast);
@@ -9707,7 +9809,7 @@ video.glitter-pool-stage__card-media-thumbnail {
 
 @media (max-width: 720px) {
   .glitter-quick-capture-modal-host,
-  .glitter-idea-edit-modal-host,
+  .GlitterIdea-edit-modal-host,
   .glitter-snippet-locations-modal-host {
     padding: 0;
   }
@@ -9719,7 +9821,7 @@ video.glitter-pool-stage__card-media-thumbnail {
     max-height: calc(100% - 20px);
   }
 
-  .glitter-idea-edit-modal,
+  .GlitterIdea-edit-modal,
   .glitter-snippet-locations-modal {
     width: min(576px, calc(100% - 20px));
     max-width: min(576px, calc(100% - 20px));
@@ -9732,7 +9834,7 @@ video.glitter-pool-stage__card-media-thumbnail {
   }
 
   .glitter-write-stage__modal-card,
-  .glitter-idea-edit-modal__surface {
+  .GlitterIdea-edit-modal__surface {
     width: 100%;
     min-height: 0;
     height: auto;

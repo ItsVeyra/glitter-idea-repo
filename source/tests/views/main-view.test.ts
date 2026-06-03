@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 /**
  * 保护主视图宿主的打开、主题同步与回调编排相关行为，避免后续重构时出现静默回退。
  */
@@ -377,7 +361,7 @@ describe("GlitterMainView", () => {
         }
       },
       manifest: {
-        id: "glitter"
+        id: "GlitterIdea"
       },
       activatePoolView: activatePoolViewMock,
       firstUseWorkflow: {
@@ -408,7 +392,7 @@ describe("GlitterMainView", () => {
 
     expect(openSettings).toHaveBeenCalledTimes(1);
     expect(openTabById).toHaveBeenCalledTimes(1);
-    expect(openTabById).toHaveBeenCalledWith("glitter");
+    expect(openTabById).toHaveBeenCalledWith("GlitterIdea");
   });
 
   it("passes persisted home field view into the home state builder and routes pool title selection like pool select", async () => {

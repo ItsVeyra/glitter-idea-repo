@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 /**
  * 保护视图命令注册与窗口打开相关行为，避免后续重构时出现静默回退。
  */
@@ -76,11 +60,11 @@ describe("view command registration", () => {
     const activateMainView = vi.fn(async () => undefined);
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterIdeaSettings: {
+      GlitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         openMainViewOnNextLoad: true
       },
-      glitterIdeaSnapshot: {
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [],
@@ -144,11 +128,11 @@ describe("view command registration", () => {
     expect(savePluginSettingsSpy).toHaveBeenCalledTimes(1);
     expect(loadData).toHaveBeenCalled();
     expect(saveData).toHaveBeenCalledWith({
-      glitterIdeaSettings: {
+      GlitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         openMainViewOnNextLoad: false
       },
-      glitterIdeaSnapshot: {
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -168,11 +152,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterIdeaSettings: {
+      GlitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: true
       },
-      glitterIdeaSnapshot: {
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [
           {
@@ -264,11 +248,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterIdeaSettings: {
+      GlitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: false
       },
-      glitterIdeaSnapshot: {
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [
           {
@@ -326,7 +310,7 @@ describe("view command registration", () => {
     expect(loadData).toHaveBeenCalled();
     expect(saveData).toHaveBeenCalledWith(
       expect.objectContaining({
-        glitterIdeaSettings: expect.objectContaining({
+        GlitterIdeaSettings: expect.objectContaining({
           hasCompletedFirstUse: true
         })
       })
@@ -338,11 +322,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterIdeaSettings: {
+      GlitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: false
       },
-      glitterIdeaSnapshot: {
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -400,11 +384,11 @@ describe("view command registration", () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
     const persistedData = {
-      glitterIdeaSettings: {
+      GlitterIdeaSettings: {
         ...DEFAULT_SETTINGS,
         hasCompletedFirstUse: false
       },
-      glitterIdeaSnapshot: {
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -470,8 +454,8 @@ describe("view command registration", () => {
 
     plugin.settings = DEFAULT_SETTINGS;
     plugin.loadData = vi.fn(async () => ({
-      glitterIdeaSettings: DEFAULT_SETTINGS,
-      glitterIdeaSnapshot: {
+      GlitterIdeaSettings: DEFAULT_SETTINGS,
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [],

@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 /**
  * 灵感片段渲染后增强器，负责让正文中的 Glitter 片段具备交互与状态同步能力。
  * 涵盖片段节点识别、点击绑定、失效态回退文案与池标签同步等增强逻辑。
@@ -24,6 +8,15 @@ export type ResolveSnippetPoolLabel = (ideaId: string) => string | null | Promis
 
 const INVALID_SNIPPET_SOURCE_COPY = "⚠ 来自 Glitter · 请重新搜索并替换该片段";
 const GLITTER_SOURCE_PREFIX = "✨ 来自 Glitter · ";
+const GLITTER_SNIPPET_SELECTOR = [
+  '.GlitterIdea-snippet[data-glitteridea-id]',
+  '.GlitterIdea-snippet[data-glitter-idea-id]',
+  '.glitter-idea-snippet[data-glitteridea-id]',
+  '.glitter-idea-snippet[data-glitter-idea-id]',
+  '.callout[data-callout="GlitterIdea"]',
+  '.callout[data-callout="glitter-idea"]',
+  '.callout[data-callout="glitteridea"]'
+].join(", ");
 
 // 片段节点解析。
 function extractIdeaIdFromGlitterHref(href: string): string | null {
@@ -32,8 +25,10 @@ function extractIdeaIdFromGlitterHref(href: string): string | null {
 }
 
 function resolveIdeaId(node: HTMLElement): string | null {
-  const fromDataset = node.dataset.glitterIdeaId;
+  const fromDataset = node.dataset.glitterideaId ?? node.dataset.glitterIdeaId;
   if (fromDataset) {
+    node.dataset.glitterideaId = fromDataset;
+    delete node.dataset.glitterIdeaId;
     return fromDataset;
   }
 
@@ -43,7 +38,8 @@ function resolveIdeaId(node: HTMLElement): string | null {
     return null;
   }
 
-  node.dataset.glitterIdeaId = fromHref;
+  node.dataset.glitterideaId = fromHref;
+  delete node.dataset.glitterIdeaId;
   return fromHref;
 }
 
@@ -56,7 +52,7 @@ function bindSnippetInteraction(node: HTMLElement, ideaId: string, onSnippetClic
   node.dataset.glitterBound = "true";
 
   node.addEventListener("click", () => {
-    if (node.dataset.glitterIdeaState === "invalid") {
+    if (node.dataset.glitterideaState === "invalid") {
       return;
     }
 
@@ -68,7 +64,7 @@ function bindSnippetInteraction(node: HTMLElement, ideaId: string, onSnippetClic
       return;
     }
 
-    if (node.dataset.glitterIdeaState === "invalid") {
+    if (node.dataset.glitterideaState === "invalid") {
       return;
     }
 
@@ -79,8 +75,9 @@ function bindSnippetInteraction(node: HTMLElement, ideaId: string, onSnippetClic
 
 function resolveSourceNode(node: HTMLElement): HTMLElement | null {
   return (
-    node.querySelector<HTMLElement>(".glitter-idea-snippet__source") ??
-    node.querySelector<HTMLElement>(".callout-content > :last-child")
+    node.querySelector<HTMLElement>(".GlitterIdea-snippet__source")
+    ?? node.querySelector<HTMLElement>(".glitter-idea-snippet__source")
+    ?? node.querySelector<HTMLElement>(".callout-content > :last-child")
   );
 }
 
@@ -126,7 +123,8 @@ function syncSnippetPoolLabel(node: HTMLElement, poolLabel: string | null): void
 }
 
 function applySnippetState(node: HTMLElement, isValid: boolean, poolLabel: string | null): void {
-  node.dataset.glitterIdeaState = isValid ? "active" : "invalid";
+  delete node.dataset.glitterIdeaState;
+  node.dataset.glitterideaState = isValid ? "active" : "invalid";
   syncInvalidSourceCopy(node, isValid);
   if (isValid) {
     syncSnippetPoolLabel(node, poolLabel);
@@ -151,11 +149,7 @@ export async function enhanceGlitterSnippets(
   resolveIdeaExists: ResolveSnippetIdeaExists = () => true,
   resolveIdeaPoolLabel: ResolveSnippetPoolLabel = () => null
 ): Promise<void> {
-  const nodes = Array.from(
-    containerEl.querySelectorAll<HTMLElement>(
-      '.glitter-idea-snippet[data-glitter-idea-id], .callout[data-callout="glitter-idea"]'
-    )
-  );
+  const nodes = Array.from(containerEl.querySelectorAll<HTMLElement>(GLITTER_SNIPPET_SELECTOR));
 
   await Promise.all(
     nodes.map(async (node) => {

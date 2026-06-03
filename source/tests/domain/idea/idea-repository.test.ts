@@ -27,10 +27,10 @@ import { createIdeaRepository } from "../../../src/domain/idea/idea-repository";
 // 提供测试夹具与辅助查询函数，减少重复的宿主搭建。
 function createMemoryIdeaStore() {
   let persisted: unknown = {
-    glitterIdeaSettings: {
+    GlitterIdeaSettings: {
       enableQuickCapture: true
     },
-    glitterIdeaSnapshot: {
+    GlitterIdeaSnapshot: {
       version: 1,
       ideas: [],
       pools: [],

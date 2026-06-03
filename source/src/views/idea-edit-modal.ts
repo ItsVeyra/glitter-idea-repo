@@ -223,9 +223,9 @@ export class IdeaEditModal extends Modal {
 
   // 读取灵感、搭建表单并绑定标题、正文与附件编辑交互。
   override async onOpen(): Promise<void> {
-    this.containerEl?.addClass?.("glitter-idea-edit-modal-host");
-    this.modalEl?.addClass?.("glitter-idea-edit-modal");
-    this.contentEl?.addClass?.("glitter-idea-edit-modal__content");
+    this.containerEl?.addClass?.("GlitterIdea-edit-modal-host");
+    this.modalEl?.addClass?.("GlitterIdea-edit-modal");
+    this.contentEl?.addClass?.("GlitterIdea-edit-modal__content");
     this.contentEl?.empty?.();
     this.releaseSelectedMediaPreviews();
     this.selectedMedia = [];
@@ -269,16 +269,16 @@ export class IdeaEditModal extends Modal {
     let currentSourceUrl = initialSourceUrl;
     const mediaPoolLabel = isLinkIdea || isMediaIdea ? await this.resolvePoolLabel(idea.poolId) : "";
 
-    const surface = this.contentEl.createDiv({ cls: "glitter-idea-edit-modal__surface" });
+    const surface = this.contentEl.createDiv({ cls: "GlitterIdea-edit-modal__surface" });
 
-    const header = surface.createDiv({ cls: "glitter-idea-edit-modal__header" });
+    const header = surface.createDiv({ cls: "GlitterIdea-edit-modal__header" });
     header.createEl("h2", {
-      cls: "glitter-idea-edit-modal__heading",
+      cls: "GlitterIdea-edit-modal__heading",
       text: "编辑灵感"
     });
 
     const closeButton = header.createEl("button", {
-      cls: "glitter-idea-edit-modal__close glitter-write-stage__close-button"
+      cls: "GlitterIdea-edit-modal__close glitter-write-stage__close-button"
     });
     closeButton.type = "button";
     closeButton.setAttr("aria-label", "关闭编辑窗口");
@@ -289,10 +289,10 @@ export class IdeaEditModal extends Modal {
       this.close();
     });
 
-    const fields = surface.createDiv({ cls: "glitter-idea-edit-modal__fields" });
+    const fields = surface.createDiv({ cls: "GlitterIdea-edit-modal__fields" });
 
     const titleInput = fields.createEl("input", {
-      cls: isLinkIdea ? "glitter-idea-edit-modal__title glitter-idea-edit-modal__title--link" : "glitter-idea-edit-modal__title",
+      cls: isLinkIdea ? "GlitterIdea-edit-modal__title GlitterIdea-edit-modal__title--link" : "GlitterIdea-edit-modal__title",
       type: "text"
     }) as HTMLInputElement;
     titleInput.value = idea.title;
@@ -307,14 +307,14 @@ export class IdeaEditModal extends Modal {
 
     if (isLinkIdea) {
       linkBodyPanel = fields.createEl("section", {
-        cls: "glitter-idea-edit-modal__link-body-panel glitter-write-stage__body-panel glitter-write-stage__body-panel--link"
+        cls: "GlitterIdea-edit-modal__link-body-panel glitter-write-stage__body-panel glitter-write-stage__body-panel--link"
       });
       bodyInputHost = linkBodyPanel;
     }
 
     if (isMediaIdea) {
       const mediaLayout = fields.createDiv({
-        cls: "glitter-idea-edit-modal__media-layout glitter-write-stage__media-layout"
+        cls: "GlitterIdea-edit-modal__media-layout glitter-write-stage__media-layout"
       });
       mediaThumbnailHost = mediaLayout.createDiv({
         cls: "glitter-write-stage__media-thumbnail-surface"
@@ -323,21 +323,21 @@ export class IdeaEditModal extends Modal {
         cls: "glitter-write-stage__media-inputs-column"
       });
       bodyInputHost = mediaInputsColumn.createDiv({
-        cls: "glitter-idea-edit-modal__media-editor-shell glitter-write-stage__media-editor-shell"
+        cls: "GlitterIdea-edit-modal__media-editor-shell glitter-write-stage__media-editor-shell"
       });
     }
 
     const bodyInput = bodyInputHost.createEl("textarea", {
       cls:
         isMediaIdea || isLinkIdea
-          ? "glitter-idea-edit-modal__body glitter-write-stage__body-editor glitter-write-stage__textarea glitter-write-stage__textarea--panel-blend"
-          : "glitter-idea-edit-modal__body"
+          ? "GlitterIdea-edit-modal__body glitter-write-stage__body-editor glitter-write-stage__textarea glitter-write-stage__textarea--panel-blend"
+          : "GlitterIdea-edit-modal__body"
     }) as HTMLTextAreaElement;
     bodyInput.value = idea.body;
 
     const attachmentList = isLinkIdea
       ? fields.createDiv({
-          cls: "glitter-idea-edit-modal__attachment-list"
+          cls: "GlitterIdea-edit-modal__attachment-list"
         })
       : null;
 
@@ -390,7 +390,7 @@ export class IdeaEditModal extends Modal {
 
       existingAttachmentPaths.forEach((path) => {
         const item = attachmentList.createDiv({
-          cls: "glitter-idea-edit-modal__attachment-item glitter-write-stage__link-attachment-row"
+          cls: "GlitterIdea-edit-modal__attachment-item glitter-write-stage__link-attachment-row"
         });
         const primary = item.createDiv({ cls: "glitter-write-stage__link-attachment-primary" });
         primary.createEl("span", {
@@ -404,7 +404,7 @@ export class IdeaEditModal extends Modal {
 
       this.selectedMedia.forEach(({ file }) => {
         const item = attachmentList.createDiv({
-          cls: "glitter-idea-edit-modal__attachment-item glitter-write-stage__link-attachment-row"
+          cls: "GlitterIdea-edit-modal__attachment-item glitter-write-stage__link-attachment-row"
         });
         const primary = item.createDiv({ cls: "glitter-write-stage__link-attachment-primary" });
         primary.createEl("span", {
@@ -869,7 +869,7 @@ export class IdeaEditModal extends Modal {
         cls: "glitter-write-stage__icon glitter-write-stage__icon--link"
       });
       const sourceInlineInput = linkAttachmentPrimary.createEl("input", {
-        cls: "glitter-idea-edit-modal__source-inline-input",
+        cls: "GlitterIdea-edit-modal__source-inline-input",
         type: "text"
       }) as HTMLInputElement;
       sourceInlineInput.value = rawSourceUrl;
@@ -883,10 +883,10 @@ export class IdeaEditModal extends Modal {
     renderMediaThumbnail();
     renderLinkSourceRow();
 
-    const footer = surface.createDiv({ cls: "glitter-idea-edit-modal__footer" });
+    const footer = surface.createDiv({ cls: "GlitterIdea-edit-modal__footer" });
 
     const cancelButton = footer.createEl("button", {
-      cls: "glitter-idea-edit-modal__button glitter-idea-edit-modal__button--ghost",
+      cls: "GlitterIdea-edit-modal__button GlitterIdea-edit-modal__button--ghost",
       text: "取消"
     });
     cancelButton.type = "button";
@@ -895,7 +895,7 @@ export class IdeaEditModal extends Modal {
     });
 
     const saveButton = footer.createEl("button", {
-      cls: "glitter-idea-edit-modal__button glitter-idea-edit-modal__button--save",
+      cls: "GlitterIdea-edit-modal__button GlitterIdea-edit-modal__button--save",
       text: "保存"
     });
     saveButton.type = "button";
@@ -1040,9 +1040,9 @@ export class IdeaEditModal extends Modal {
   override onClose(): void {
     this.releaseSelectedMediaPreviews();
     this.selectedMedia = [];
-    this.containerEl?.removeClass?.("glitter-idea-edit-modal-host");
-    this.modalEl?.removeClass?.("glitter-idea-edit-modal");
-    this.contentEl?.removeClass?.("glitter-idea-edit-modal__content");
+    this.containerEl?.removeClass?.("GlitterIdea-edit-modal-host");
+    this.modalEl?.removeClass?.("GlitterIdea-edit-modal");
+    this.contentEl?.removeClass?.("GlitterIdea-edit-modal__content");
     this.contentEl?.empty?.();
   }
 

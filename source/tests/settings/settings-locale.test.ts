@@ -134,7 +134,7 @@ const expectedChineseText = {
     clearAiApiKey: "清除当前已保存的 API Key。",
     poolColor: "设置对应灵感池的颜色值。",
     aboutIntro: "Glitter 适合保存那些值得留下、却不一定需要立刻建成正式笔记的小点子、片段和灵感。你可以先用全局快速记录把文本、链接、图片、视频轻量收住，粘贴链接时自动识别并补全信息；之后再按灵感池整理、搜索与回看，并在需要时创建 Markdown 文件或插入笔记正文。",
-    aboutGithub: "GitHub：https://github.com/ItsVeyra/glitter-plugin-repo",
+    aboutGithub: "GitHub：https://github.com/ItsVeyra/glitter-idea-repo",
     aboutDeveloper: "开发者：ItsVeyra"
   },
   placeholders: {
@@ -263,7 +263,7 @@ const expectedEnglishText = {
     clearAiApiKey: "Clear the currently saved API key.",
     poolColor: "Set the color value for the matching pool.",
     aboutIntro: "Glitter is for ideas worth keeping but not worth turning into full notes right away. You can use global quick capture to save text, links, images, and videos in a lighter way, with automatic detail filling when you paste a link; later, organize them into pools, search and revisit them, and create a Markdown note or insert a snippet only when needed.",
-    aboutGithub: "GitHub: https://github.com/ItsVeyra/glitter-plugin-repo",
+    aboutGithub: "GitHub: https://github.com/ItsVeyra/glitter-idea-repo",
     aboutDeveloper: "Developer: ItsVeyra"
   },
   placeholders: {

@@ -151,18 +151,18 @@ describe("createPoolService", () => {
     const baseStore = createPluginDataStore<Idea, Pool>({
       async loadData() {
         return {
-          glitterIdeaSettings: JSON.parse(JSON.stringify(persisted.settings)) as Record<string, unknown>,
-          glitterIdeaSnapshot: JSON.parse(JSON.stringify(persisted.snapshot)) as PluginDataShape<Idea, Pool>["snapshot"]
+          GlitterIdeaSettings: JSON.parse(JSON.stringify(persisted.settings)) as Record<string, unknown>,
+          GlitterIdeaSnapshot: JSON.parse(JSON.stringify(persisted.snapshot)) as PluginDataShape<Idea, Pool>["snapshot"]
         };
       },
       async saveData(data) {
         const normalized = data as {
-          glitterIdeaSettings?: Record<string, unknown>;
-          glitterIdeaSnapshot?: PluginDataShape<Idea, Pool>["snapshot"];
+          GlitterIdeaSettings?: Record<string, unknown>;
+          GlitterIdeaSnapshot?: PluginDataShape<Idea, Pool>["snapshot"];
         };
         persisted = {
-          settings: normalized.glitterIdeaSettings ?? {},
-          snapshot: normalized.glitterIdeaSnapshot ?? {
+          settings: normalized.GlitterIdeaSettings ?? {},
+          snapshot: normalized.GlitterIdeaSnapshot ?? {
             version: 1,
             ideas: [],
             pools: [],
@@ -371,18 +371,18 @@ describe("createPoolService", () => {
     const store = createPluginDataStore<Idea, Pool>({
       async loadData() {
         return {
-          glitterIdeaSettings: JSON.parse(JSON.stringify(persisted.settings)) as Record<string, unknown>,
-          glitterIdeaSnapshot: JSON.parse(JSON.stringify(persisted.snapshot)) as PluginDataShape<Idea, Pool>["snapshot"]
+          GlitterIdeaSettings: JSON.parse(JSON.stringify(persisted.settings)) as Record<string, unknown>,
+          GlitterIdeaSnapshot: JSON.parse(JSON.stringify(persisted.snapshot)) as PluginDataShape<Idea, Pool>["snapshot"]
         };
       },
       async saveData(data) {
         const normalized = data as {
-          glitterIdeaSettings?: Record<string, unknown>;
-          glitterIdeaSnapshot?: PluginDataShape<Idea, Pool>["snapshot"];
+          GlitterIdeaSettings?: Record<string, unknown>;
+          GlitterIdeaSnapshot?: PluginDataShape<Idea, Pool>["snapshot"];
         };
         persisted = {
-          settings: normalized.glitterIdeaSettings ?? {},
-          snapshot: normalized.glitterIdeaSnapshot ?? persisted.snapshot
+          settings: normalized.GlitterIdeaSettings ?? {},
+          snapshot: normalized.GlitterIdeaSnapshot ?? persisted.snapshot
         };
       }
     });
@@ -429,8 +429,8 @@ describe("createPoolService", () => {
 
   it("does not rewrite persisted pools when read paths only inspect already-normalized data", async () => {
     let persisted: unknown = {
-      glitterIdeaSettings: {},
-      glitterIdeaSnapshot: {
+      GlitterIdeaSettings: {},
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -516,8 +516,8 @@ describe("createPoolService", () => {
   it("does not persist normalization when read methods encounter legacy default-pool data", async () => {
     const legacyUpdatedAt = "2026-01-01T00:00:00.000Z";
     let persisted: unknown = {
-      glitterIdeaSettings: {},
-      glitterIdeaSnapshot: {
+      GlitterIdeaSettings: {},
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [
@@ -595,8 +595,8 @@ describe("createPoolService", () => {
 
   it("persists normalization when ensureDefaultPool encounters legacy default-pool data", async () => {
     let persisted: unknown = {
-      glitterIdeaSettings: {},
-      glitterIdeaSnapshot: {
+      GlitterIdeaSettings: {},
+      GlitterIdeaSnapshot: {
         version: 1,
         ideas: [],
         pools: [

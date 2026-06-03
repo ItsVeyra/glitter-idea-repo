@@ -1,27 +1,13 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 /**
  * 插件数据存储封装。
  * 负责串行化设置与快照写入，并通过深拷贝与归一化保证持久化读写的稳定性。
  */
 // 数据结构与存储契约。
 const SNAPSHOT_VERSION = 1;
-const SETTINGS_KEY = "glitterIdeaSettings";
-const SNAPSHOT_KEY = "glitterIdeaSnapshot";
+const SETTINGS_KEY = "GlitterIdeaSettings";
+const SNAPSHOT_KEY = "GlitterIdeaSnapshot";
+const LEGACY_SETTINGS_KEY = "glitterIdeaSettings";
+const LEGACY_SNAPSHOT_KEY = "glitterIdeaSnapshot";
 
 export interface PluginDataSnapshot<TIdea = unknown, TPool = unknown> {
   version: number;
@@ -147,9 +133,16 @@ function normalizeLoaded<TIdea, TPool>(loaded: unknown): PluginDataShape<TIdea, 
     };
   }
 
-  if (SETTINGS_KEY in loaded || SNAPSHOT_KEY in loaded) {
-    const settings = isRecord(loaded[SETTINGS_KEY]) ? cloneSettings(loaded[SETTINGS_KEY]) : {};
-    const snapshot = normalizeSnapshot<TIdea, TPool>(loaded[SNAPSHOT_KEY]);
+  if (
+    SETTINGS_KEY in loaded
+    || SNAPSHOT_KEY in loaded
+    || LEGACY_SETTINGS_KEY in loaded
+    || LEGACY_SNAPSHOT_KEY in loaded
+  ) {
+    const settingsKey = SETTINGS_KEY in loaded ? SETTINGS_KEY : LEGACY_SETTINGS_KEY;
+    const snapshotKey = SNAPSHOT_KEY in loaded ? SNAPSHOT_KEY : LEGACY_SNAPSHOT_KEY;
+    const settings = isRecord(loaded[settingsKey]) ? cloneSettings(loaded[settingsKey]) : {};
+    const snapshot = normalizeSnapshot<TIdea, TPool>(loaded[snapshotKey]);
     return { settings, snapshot };
   }
 

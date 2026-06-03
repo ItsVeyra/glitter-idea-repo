@@ -427,34 +427,34 @@ describe("renderWriteView", () => {
     );
     expect(stylesCss).toContain(".glitter-quick-capture-modal-host .modal-bg,");
     expect(stylesCss).toContain(".glitter-pool-modal-host .modal-bg,");
-    expect(stylesCss).toContain(".glitter-idea-edit-modal-host .modal-bg,");
+    expect(stylesCss).toContain(".GlitterIdea-edit-modal-host .modal-bg,");
     expect(stylesCss).toContain(".modal-container.glitter-quick-capture-modal-host,");
     expect(stylesCss).toContain(".modal-container.glitter-pool-modal-host");
-    expect(stylesCss).toContain(".modal-container.glitter-idea-edit-modal-host");
+    expect(stylesCss).toContain(".modal-container.GlitterIdea-edit-modal-host");
     expect(stylesCss).toContain(".modal.glitter-quick-capture-modal");
     expect(stylesCss).toContain(".modal.glitter-pool-modal");
-    expect(stylesCss).toContain(".modal.glitter-idea-edit-modal");
+    expect(stylesCss).toContain(".modal.GlitterIdea-edit-modal");
     expect(stylesCss).toContain(".modal-content.glitter-quick-capture-modal__content,");
     expect(stylesCss).toContain(".modal-content.glitter-pool-modal__content,");
-    expect(stylesCss).toContain(".modal-content.glitter-idea-edit-modal__content,");
-    expect(stylesCss).toContain(".modal-content.glitter-idea-picker-modal__content,");
+    expect(stylesCss).toContain(".modal-content.GlitterIdea-edit-modal__content,");
+    expect(stylesCss).toContain(".modal-content.GlitterIdea-picker-modal__content,");
     expect(stylesCss).toContain(".modal-content.glitter-snippet-locations-modal__content,");
     expect(stylesCss).toContain(".modal-content.glitter-pool-roam-history-modal__content,");
     expect(stylesCss).toContain(".modal-content.glitter-pool-roam-board-modal__content {");
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".modal-content.glitter-quick-capture-modal__content,\n.modal-content.glitter-pool-modal__content,\n.modal-content.glitter-idea-edit-modal__content,\n.modal-content.glitter-idea-picker-modal__content,\n.modal-content.glitter-snippet-locations-modal__content,\n.modal-content.glitter-pool-roam-history-modal__content,\n.modal-content.glitter-pool-roam-board-modal__content",
+      ".modal-content.glitter-quick-capture-modal__content,\n.modal-content.glitter-pool-modal__content,\n.modal-content.GlitterIdea-edit-modal__content,\n.modal-content.GlitterIdea-picker-modal__content,\n.modal-content.glitter-snippet-locations-modal__content,\n.modal-content.glitter-pool-roam-history-modal__content,\n.modal-content.glitter-pool-roam-board-modal__content",
       ["width: 100%;", "max-width: 100%;", "min-width: 100%;", "height: 100%;"]
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-quick-capture-modal:not(.glitter-quick-capture-modal--first-use) .glitter-quick-capture-modal__content,\n.glitter-pool-modal.glitter-pool-modal--create .glitter-pool-modal__content,\n.glitter-idea-edit-modal .glitter-idea-edit-modal__content",
+      ".glitter-quick-capture-modal:not(.glitter-quick-capture-modal--first-use) .glitter-quick-capture-modal__content,\n.glitter-pool-modal.glitter-pool-modal--create .glitter-pool-modal__content,\n.GlitterIdea-edit-modal .GlitterIdea-edit-modal__content",
       ["height: auto;"]
     );
     expect(stylesCss).toContain(".modal.glitter-quick-capture-modal > .modal-header,");
     expect(stylesCss).toContain(".modal.glitter-pool-modal > .modal-header,");
-    expect(stylesCss).toContain(".modal.glitter-idea-edit-modal > .modal-header,");
-    expect(stylesCss).toContain(".modal.glitter-idea-picker-modal > .modal-header,");
+    expect(stylesCss).toContain(".modal.GlitterIdea-edit-modal > .modal-header,");
+    expect(stylesCss).toContain(".modal.GlitterIdea-picker-modal > .modal-header,");
     expect(stylesCss).toContain(".modal.glitter-snippet-locations-modal > .modal-header,");
     expect(stylesCss).toContain(".modal.glitter-pool-roam-history-modal > .modal-header,");
     expect(stylesCss).toContain(".modal.glitter-pool-roam-board-modal > .modal-header {");
@@ -468,7 +468,7 @@ describe("renderWriteView", () => {
     expect(stylesCss).not.toContain(".glitter-pool-modal .modal-content,");
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-quick-capture-modal-host .modal-bg,\n.glitter-pool-modal-host .modal-bg,\n.glitter-idea-edit-modal-host .modal-bg,\n.glitter-idea-picker-modal-host .modal-bg,\n.glitter-snippet-locations-modal-host .modal-bg,\n.glitter-pool-roam-history-modal-host .modal-bg,\n.glitter-pool-roam-board-modal-host .modal-bg",
+      ".glitter-quick-capture-modal-host .modal-bg,\n.glitter-pool-modal-host .modal-bg,\n.GlitterIdea-edit-modal-host .modal-bg,\n.GlitterIdea-picker-modal-host .modal-bg,\n.glitter-snippet-locations-modal-host .modal-bg,\n.glitter-pool-roam-history-modal-host .modal-bg,\n.glitter-pool-roam-board-modal-host .modal-bg",
       [
         "background:",
         "radial-gradient(",
@@ -478,11 +478,11 @@ describe("renderWriteView", () => {
       ]
     );
     expect(stylesCss).toContain(
-      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.glitter-idea-edit-modal-host,\n.glitter-idea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host {"
+      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host {"
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.glitter-idea-edit-modal-host,\n.glitter-idea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
+      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
       [
         "display: flex;",
         "align-items: center;",
@@ -499,20 +499,20 @@ describe("renderWriteView", () => {
     );
     expectNoDeclarationInSelectorBlock(
       stylesCss,
-      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.glitter-idea-edit-modal-host,\n.glitter-idea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
+      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
       "padding: clamp(18px, 5vh, 44px) clamp(18px, 5vw, 44px);"
     );
     expectNoDeclarationInSelectorBlock(
       stylesCss,
-      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.glitter-idea-edit-modal-host,\n.glitter-idea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
+      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
       "backdrop-filter: blur(6px);"
     );
     expect(stylesCss).toContain(
-      ".glitter-quick-capture-modal,\n.glitter-pool-modal,\n.glitter-idea-edit-modal,\n.glitter-idea-picker-modal,\n.glitter-snippet-locations-modal,\n.glitter-pool-roam-history-modal,\n.glitter-pool-roam-board-modal {\n  padding: 0;\n  border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 58%, transparent);\n  border-radius: 16px;\n  background: var(--glitter-ui-bg);\n  box-shadow: none;\n}"
+      ".glitter-quick-capture-modal,\n.glitter-pool-modal,\n.GlitterIdea-edit-modal,\n.GlitterIdea-picker-modal,\n.glitter-snippet-locations-modal,\n.glitter-pool-roam-history-modal,\n.glitter-pool-roam-board-modal {\n  padding: 0;\n  border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 58%, transparent);\n  border-radius: 16px;\n  background: var(--glitter-ui-bg);\n  box-shadow: none;\n}"
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-quick-capture-modal:not(.glitter-quick-capture-modal--first-use),\n.glitter-pool-modal.glitter-pool-modal--create,\n.glitter-idea-edit-modal",
+      ".glitter-quick-capture-modal:not(.glitter-quick-capture-modal--first-use),\n.glitter-pool-modal.glitter-pool-modal--create,\n.GlitterIdea-edit-modal",
       [
         "background: color-mix(in srgb, var(--glitter-ui-bg) 72%, transparent);",
         "overflow: hidden;",
@@ -540,7 +540,7 @@ describe("renderWriteView", () => {
       "  .glitter-quick-capture-modal {\n    width: min(664px, calc(100% - 20px));\n    max-width: min(664px, calc(100% - 20px));\n    min-width: min(664px, calc(100% - 20px));\n    max-height: calc(100% - 20px);\n  }"
     );
     expect(stylesCss).toContain(
-      "  .glitter-idea-edit-modal,\n  .glitter-snippet-locations-modal {\n    width: min(576px, calc(100% - 20px));\n    max-width: min(576px, calc(100% - 20px));\n    min-width: min(576px, calc(100% - 20px));\n    max-height: calc(100% - 20px);\n  }"
+      "  .GlitterIdea-edit-modal,\n  .glitter-snippet-locations-modal {\n    width: min(576px, calc(100% - 20px));\n    max-width: min(576px, calc(100% - 20px));\n    min-width: min(576px, calc(100% - 20px));\n    max-height: calc(100% - 20px);\n  }"
     );
     expect(stylesCss).toContain(
       "  .glitter-write-stage--quick-capture .glitter-write-stage__modal-card {\n    padding: 20px 18px 18px;\n  }"
@@ -650,7 +650,7 @@ describe("renderWriteView", () => {
       ]
     );
     expect(stylesCss).toContain(
-      ".glitter-quick-capture-modal .modal-close-button,\n.glitter-pool-modal .modal-close-button,\n.glitter-idea-edit-modal .modal-close-button,\n.glitter-idea-picker-modal .modal-close-button,\n.glitter-snippet-locations-modal .modal-close-button,\n.glitter-pool-roam-history-modal .modal-close-button,\n.glitter-pool-roam-board-modal .modal-close-button {\n  display: none;\n}"
+      ".glitter-quick-capture-modal .modal-close-button,\n.glitter-pool-modal .modal-close-button,\n.GlitterIdea-edit-modal .modal-close-button,\n.GlitterIdea-picker-modal .modal-close-button,\n.glitter-snippet-locations-modal .modal-close-button,\n.glitter-pool-roam-history-modal .modal-close-button,\n.glitter-pool-roam-board-modal .modal-close-button {\n  display: none;\n}"
     );
   });
   it("renders first-use quick capture modal shell and Chinese copy", () => {
@@ -1996,7 +1996,7 @@ describe("renderWriteView", () => {
     ]);
     expectDeclarationsInLastSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action",
       [
       "position: relative;",
       "width: 30px;",
@@ -2027,12 +2027,12 @@ describe("renderWriteView", () => {
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action::before,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action::before",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action::before,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action::before",
       ['content: "";', "position: absolute;", "inset: 0;", "border-radius: inherit;", "pointer-events: none;"]
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action::before,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action::before",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action::before,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action::before",
       [
         "background:\n    linear-gradient(180deg, color-mix(in srgb, white 14%, transparent), transparent 62%),\n    radial-gradient(circle at 50% -10%, color-mix(in srgb, white 10%, transparent), transparent 72%);",
         "opacity: 1;"
@@ -2046,7 +2046,7 @@ describe("renderWriteView", () => {
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action .glitter-write-stage__icon,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action .glitter-write-stage__icon",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action .glitter-write-stage__icon,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action .glitter-write-stage__icon",
       ["position: relative;", "z-index: 1;"]
     );
     expect(stylesCss).not.toContain("mix-blend-mode: difference;");
@@ -2065,7 +2065,7 @@ describe("renderWriteView", () => {
     );
     expectDeclarationsInLastSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):hover,\n.glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):focus-visible,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):focus-visible",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):hover,\n.glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):focus-visible,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):focus-visible",
       [
         "color: var(--glitter-ui-accent);",
         "border-color: color-mix(in srgb, var(--glitter-ui-accent) 68%, white 20%);",
@@ -2075,7 +2075,7 @@ describe("renderWriteView", () => {
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):hover,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):hover,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover",
       [
       "transform: translateY(-1px);"
     ]);
@@ -2094,7 +2094,7 @@ describe("renderWriteView", () => {
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover",
       [
       "color: var(--text-error, #ff6b6b);",
       "border-color: color-mix(in srgb, var(--text-error, #ff6b6b) 68%, white 20%);",
@@ -2106,7 +2106,7 @@ describe("renderWriteView", () => {
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action:disabled::before,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:disabled::before",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action:disabled::before,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:disabled::before",
       [
       "opacity: 0;"
     ]);
@@ -2115,7 +2115,7 @@ describe("renderWriteView", () => {
     );
     expectDeclarationsInLastSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action:disabled,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action:disabled",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action:disabled,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:disabled",
       [
       "border-color: color-mix(in srgb, var(--glitter-ui-border-strong) 28%, transparent);",
       "background: color-mix(in srgb, var(--glitter-ui-bg) 42%, transparent);",

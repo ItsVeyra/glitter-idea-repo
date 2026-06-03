@@ -54,22 +54,22 @@ export class IdeaPickerModal extends Modal {
 
   // 打开时搭建搜索框与结果容器。
   override onOpen(): void {
-    this.containerEl?.addClass?.("glitter-idea-picker-modal-host");
-    this.modalEl?.addClass?.("glitter-idea-picker-modal");
+    this.containerEl?.addClass?.("GlitterIdea-picker-modal-host");
+    this.modalEl?.addClass?.("GlitterIdea-picker-modal");
     this.contentEl.empty();
 
     const surface = this.contentEl.createDiv({
-      cls: "glitter-idea-picker-modal__surface glitter-idea-edit-modal__surface"
+      cls: "GlitterIdea-picker-modal__surface GlitterIdea-edit-modal__surface"
     });
     const header = surface.createDiv({
-      cls: "glitter-idea-picker-modal__header glitter-idea-edit-modal__header"
+      cls: "GlitterIdea-picker-modal__header GlitterIdea-edit-modal__header"
     });
     header.createEl("h2", {
-      cls: "glitter-idea-picker-modal__title glitter-idea-edit-modal__heading",
+      cls: "GlitterIdea-picker-modal__title GlitterIdea-edit-modal__heading",
       text: "插入 Glitter 灵感"
     });
     const closeButton = header.createEl("button", {
-      cls: "glitter-idea-picker-modal__close glitter-write-stage__close-button glitter-idea-edit-modal__close-button"
+      cls: "GlitterIdea-picker-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     });
     closeButton.type = "button";
     closeButton.setAttribute?.("aria-label", "关闭插入灵感窗口");
@@ -81,7 +81,7 @@ export class IdeaPickerModal extends Modal {
     });
 
     const queryInput = surface.createEl("input", {
-      cls: "glitter-idea-picker-modal__query"
+      cls: "GlitterIdea-picker-modal__query"
     });
     queryInput.type = "search";
     queryInput.value = this.query;
@@ -96,10 +96,10 @@ export class IdeaPickerModal extends Modal {
     });
 
     this.sectionTitleEl = surface.createDiv({
-      cls: "glitter-idea-picker-modal__section-title"
+      cls: "GlitterIdea-picker-modal__section-title"
     });
     this.resultsEl = surface.createDiv({
-      cls: "glitter-idea-picker-modal__results"
+      cls: "GlitterIdea-picker-modal__results"
     });
 
     queryInput.focus?.();
@@ -115,8 +115,8 @@ export class IdeaPickerModal extends Modal {
     this.activeIndex = -1;
     this.isQueryPending = false;
     this.isPicking = false;
-    this.containerEl?.removeClass?.("glitter-idea-picker-modal-host");
-    this.modalEl?.removeClass?.("glitter-idea-picker-modal");
+    this.containerEl?.removeClass?.("GlitterIdea-picker-modal-host");
+    this.modalEl?.removeClass?.("GlitterIdea-picker-modal");
     this.contentEl?.empty?.();
   }
 
@@ -167,12 +167,12 @@ export class IdeaPickerModal extends Modal {
   }
 
   private syncActiveResult(): void {
-    const resultEls = this.resultsEl?.querySelectorAll<HTMLElement>(".glitter-idea-picker-modal__result") ?? [];
+    const resultEls = this.resultsEl?.querySelectorAll<HTMLElement>(".GlitterIdea-picker-modal__result") ?? [];
     Array.from(resultEls).forEach((resultEl, index) => {
       resultEl.className =
         index === this.activeIndex
-          ? "glitter-idea-picker-modal__result glitter-idea-picker-modal__result--active"
-          : "glitter-idea-picker-modal__result";
+          ? "GlitterIdea-picker-modal__result GlitterIdea-picker-modal__result--active"
+          : "GlitterIdea-picker-modal__result";
       resultEl.setAttribute?.("aria-selected", index === this.activeIndex ? "true" : "false");
     });
   }
@@ -234,7 +234,7 @@ export class IdeaPickerModal extends Modal {
 
     if (this.renderedResults.length === 0) {
       resultsEl.createDiv({
-        cls: "glitter-idea-picker-modal__empty",
+        cls: "GlitterIdea-picker-modal__empty",
         text: "没有找到匹配的灵感"
       });
       return;
@@ -244,37 +244,37 @@ export class IdeaPickerModal extends Modal {
       const row = resultsEl.createDiv({
         cls:
           index === this.activeIndex
-            ? "glitter-idea-picker-modal__result glitter-idea-picker-modal__result--active"
-            : "glitter-idea-picker-modal__result"
+            ? "GlitterIdea-picker-modal__result GlitterIdea-picker-modal__result--active"
+            : "GlitterIdea-picker-modal__result"
       });
       row.dataset.ideaId = idea.id;
 
       const header = row.createDiv({
-        cls: "glitter-idea-picker-modal__result-header"
+        cls: "GlitterIdea-picker-modal__result-header"
       });
       const content = header.createDiv({
-        cls: "glitter-idea-picker-modal__result-content"
+        cls: "GlitterIdea-picker-modal__result-content"
       });
       content.createEl("strong", {
-        cls: "glitter-idea-picker-modal__result-title",
+        cls: "GlitterIdea-picker-modal__result-title",
         text: idea.title
       });
       content.createEl("span", {
-        cls: "glitter-idea-picker-modal__result-body",
+        cls: "GlitterIdea-picker-modal__result-body",
         text: idea.body.replace(/\s+/g, " ").trim() || "无正文"
       });
       const actionButton = header.createEl("button", {
-        cls: "glitter-idea-picker-modal__result-action",
+        cls: "GlitterIdea-picker-modal__result-action",
         text: "+"
       });
       actionButton.type = "button";
       actionButton.setAttribute?.("aria-label", `插入灵感 ${idea.title}`);
 
       const meta = row.createDiv({
-        cls: "glitter-idea-picker-modal__result-meta"
+        cls: "GlitterIdea-picker-modal__result-meta"
       });
       meta.createEl("span", {
-        cls: "glitter-idea-picker-modal__result-pool",
+        cls: "GlitterIdea-picker-modal__result-pool",
         text: this.poolNameById.get(idea.poolId) ?? "未命名池"
       });
       buildIdeaStatusLabels({
@@ -282,7 +282,7 @@ export class IdeaPickerModal extends Modal {
         snippetCount: countDistinctSnippetNotes(idea)
       }).forEach((label) => {
         meta.createEl("span", {
-          cls: "glitter-idea-picker-modal__result-status",
+          cls: "GlitterIdea-picker-modal__result-status",
           text: label
         });
       });

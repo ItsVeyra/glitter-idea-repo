@@ -250,21 +250,21 @@ export class PoolRoamHistoryModal extends Modal {
     this.contentEl.empty();
 
     const surface = this.contentEl.createDiv({
-      cls: "glitter-pool-roam-history-modal__surface glitter-idea-edit-modal__surface"
+      cls: "glitter-pool-roam-history-modal__surface GlitterIdea-edit-modal__surface"
     });
     const header = surface.createDiv({
-      cls: "glitter-pool-roam-history-modal__header glitter-idea-edit-modal__header"
+      cls: "glitter-pool-roam-history-modal__header GlitterIdea-edit-modal__header"
     });
     const heading = header.createDiv({
       cls: "glitter-pool-roam-history-modal__heading"
     });
     heading.createEl("h2", {
-      cls: "glitter-pool-roam-history-modal__title glitter-snippet-locations-modal__title glitter-idea-edit-modal__heading",
+      cls: "glitter-pool-roam-history-modal__title glitter-snippet-locations-modal__title GlitterIdea-edit-modal__heading",
       text: "漫游白板历史"
     });
 
     const closeButton = header.createEl("button", {
-      cls: "glitter-pool-roam-history-modal__close glitter-write-stage__close-button glitter-idea-edit-modal__close-button"
+      cls: "glitter-pool-roam-history-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     }) as HTMLButtonElement;
     closeButton.type = "button";
     closeButton.setAttribute?.("aria-label", "关闭漫游白板历史");

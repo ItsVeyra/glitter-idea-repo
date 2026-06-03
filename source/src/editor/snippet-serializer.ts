@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 /**
  * 灵感片段序列化器，负责把灵感实体转换为可插入正文的参考样式 callout。
  * 统一处理标题、正文、来源、附件、标签与池来源信息的 Markdown 输出。
@@ -29,8 +13,40 @@ function escapeMarkdownLinkText(value: string): string {
     .replace(/\]/g, "\\]");
 }
 
+const IDEA_SNIPPET_CALLOUT_START_PREFIXES = ["> [!GlitterIdea] ", "> [!glitter-idea] "];
+const IDEA_SNIPPET_HTML_CLASS_NAMES = ["GlitterIdea-snippet", "glitter-idea-snippet"];
+const IDEA_SNIPPET_HTML_ID_PATTERNS = [
+  /data-glitteridea-id="([^"]+)"/,
+  /data-glitter-idea-id="([^"]+)"/,
+  /data-GlitterIdea-id="([^"]+)"/
+];
+
+function isIdeaSnippetCalloutStartLine(line: string, ideaId: string): boolean {
+  return IDEA_SNIPPET_CALLOUT_START_PREFIXES.some((prefix) => line.startsWith(prefix))
+    && line.includes(`](glitter://idea/${ideaId})`);
+}
+
+function extractIdeaIdFromHtmlSnippetStartLine(line: string): string | null {
+  if (!line.includes("<div") || !IDEA_SNIPPET_HTML_CLASS_NAMES.some((className) => line.includes(className))) {
+    return null;
+  }
+
+  for (const pattern of IDEA_SNIPPET_HTML_ID_PATTERNS) {
+    const matched = line.match(pattern)?.[1];
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return null;
+}
+
+function isIdeaSnippetHtmlStartLine(line: string, ideaId: string): boolean {
+  return extractIdeaIdFromHtmlSnippetStartLine(line) === ideaId;
+}
+
 export function isIdeaSnippetStartLine(line: string, ideaId: string): boolean {
-  return line.startsWith("> [!glitter-idea] ") && line.includes(`](glitter://idea/${ideaId})`);
+  return isIdeaSnippetCalloutStartLine(line, ideaId) || isIdeaSnippetHtmlStartLine(line, ideaId);
 }
 
 export function isIdeaSnippetFooterLine(line: string): boolean {
@@ -39,6 +55,23 @@ export function isIdeaSnippetFooterLine(line: string): boolean {
 
 export function countIdeaSnippetOccurrences(markdown: string, ideaId: string): number {
   return markdown.split(/\r?\n/).filter((line) => isIdeaSnippetStartLine(line, ideaId)).length;
+}
+
+function countMatches(value: string, pattern: RegExp): number {
+  return Array.from(value.matchAll(pattern)).length;
+}
+
+function resolveIdeaSnippetHtmlEndIndex(lines: string[], startIndex: number): number {
+  let endIndex = startIndex;
+  let depth = countMatches(lines[startIndex] ?? "", /<div\b/gi) - countMatches(lines[startIndex] ?? "", /<\/div>/gi);
+
+  while (endIndex + 1 < lines.length && depth > 0) {
+    endIndex += 1;
+    const candidate = lines[endIndex] ?? "";
+    depth += countMatches(candidate, /<div\b/gi) - countMatches(candidate, /<\/div>/gi);
+  }
+
+  return endIndex;
 }
 
 export function replaceIdeaSnippetMarkdown(markdown: string, ideaId: string, replacement: string): string {
@@ -50,13 +83,20 @@ export function replaceIdeaSnippetMarkdown(markdown: string, ideaId: string, rep
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
-    if (!isIdeaSnippetStartLine(line, ideaId)) {
+    const isCalloutSnippet = isIdeaSnippetCalloutStartLine(line, ideaId);
+    const isHtmlSnippet = isIdeaSnippetHtmlStartLine(line, ideaId);
+    if (!isCalloutSnippet && !isHtmlSnippet) {
       nextLines.push(line);
       continue;
     }
 
     replaced = true;
     nextLines.push(...replacementLines);
+
+    if (isHtmlSnippet) {
+      index = resolveIdeaSnippetHtmlEndIndex(lines, index);
+      continue;
+    }
 
     let endIndex = index;
     let footerFound = false;
@@ -145,7 +185,7 @@ export function serializeIdeaSnippet(input: {
 
   sections.push([`✨ 来自 Glitter · ${input.poolLabel?.trim() || DEFAULT_POOL_LABEL}`]);
 
-  const output = [`> [!glitter-idea] [\\[引用灵感\\] ${escapeMarkdownLinkText(title)}](glitter://idea/${input.id})`];
+  const output = [`> [!GlitterIdea] [\\[引用灵感\\] ${escapeMarkdownLinkText(title)}](glitter://idea/${input.id})`];
 
   sections.forEach((section, index) => {
     if (index > 0) {

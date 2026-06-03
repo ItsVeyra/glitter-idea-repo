@@ -79,12 +79,12 @@ describe("createEditorWorkflow", () => {
       emoji: "🔖"
     });
 
-    expect(replaceSelection).toHaveBeenCalledWith(expect.stringContaining("> [!glitter-idea] [\\[引用灵感\\] 灵感标题](glitter://idea/idea-1)"));
+    expect(replaceSelection).toHaveBeenCalledWith(expect.stringContaining("> [!GlitterIdea] [\\[引用灵感\\] 灵感标题](glitter://idea/idea-1)"));
     expect(replaceSelection).toHaveBeenCalledWith(expect.stringContaining("> 灵感正文"));
     expect(replaceSelection).toHaveBeenCalledWith(expect.stringContaining("> ![[Glitter/images/默认池/image.png]]"));
     expect(replaceSelection).toHaveBeenCalledWith(expect.stringContaining("> #tagA #tagB"));
     expect(replaceSelection).toHaveBeenCalledWith(expect.stringContaining("> ✨ 来自 Glitter · 默认池"));
-    expect(replaceSelection).not.toHaveBeenCalledWith(expect.stringContaining("<div class=\"glitter-idea-snippet\""));
+    expect(replaceSelection).not.toHaveBeenCalledWith(expect.stringContaining("<div class=\"GlitterIdea-snippet\""));
     expect(recordSnippetRef).toHaveBeenCalledWith(
       "idea-1",
       expect.objectContaining({

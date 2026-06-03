@@ -242,25 +242,25 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    expect(calls.containerAddClass).toHaveBeenCalledWith("glitter-idea-edit-modal-host");
-    expect(calls.modalAddClass).toHaveBeenCalledWith("glitter-idea-edit-modal");
-    expect(calls.contentAddClass).toHaveBeenCalledWith("glitter-idea-edit-modal__content");
+    expect(calls.containerAddClass).toHaveBeenCalledWith("GlitterIdea-edit-modal-host");
+    expect(calls.modalAddClass).toHaveBeenCalledWith("GlitterIdea-edit-modal");
+    expect(calls.contentAddClass).toHaveBeenCalledWith("GlitterIdea-edit-modal__content");
 
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__surface")).not.toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__header")).not.toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__heading")).not.toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__surface")).not.toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__header")).not.toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__heading")).not.toBeNull();
 
-    const closeButton = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__close");
+    const closeButton = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__close");
     expect(closeButton).not.toBeNull();
     expect(closeButton?.className.split(/\s+/).filter(Boolean)).toContain("glitter-write-stage__close-button");
     expect(closeButton?.getAttr("aria-label")).toBe("关闭编辑窗口");
     expect(closeButton?.querySelector(".glitter-write-stage__icon--close")).not.toBeNull();
 
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__fields")).not.toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__title")).not.toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__body")).not.toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__footer")).not.toBeNull();
-    expect(contentEl.querySelectorAll(".glitter-idea-edit-modal__button")).toHaveLength(2);
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__fields")).not.toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__title")).not.toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__body")).not.toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__footer")).not.toBeNull();
+    expect(contentEl.querySelectorAll(".GlitterIdea-edit-modal__button")).toHaveLength(2);
   });
 
   it("renders link-edit content area with an editable inline source attachment", async () => {
@@ -284,14 +284,14 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyPanel = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__link-body-panel");
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
+    const bodyPanel = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__link-body-panel");
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
     const linkAttachmentRow = contentEl.querySelector<FakeElement>(".glitter-write-stage__link-attachment-row");
     const linkAttachmentPrimary = contentEl.querySelector<FakeElement>(".glitter-write-stage__link-attachment-primary");
     const linkAttachmentRemove = contentEl.querySelector<FakeElement>(".glitter-write-stage__attachment-remove");
-    const sourceInlineInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__source-inline-input");
+    const sourceInlineInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__source-inline-input");
 
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__source-url")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__source-url")).toBeNull();
     expect(bodyPanel).not.toBeNull();
     expect(bodyPanel?.className).toContain("glitter-write-stage__body-panel--link");
     expect(bodyInput?.className.split(/\s+/).filter(Boolean)).toContain("glitter-write-stage__textarea--panel-blend");
@@ -300,8 +300,8 @@ describe("IdeaEditModal", () => {
     expect(sourceInlineInput?.value).toBe("https://old.example.com");
     expect(bodyPanel?.children[bodyPanel.children.length - 1]?.className).toContain("glitter-write-stage__link-attachment-row");
     expect(linkAttachmentRemove?.getAttr("aria-label")).toBe("移除已加载链接");
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__attachment-trigger")).toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__attachment-list")).not.toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__attachment-trigger")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__attachment-list")).not.toBeNull();
     expect(contentEl.querySelectorAll(".glitter-write-stage__link-attachment-row")).toHaveLength(2);
   });
 
@@ -326,8 +326,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyPanel = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__link-body-panel");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const bodyPanel = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__link-body-panel");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     const linkAttachmentRemove = contentEl.querySelector<FakeElement>(".glitter-write-stage__attachment-remove");
 
     expect(linkAttachmentRemove).not.toBeNull();
@@ -361,8 +361,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyPanel = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__link-body-panel");
-    const sourceInlineInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__source-inline-input");
+    const bodyPanel = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__link-body-panel");
+    const sourceInlineInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__source-inline-input");
     const linkAttachmentRemove = contentEl.querySelector<FakeElement>(".glitter-write-stage__attachment-remove");
 
     expect(bodyPanel?.querySelector(".glitter-write-stage__link-attachment-row")).not.toBeNull();
@@ -397,11 +397,11 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const mediaLayout = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__media-layout");
+    const mediaLayout = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__media-layout");
     const thumbnailSurface = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-thumbnail-surface");
     const previewTrigger = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-thumbnail-preview-trigger");
     const thumbnailImage = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-thumbnail-image");
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
     const pageChip = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-page-chip");
     const addButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--add");
     const replaceButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--replace");
@@ -418,10 +418,10 @@ describe("IdeaEditModal", () => {
     expect(addButton?.getAttr("aria-label")).toBe("增加图片");
     expect(replaceButton?.getAttr("aria-label")).toBe("替换当前图片");
     expect(removeButton?.getAttr("aria-label")).toBe("删除当前图片");
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__media-path-trigger")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__media-path-trigger")).toBeNull();
     expect(contentEl.querySelector(".glitter-write-stage__media-path-primary")).toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__attachment-trigger")).toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__attachment-list")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__attachment-trigger")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__attachment-list")).toBeNull();
   });
 
   it("navigates and shrinks image galleries from the shared media surface", async () => {
@@ -565,7 +565,7 @@ describe("IdeaEditModal", () => {
     await modal.onOpen();
 
     const addButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--add");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     expect(addButton?.getAttr("aria-label")).toBe("增加图片");
 
@@ -650,8 +650,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     const preventDefault = vi.fn();
     const pastedImages = [
       {
@@ -745,8 +745,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     const preventDefault = vi.fn();
     const pastedImages = [
       {
@@ -761,7 +761,7 @@ describe("IdeaEditModal", () => {
       }
     ] as File[];
 
-    expect(contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__attachment-item")).toHaveLength(1);
+    expect(contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__attachment-item")).toHaveLength(1);
 
     await bodyInput!.dispatch("paste", {
       clipboardData: {
@@ -771,7 +771,7 @@ describe("IdeaEditModal", () => {
     });
 
     expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__attachment-item")).toHaveLength(3);
+    expect(contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__attachment-item")).toHaveLength(3);
     expect(saveButton?.getAttr("data-dirty")).toBe("true");
 
     await saveButton.click();
@@ -914,8 +914,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     bodyInput!.value = "New body";
     await bodyInput!.dispatch("input");
@@ -1007,7 +1007,7 @@ describe("IdeaEditModal", () => {
     expect(thumbnailVideo?.getAttr("src")).toBe("app://vault/existing/clip.mp4");
     expect(thumbnailVideo?.getAttr("autoplay")).toBe("");
     expect(thumbnailVideo?.getAttr("loop")).toBe("");
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__media-play-button")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__media-play-button")).toBeNull();
     expect(contentEl.querySelector(".glitter-write-stage__media-surface-page-chip")).toBeNull();
     expect(contentEl.querySelector(".glitter-write-stage__media-surface-action--add")).toBeNull();
     expect(replaceButton?.getAttr("aria-label")).toBe("替换视频");
@@ -1076,8 +1076,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     const preventDefault = vi.fn();
     const pastedImage = {
       name: "cover.png",
@@ -1157,7 +1157,7 @@ describe("IdeaEditModal", () => {
     await modal.onOpen();
 
     const replaceButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--replace");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     expect(replaceButton).not.toBeNull();
 
     await replaceButton!.click();
@@ -1179,10 +1179,10 @@ describe("IdeaEditModal", () => {
   });
 
   it("uses priority-safe title backgrounds that match the body surfaces", () => {
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__close.glitter-write-stage__close-button,\n.glitter-idea-edit-modal__close-button.glitter-write-stage__close-button", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__close.glitter-write-stage__close-button,\n.GlitterIdea-edit-modal__close-button.glitter-write-stage__close-button", [
       "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 88%, transparent);"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal .glitter-idea-edit-modal__title", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal .GlitterIdea-edit-modal__title", [
       "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 86%, transparent) !important;",
       "background-image: none !important;",
       "box-shadow: none !important;",
@@ -1191,7 +1191,7 @@ describe("IdeaEditModal", () => {
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-idea-edit-modal .glitter-idea-edit-modal__body:not(.glitter-write-stage__textarea--panel-blend)",
+      ".GlitterIdea-edit-modal .GlitterIdea-edit-modal__body:not(.glitter-write-stage__textarea--panel-blend)",
       [
         "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 86%, transparent) !important;",
         "background-image: none !important;",
@@ -1200,10 +1200,10 @@ describe("IdeaEditModal", () => {
         "-webkit-appearance: none;"
       ]
     );
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal .glitter-idea-edit-modal__title--link", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal .GlitterIdea-edit-modal__title--link", [
       "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 88%, transparent) !important;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__link-body-panel", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__link-body-panel", [
       "margin-top: 0;",
       "min-height: 180px;",
       "border: none;",
@@ -1212,16 +1212,16 @@ describe("IdeaEditModal", () => {
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-idea-edit-modal__link-body-panel .glitter-idea-edit-modal__body.glitter-write-stage__textarea--panel-blend",
+      ".GlitterIdea-edit-modal__link-body-panel .GlitterIdea-edit-modal__body.glitter-write-stage__textarea--panel-blend",
       ["border: none;", "background: transparent;"]
     );
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__link-body-panel:focus-within", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__link-body-panel:focus-within", [
       "outline: 1px solid color-mix(in srgb, var(--glitter-ui-border-strong) 64%, transparent);",
       "box-shadow: none;"
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-idea-edit-modal__link-body-panel .glitter-write-stage__link-attachment-row,\n.glitter-idea-edit-modal__attachment-item",
+      ".GlitterIdea-edit-modal__link-body-panel .glitter-write-stage__link-attachment-row,\n.GlitterIdea-edit-modal__attachment-item",
       [
         "border-color: transparent;",
         "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 82%, transparent);",
@@ -1231,12 +1231,12 @@ describe("IdeaEditModal", () => {
   });
 
   it("keeps title and body borders aligned and switches them to the theme accent on focus", () => {
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__title,\n.glitter-idea-edit-modal__body", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__title,\n.GlitterIdea-edit-modal__body", [
       "border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 76%, transparent);"
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-idea-edit-modal__title:focus,\n.glitter-idea-edit-modal__title:focus-visible,\n.glitter-idea-edit-modal__body:focus,\n.glitter-idea-edit-modal__body:focus-visible",
+      ".GlitterIdea-edit-modal__title:focus,\n.GlitterIdea-edit-modal__title:focus-visible,\n.GlitterIdea-edit-modal__body:focus,\n.GlitterIdea-edit-modal__body:focus-visible",
       [
         "outline: none;",
         "border-color: var(--glitter-ui-accent);",
@@ -1247,17 +1247,17 @@ describe("IdeaEditModal", () => {
 
   it("reuses the shared frosted overlay button contract inside the media edit surface", () => {
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-write-stage__media-inputs-column", ["min-width: 0;"]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__media-layout", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__media-layout", [
       "min-height: 248px;",
       "grid-template-columns: minmax(176px, 38%) minmax(0, 1fr);",
       "gap: 14px;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__title,\n.glitter-idea-edit-modal__body", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__title,\n.GlitterIdea-edit-modal__body", [
       "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 86%, transparent);"
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action",
       [
         "color: var(--glitter-media-surface-action-icon-color);",
         "border-color: color-mix(in srgb, white 16%, var(--glitter-ui-border-strong) 14%);",
@@ -1267,7 +1267,7 @@ describe("IdeaEditModal", () => {
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action .glitter-write-stage__icon,\n.glitter-idea-edit-modal button.glitter-write-stage__media-surface-action .glitter-write-stage__icon",
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action .glitter-write-stage__icon,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action .glitter-write-stage__icon",
       ["position: relative;", "z-index: 1;"]
     );
   });
@@ -1286,8 +1286,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     expect(bodyInput).not.toBeNull();
     expect(saveButton?.getAttr("data-dirty")).toBe("false");
@@ -1319,7 +1319,7 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     expect(saveButton?.getAttr("data-dirty")).toBe("false");
   });
 
@@ -1360,7 +1360,7 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     expect(saveButton?.getAttr("data-dirty")).toBe("false");
 
     await saveButton.click();
@@ -1375,22 +1375,22 @@ describe("IdeaEditModal", () => {
   });
 
   it("uses flat footer button states and only highlights save after edits", () => {
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal .glitter-idea-edit-modal__button", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal .GlitterIdea-edit-modal__button", [
       "appearance: none;",
       "background-image: none !important;",
       "box-shadow: none !important;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__button--save[data-dirty=\"false\"]", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__button--save[data-dirty=\"false\"]", [
       "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 82%, transparent);",
       "color: var(--glitter-ui-text);"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-idea-edit-modal__button--save[data-dirty=\"true\"]", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".GlitterIdea-edit-modal__button--save[data-dirty=\"true\"]", [
       "background: var(--glitter-ui-accent);",
       "color: var(--glitter-ui-accent-contrast);"
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-idea-edit-modal .glitter-idea-edit-modal__button:focus-visible,\n.glitter-idea-edit-modal .glitter-idea-edit-modal__button:active",
+      ".GlitterIdea-edit-modal .GlitterIdea-edit-modal__button:focus-visible,\n.GlitterIdea-edit-modal .GlitterIdea-edit-modal__button:active",
       ["box-shadow: none !important;"]
     );
   });
@@ -1409,10 +1409,10 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const footer = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__footer");
+    const footer = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__footer");
     expect(footer).not.toBeNull();
 
-    const footerButtons = footer!.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button");
+    const footerButtons = footer!.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button");
     expect(footerButtons).toHaveLength(2);
     expect(footerButtons[0]?.textContent).toBe("取消");
     expect(footerButtons[1]?.textContent).toBe("保存");
@@ -1433,8 +1433,8 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const closeButton = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__close");
-    const cancelButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[0];
+    const closeButton = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__close");
+    const cancelButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[0];
 
     expect(closeButton).not.toBeNull();
     expect(cancelButton).toBeDefined();
@@ -1517,9 +1517,9 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const titleInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__title");
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const titleInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__title");
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     expect(titleInput).not.toBeNull();
     expect(bodyInput).not.toBeNull();
@@ -1633,7 +1633,7 @@ describe("IdeaEditModal", () => {
     await modal.onOpen();
 
     const addButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--add");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     expect(addButton).not.toBeNull();
     expect(saveButton).toBeDefined();
@@ -1735,7 +1735,7 @@ describe("IdeaEditModal", () => {
     await modal.onOpen();
 
     const replaceButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--replace");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     expect(replaceButton).not.toBeNull();
     expect(saveButton).toBeDefined();
@@ -1812,7 +1812,7 @@ describe("IdeaEditModal", () => {
     await modal.onOpen();
 
     const removeButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--remove");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     expect(removeButton).not.toBeNull();
 
@@ -1875,18 +1875,18 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const titleInputs = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__title");
+    const titleInputs = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__title");
     const titleInput = titleInputs[0] ?? null;
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const sourceInlineInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__source-inline-input");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const sourceInlineInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__source-inline-input");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     expect(titleInputs).toHaveLength(1);
     expect(titleInput).not.toBeNull();
     expect(bodyInput).not.toBeNull();
     expect(sourceInlineInput).not.toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__source-url")).toBeNull();
-    expect(contentEl.querySelector(".glitter-idea-edit-modal__attachment-trigger")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__source-url")).toBeNull();
+    expect(contentEl.querySelector(".GlitterIdea-edit-modal__attachment-trigger")).toBeNull();
     expect(saveButton).toBeDefined();
 
     titleInput!.value = " New title ";
@@ -1944,7 +1944,7 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
     const linkAttachmentRemove = contentEl.querySelector<FakeElement>(".glitter-write-stage__attachment-remove");
 
     await linkAttachmentRemove!.click();
@@ -2003,9 +2003,9 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const titleInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__title");
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const titleInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__title");
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     titleInput!.value = "New title";
     bodyInput!.value = "New body";
@@ -2031,17 +2031,17 @@ describe("IdeaEditModal", () => {
         "Journal.md",
         `# Journal
 
-> [!glitter-idea] [\\[引用灵感\\] Old title](glitter://idea/idea-1)
+> [!GlitterIdea] [\\[引用灵感\\] Old title](glitter://idea/idea-1)
 > Old body
 >
 > ✨ 来自 Glitter · 默认池
 
-> [!glitter-idea] [\\[引用灵感\\] Keep title](glitter://idea/idea-2)
+> [!GlitterIdea] [\\[引用灵感\\] Keep title](glitter://idea/idea-2)
 > Keep body
 >
 > ✨ 来自 Glitter · 默认池
 
-> [!glitter-idea] [\\[引用灵感\\] Old title](glitter://idea/idea-1)
+> [!GlitterIdea] [\\[引用灵感\\] Old title](glitter://idea/idea-1)
 > Old body
 >
 > ✨ 来自 Glitter · 默认池`
@@ -2088,9 +2088,9 @@ describe("IdeaEditModal", () => {
 
     await modal.onOpen();
 
-    const titleInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__title");
-    const bodyInput = contentEl.querySelector<FakeElement>(".glitter-idea-edit-modal__body");
-    const saveButton = contentEl.querySelectorAll<FakeElement>(".glitter-idea-edit-modal__button")[1];
+    const titleInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__title");
+    const bodyInput = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__body");
+    const saveButton = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button")[1];
 
     titleInput!.value = "New title";
     bodyInput!.value = "New body";
@@ -2133,9 +2133,9 @@ describe("IdeaEditModal", () => {
 
     modal.onClose();
 
-    expect(calls.containerRemoveClass).toHaveBeenCalledWith("glitter-idea-edit-modal-host");
-    expect(calls.modalRemoveClass).toHaveBeenCalledWith("glitter-idea-edit-modal");
-    expect(calls.contentRemoveClass).toHaveBeenCalledWith("glitter-idea-edit-modal__content");
+    expect(calls.containerRemoveClass).toHaveBeenCalledWith("GlitterIdea-edit-modal-host");
+    expect(calls.modalRemoveClass).toHaveBeenCalledWith("GlitterIdea-edit-modal");
+    expect(calls.contentRemoveClass).toHaveBeenCalledWith("GlitterIdea-edit-modal__content");
     expect(calls.contentEmpty).toHaveBeenCalledTimes(1);
   });
 });

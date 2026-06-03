@@ -212,13 +212,13 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    expect(addClass).toHaveBeenCalledWith("glitter-idea-picker-modal-host");
-    expect(addClass).toHaveBeenCalledWith("glitter-idea-picker-modal");
+    expect(addClass).toHaveBeenCalledWith("GlitterIdea-picker-modal-host");
+    expect(addClass).toHaveBeenCalledWith("GlitterIdea-picker-modal");
     expect(queryIdeas).toHaveBeenCalledWith({ text: "", sort: "updatedAt-desc" });
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query")?.isFocused).toBe(true);
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query")?.isFocused).toBe(true);
 
-    const row = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result");
-    const plusButton = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result-action");
+    const row = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result");
+    const plusButton = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-action");
     expect(row?.dataset.ideaId).toBe("idea-1");
     expect(row?.type).toBe("div");
     expect(plusButton?.type).toBe("button");
@@ -236,8 +236,8 @@ describe("IdeaPickerModal", () => {
     expect(closeSpy).toHaveBeenCalledTimes(1);
 
     modal.onClose();
-    expect(removeClass).toHaveBeenCalledWith("glitter-idea-picker-modal-host");
-    expect(removeClass).toHaveBeenCalledWith("glitter-idea-picker-modal");
+    expect(removeClass).toHaveBeenCalledWith("GlitterIdea-picker-modal-host");
+    expect(removeClass).toHaveBeenCalledWith("GlitterIdea-picker-modal");
     expect(empty).toHaveBeenCalled();
   });
 
@@ -260,7 +260,7 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const closeButton = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__close");
+    const closeButton = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__close");
     expect(closeButton).not.toBeNull();
     expect(closeButton?.className).toContain("glitter-write-stage__close-button");
 
@@ -291,21 +291,21 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__title")?.textContent).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__title")?.textContent).toBe(
       "插入 Glitter 灵感"
     );
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__section-title")?.textContent).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__section-title")?.textContent).toBe(
       "最近使用"
     );
     expect(
       contentEl
-        .querySelectorAll<FakeElement>(".glitter-idea-picker-modal__result")
+        .querySelectorAll<FakeElement>(".GlitterIdea-picker-modal__result")
         .map((result) => result.dataset.ideaId)
     ).toEqual(["idea-3", "idea-2"]);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result-content")).not.toBeNull();
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-content")).not.toBeNull();
     expect(
       contentEl
-        .querySelectorAll<FakeElement>(".glitter-idea-picker-modal__result-body")
+        .querySelectorAll<FakeElement>(".GlitterIdea-picker-modal__result-body")
         .map((body) => body.textContent)
     ).toEqual(["灵感正文", "无正文"]);
   });
@@ -313,38 +313,38 @@ describe("IdeaPickerModal", () => {
   it("defines non-overflow layout rules for recent idea rows", () => {
     const css = readFileSync(resolve(__dirname, "../../styles.css"), "utf8");
 
-    expect(css).toMatch(/\.glitter-idea-picker-modal__result\s*\{[\s\S]*?overflow:\s*hidden;/);
-    expect(css).toMatch(/\.glitter-idea-picker-modal__result-header\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/);
-    expect(css).toMatch(/\.glitter-idea-picker-modal__result-content\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?overflow:\s*hidden;/);
+    expect(css).toMatch(/\.GlitterIdea-picker-modal__result\s*\{[\s\S]*?overflow:\s*hidden;/);
+    expect(css).toMatch(/\.GlitterIdea-picker-modal__result-header\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/);
+    expect(css).toMatch(/\.GlitterIdea-picker-modal__result-content\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?overflow:\s*hidden;/);
   });
 
   it("defines a fixed in-row plus position and stable recent row height", () => {
     const css = readFileSync(resolve(__dirname, "../../styles.css"), "utf8");
 
-    expect(css).toMatch(/\.glitter-idea-picker-modal__result\s*\{[\s\S]*?position:\s*relative;[\s\S]*?min-height:\s*64px;[\s\S]*?padding-right:\s*56px;/);
-    expect(css).toMatch(/\.glitter-idea-picker-modal__result-action\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?right:\s*14px;[\s\S]*?top:\s*50%;[\s\S]*?transform:\s*translateY\(-50%\);/);
+    expect(css).toMatch(/\.GlitterIdea-picker-modal__result\s*\{[\s\S]*?position:\s*relative;[\s\S]*?min-height:\s*64px;[\s\S]*?padding-right:\s*56px;/);
+    expect(css).toMatch(/\.GlitterIdea-picker-modal__result-action\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?right:\s*14px;[\s\S]*?top:\s*50%;[\s\S]*?transform:\s*translateY\(-50%\);/);
   });
 
   it("aligns picker cards and controls with quick capture chrome", () => {
     const css = readFileSync(resolve(__dirname, "../../styles.css"), "utf8");
 
     expect(css).toMatch(
-      /\.glitter-idea-picker-modal__result\s*\{[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\);/
+      /\.GlitterIdea-picker-modal__result\s*\{[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\);/
     );
     expect(css).toMatch(
-      /\.glitter-idea-picker-modal__close\.glitter-write-stage__close-button\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;[^}]*border-radius:\s*8px;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*88%,\s*transparent\);[^}]*box-shadow:\s*none;/
+      /\.GlitterIdea-picker-modal__close\.glitter-write-stage__close-button\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;[^}]*border-radius:\s*8px;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*88%,\s*transparent\);[^}]*box-shadow:\s*none;/
     );
     expect(css).toMatch(
-      /\.glitter-idea-picker-modal__query\s*\{[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\);[^}]*appearance:\s*none;[^}]*-webkit-appearance:\s*none;[^}]*background-image:\s*none;[^}]*box-shadow:\s*none;/
+      /\.GlitterIdea-picker-modal__query\s*\{[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\);[^}]*appearance:\s*none;[^}]*-webkit-appearance:\s*none;[^}]*background-image:\s*none;[^}]*box-shadow:\s*none;/
     );
     expect(css).toMatch(
-      /\.glitter-idea-picker-modal\s+\.glitter-idea-picker-modal__query\s*\{[^}]*border:\s*1px\s+solid\s+color-mix\(in srgb,\s*var\(--background-modifier-border,\s*#4a5f84\)\s*72%,\s*transparent\)\s*!important;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\)\s*!important;[^}]*appearance:\s*none\s*!important;[^}]*-webkit-appearance:\s*none\s*!important;[^}]*background-image:\s*none\s*!important;[^}]*box-shadow:\s*none\s*!important;/
+      /\.GlitterIdea-picker-modal\s+\.GlitterIdea-picker-modal__query\s*\{[^}]*border:\s*1px\s+solid\s+color-mix\(in srgb,\s*var\(--background-modifier-border,\s*#4a5f84\)\s*72%,\s*transparent\)\s*!important;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\)\s*!important;[^}]*appearance:\s*none\s*!important;[^}]*-webkit-appearance:\s*none\s*!important;[^}]*background-image:\s*none\s*!important;[^}]*box-shadow:\s*none\s*!important;/
     );
     expect(css).toMatch(
-      /\.glitter-idea-picker-modal__result-action\s*\{[^}]*border:\s*none;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\);[^}]*box-shadow:\s*none;[^}]*appearance:\s*none;[^}]*-webkit-appearance:\s*none;/
+      /\.GlitterIdea-picker-modal__result-action\s*\{[^}]*border:\s*none;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\);[^}]*box-shadow:\s*none;[^}]*appearance:\s*none;[^}]*-webkit-appearance:\s*none;/
     );
     expect(css).toMatch(
-      /\.glitter-idea-picker-modal\s+\.glitter-idea-picker-modal__result-action\s*\{[^}]*border:\s*none\s*!important;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\)\s*!important;[^}]*background-image:\s*none\s*!important;[^}]*box-shadow:\s*none\s*!important;[^}]*appearance:\s*none\s*!important;[^}]*-webkit-appearance:\s*none\s*!important;/
+      /\.GlitterIdea-picker-modal\s+\.GlitterIdea-picker-modal__result-action\s*\{[^}]*border:\s*none\s*!important;[^}]*background:\s*color-mix\(in srgb,\s*var\(--glitter-ui-bg-alt\)\s*94%,\s*black\s*6%\)\s*!important;[^}]*background-image:\s*none\s*!important;[^}]*box-shadow:\s*none\s*!important;[^}]*appearance:\s*none\s*!important;[^}]*-webkit-appearance:\s*none\s*!important;/
     );
   });
 
@@ -352,7 +352,7 @@ describe("IdeaPickerModal", () => {
     const css = readFileSync(resolve(__dirname, "../../styles.css"), "utf8");
 
     expect(css).toMatch(
-      /\.glitter-quick-capture-modal,\s*\.glitter-pool-modal,\s*\.glitter-idea-edit-modal,\s*\.glitter-idea-picker-modal,\s*\.glitter-snippet-locations-modal,\s*\.glitter-pool-roam-history-modal,\s*\.glitter-pool-roam-board-modal\s*\{[^}]*background:\s*var\(--glitter-ui-bg\);/
+      /\.glitter-quick-capture-modal,\s*\.glitter-pool-modal,\s*\.GlitterIdea-edit-modal,\s*\.GlitterIdea-picker-modal,\s*\.glitter-snippet-locations-modal,\s*\.glitter-pool-roam-history-modal,\s*\.glitter-pool-roam-board-modal\s*\{[^}]*background:\s*var\(--glitter-ui-bg\);/
     );
   });
 
@@ -360,7 +360,7 @@ describe("IdeaPickerModal", () => {
     const css = readFileSync(resolve(__dirname, "../../styles.css"), "utf8");
 
     expect(css).toMatch(
-      /\.glitter-quick-capture-modal-host \.modal-bg,\s*\.glitter-pool-modal-host \.modal-bg,\s*\.glitter-idea-edit-modal-host \.modal-bg,\s*\.glitter-idea-picker-modal-host \.modal-bg,\s*\.glitter-snippet-locations-modal-host \.modal-bg,\s*\.glitter-pool-roam-history-modal-host \.modal-bg,\s*\.glitter-pool-roam-board-modal-host \.modal-bg\s*\{[^}]*background:\s*radial-gradient\(\s*circle at 50% 18%,\s*rgba\(255,\s*255,\s*255,\s*0\.22\)\s*0%,\s*rgba\(255,\s*255,\s*255,\s*0\.1\)\s*24%,\s*rgba\(255,\s*255,\s*255,\s*0\)\s*52%\s*\)\s*,\s*radial-gradient\(\s*circle at 62% 52%,\s*rgba\(246,\s*221,\s*182,\s*0\.16\)\s*0%,\s*rgba\(246,\s*221,\s*182,\s*0\)\s*26%\s*\)\s*,\s*radial-gradient\(\s*circle at 18% 78%,\s*rgba\(120,\s*174,\s*187,\s*0\.14\)\s*0%,\s*rgba\(120,\s*174,\s*187,\s*0\)\s*34%\s*\)\s*,\s*radial-gradient\(\s*circle at 88% 78%,\s*rgba\(242,\s*214,\s*221,\s*0\.12\)\s*0%,\s*rgba\(242,\s*214,\s*221,\s*0\)\s*32%\s*\)\s*,\s*linear-gradient\(\s*180deg,\s*rgba\(238,\s*244,\s*246,\s*0\.12\)\s*0%,\s*rgba\(184,\s*207,\s*215,\s*0\.16\)\s*38%,\s*rgba\(118,\s*147,\s*162,\s*0\.3\)\s*100%\s*\);[^}]*-webkit-backdrop-filter:\s*blur\(68px\)\s+saturate\(118%\);[^}]*backdrop-filter:\s*blur\(68px\)\s+saturate\(118%\);/
+      /\.glitter-quick-capture-modal-host \.modal-bg,\s*\.glitter-pool-modal-host \.modal-bg,\s*\.GlitterIdea-edit-modal-host \.modal-bg,\s*\.GlitterIdea-picker-modal-host \.modal-bg,\s*\.glitter-snippet-locations-modal-host \.modal-bg,\s*\.glitter-pool-roam-history-modal-host \.modal-bg,\s*\.glitter-pool-roam-board-modal-host \.modal-bg\s*\{[^}]*background:\s*radial-gradient\(\s*circle at 50% 18%,\s*rgba\(255,\s*255,\s*255,\s*0\.22\)\s*0%,\s*rgba\(255,\s*255,\s*255,\s*0\.1\)\s*24%,\s*rgba\(255,\s*255,\s*255,\s*0\)\s*52%\s*\)\s*,\s*radial-gradient\(\s*circle at 62% 52%,\s*rgba\(246,\s*221,\s*182,\s*0\.16\)\s*0%,\s*rgba\(246,\s*221,\s*182,\s*0\)\s*26%\s*\)\s*,\s*radial-gradient\(\s*circle at 18% 78%,\s*rgba\(120,\s*174,\s*187,\s*0\.14\)\s*0%,\s*rgba\(120,\s*174,\s*187,\s*0\)\s*34%\s*\)\s*,\s*radial-gradient\(\s*circle at 88% 78%,\s*rgba\(242,\s*214,\s*221,\s*0\.12\)\s*0%,\s*rgba\(242,\s*214,\s*221,\s*0\)\s*32%\s*\)\s*,\s*linear-gradient\(\s*180deg,\s*rgba\(238,\s*244,\s*246,\s*0\.12\)\s*0%,\s*rgba\(184,\s*207,\s*215,\s*0\.16\)\s*38%,\s*rgba\(118,\s*147,\s*162,\s*0\.3\)\s*100%\s*\);[^}]*-webkit-backdrop-filter:\s*blur\(68px\)\s+saturate\(118%\);[^}]*backdrop-filter:\s*blur\(68px\)\s+saturate\(118%\);/
     );
   });
 
@@ -390,15 +390,15 @@ describe("IdeaPickerModal", () => {
     await flushMicrotasks();
 
     expect(listPools).toHaveBeenCalledTimes(1);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result-pool")?.textContent).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-pool")?.textContent).toBe(
       "产品池"
     );
     expect(
       contentEl
-        .querySelectorAll<FakeElement>(".glitter-idea-picker-modal__result-status")
+        .querySelectorAll<FakeElement>(".GlitterIdea-picker-modal__result-status")
         .map((marker) => marker.textContent)
     ).toEqual(["已创建文件", "已引用为 2 个片段"]);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result-action")?.textContent).toBe("+");
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-action")?.textContent).toBe("+");
   });
 
   it("renders query results before pool names resolve and reuses the pool lookup across queries", async () => {
@@ -427,24 +427,24 @@ describe("IdeaPickerModal", () => {
     await flushMicrotasks();
 
     expect(listPools).toHaveBeenCalledTimes(1);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result")?.dataset.ideaId).toBe("idea-1");
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result-pool")?.textContent).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe("idea-1");
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-pool")?.textContent).toBe(
       "未命名池"
     );
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     queryInput!.value = "flow";
     queryInput!.dispatchEvent("input");
     await flushMicrotasks();
 
     expect(listPools).toHaveBeenCalledTimes(1);
     expect(queryIdeas).toHaveBeenNthCalledWith(2, { text: "flow", sort: "updatedAt-desc" });
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result")?.dataset.ideaId).toBe("idea-flow");
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe("idea-flow");
 
     pools.resolve([{ id: "pool-1", name: "产品池" }]);
     await flushMicrotasks(3);
 
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result-pool")?.textContent).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-pool")?.textContent).toBe(
       "产品池"
     );
   });
@@ -474,12 +474,12 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     queryInput!.value = "new";
     queryInput!.dispatchEvent("input");
     await flushMicrotasks();
 
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result--active")).toBeNull();
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result--active")).toBeNull();
 
     const enterEvent = queryInput!.keydown("Enter");
     await flushMicrotasks();
@@ -491,7 +491,7 @@ describe("IdeaPickerModal", () => {
     latestQuery.resolve([buildIdea({ id: "idea-new", title: "New" })]);
     await flushMicrotasks(3);
 
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result--active")).toBeNull();
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result--active")).toBeNull();
 
     queryInput!.keydown("ArrowDown");
     queryInput!.keydown("Enter");
@@ -527,9 +527,9 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     expect(queryInput).not.toBeNull();
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result")?.dataset.ideaId).toBe("idea-old");
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe("idea-old");
 
     queryInput!.value = "broken";
     queryInput!.dispatchEvent("input");
@@ -537,7 +537,7 @@ describe("IdeaPickerModal", () => {
     rejectedQuery.reject(new Error("latest query failed"));
     await flushMicrotasks(3);
 
-    const staleButton = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result");
+    const staleButton = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result");
     staleButton?.click();
     await flushMicrotasks();
 
@@ -564,7 +564,7 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__empty")?.textContent).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__empty")?.textContent).toBe(
       "没有找到匹配的灵感"
     );
   });
@@ -593,25 +593,25 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     expect(queryInput).not.toBeNull();
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result--active")).toBeNull();
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result--active")).toBeNull();
 
     const firstDownEvent = queryInput!.keydown("ArrowDown");
     expect(firstDownEvent.preventDefault).toHaveBeenCalledTimes(1);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result--active")?.dataset.ideaId).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result--active")?.dataset.ideaId).toBe(
       "idea-1"
     );
 
     const downEvent = queryInput!.keydown("ArrowDown");
     expect(downEvent.preventDefault).toHaveBeenCalledTimes(1);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result--active")?.dataset.ideaId).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result--active")?.dataset.ideaId).toBe(
       "idea-2"
     );
 
     const upEvent = queryInput!.keydown("ArrowUp");
     expect(upEvent.preventDefault).toHaveBeenCalledTimes(1);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result--active")?.dataset.ideaId).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result--active")?.dataset.ideaId).toBe(
       "idea-1"
     );
 
@@ -645,7 +645,7 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     queryInput!.keydown("ArrowDown");
     queryInput!.keydown("Enter");
     queryInput!.keydown("Enter");
@@ -681,7 +681,7 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const button = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result-action");
+    const button = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-action");
     button?.click();
     button?.click();
     await flushMicrotasks();
@@ -713,7 +713,7 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     const escapeEvent = queryInput!.keydown("Escape");
 
     expect(escapeEvent.preventDefault).toHaveBeenCalledTimes(1);
@@ -744,17 +744,17 @@ describe("IdeaPickerModal", () => {
     modal.onOpen();
     await flushMicrotasks();
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     expect(queryInput).not.toBeNull();
 
     queryInput!.value = "design";
     queryInput!.dispatchEvent("input");
     await flushMicrotasks();
 
-    const sameQueryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const sameQueryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     expect(sameQueryInput).toBe(queryInput);
     expect(queryIdeas).toHaveBeenNthCalledWith(2, { text: "design", sort: "updatedAt-desc" });
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result")?.dataset.ideaId).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe(
       "idea-design"
     );
 
@@ -762,9 +762,9 @@ describe("IdeaPickerModal", () => {
     queryInput!.dispatchEvent("input");
     await flushMicrotasks();
 
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query")).toBe(queryInput);
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query")).toBe(queryInput);
     expect(queryIdeas).toHaveBeenNthCalledWith(3, { text: "design flow", sort: "updatedAt-desc" });
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result")?.dataset.ideaId).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe(
       "idea-flow"
     );
   });
@@ -795,7 +795,7 @@ describe("IdeaPickerModal", () => {
 
     modal.onOpen();
 
-    const queryInput = contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__query");
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
     expect(queryInput).not.toBeNull();
 
     initialQuery.resolve([]);
@@ -811,13 +811,13 @@ describe("IdeaPickerModal", () => {
 
     latestQuery.resolve([buildIdea({ id: "idea-second", title: "Second", body: "Latest" })]);
     await flushMicrotasks(3);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result")?.dataset.ideaId).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe(
       "idea-second"
     );
 
     olderQuery.resolve([buildIdea({ id: "idea-first", title: "First", body: "Stale" })]);
     await flushMicrotasks(3);
-    expect(contentEl.querySelector<FakeElement>(".glitter-idea-picker-modal__result")?.dataset.ideaId).toBe(
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe(
       "idea-second"
     );
   });

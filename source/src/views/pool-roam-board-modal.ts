@@ -107,16 +107,16 @@ export class PoolRoamBoardModal extends Modal {
     this.contentEl.empty();
 
     const surface = this.contentEl.createDiv({
-      cls: "glitter-pool-roam-board-modal__surface glitter-idea-edit-modal__surface"
+      cls: "glitter-pool-roam-board-modal__surface GlitterIdea-edit-modal__surface"
     });
     const header = surface.createDiv({
-      cls: "glitter-pool-roam-board-modal__header glitter-snippet-locations-modal__header glitter-idea-edit-modal__header"
+      cls: "glitter-pool-roam-board-modal__header glitter-snippet-locations-modal__header GlitterIdea-edit-modal__header"
     });
     const headerCopy = header.createDiv({
       cls: "glitter-pool-roam-board-modal__header-copy"
     });
     this.boardTitleEl = headerCopy.createEl("h2", {
-      cls: "glitter-pool-roam-board-modal__title glitter-snippet-locations-modal__title glitter-idea-edit-modal__heading"
+      cls: "glitter-pool-roam-board-modal__title glitter-snippet-locations-modal__title GlitterIdea-edit-modal__heading"
     });
     this.pathEl = headerCopy.createEl("span", {
       cls: "glitter-pool-roam-board-modal__path glitter-snippet-locations-modal__card-path"
@@ -155,7 +155,7 @@ export class PoolRoamBoardModal extends Modal {
     });
 
     const closeButton = headerActions.createEl("button", {
-      cls: "glitter-pool-roam-board-modal__close glitter-write-stage__close-button glitter-idea-edit-modal__close-button"
+      cls: "glitter-pool-roam-board-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     }) as HTMLButtonElement;
     closeButton.type = "button";
     closeButton.setAttribute?.("aria-label", "关闭漫游白板预览");

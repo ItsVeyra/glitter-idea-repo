@@ -42,17 +42,17 @@ export class SnippetLocationsModal extends Modal {
     this.contentEl.empty();
 
     const surface = this.contentEl.createDiv({
-      cls: "glitter-snippet-locations-modal__surface glitter-idea-edit-modal__surface"
+      cls: "glitter-snippet-locations-modal__surface GlitterIdea-edit-modal__surface"
     });
     const header = surface.createDiv({
-      cls: "glitter-snippet-locations-modal__header glitter-idea-edit-modal__header"
+      cls: "glitter-snippet-locations-modal__header GlitterIdea-edit-modal__header"
     });
     header.createEl("h2", {
-      cls: "glitter-snippet-locations-modal__title glitter-idea-edit-modal__heading",
+      cls: "glitter-snippet-locations-modal__title GlitterIdea-edit-modal__heading",
       text: "选择文件"
     });
     const closeButton = header.createEl("button", {
-      cls: "glitter-snippet-locations-modal__close glitter-write-stage__close-button glitter-idea-edit-modal__close-button"
+      cls: "glitter-snippet-locations-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     }) as HTMLButtonElement;
     closeButton.type = "button";
     closeButton.setAttribute?.("aria-label", "关闭选择文件窗口");
