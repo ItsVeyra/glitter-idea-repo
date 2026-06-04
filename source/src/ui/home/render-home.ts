@@ -449,6 +449,24 @@ function findHomeStageRoot(orbStage: HTMLElement): HTMLElement | null {
   return null;
 }
 
+function findHomeStageViewportHost(orbStage: HTMLElement): HTMLElement | null {
+  let current: (HTMLElement & {
+    parentElement?: HTMLElement | null;
+    parent?: HTMLElement | null;
+    className?: string;
+  }) | null = orbStage;
+
+  while (current) {
+    const classNames = typeof current.className === "string" ? current.className.split(/\s+/) : [];
+    if (classNames.includes("glitter-idea-main-view-host")) {
+      return current;
+    }
+    current = current.parentElement ?? current.parent ?? null;
+  }
+
+  return null;
+}
+
 function isElementFloatingOutOfFlow(element: HTMLElement | null, fallback: boolean): boolean {
   if (!element) {
     return false;
@@ -493,8 +511,10 @@ function getHomeStageViewportSize(orbStage: HTMLElement): { width: number; heigh
     );
   }
 
-  const rootSize = getElementSizeIfAvailable(root);
-  if (!rootSize) {
+  const viewportHost = findHomeStageViewportHost(orbStage);
+  const viewportBase = viewportHost ?? root;
+  const viewportSize = getElementSizeIfAvailable(viewportBase);
+  if (!viewportSize) {
     return {
       width: HOME_ORB_LAYOUT_DEFAULT_STAGE.width,
       height: HOME_ORB_LAYOUT_DEFAULT_STAGE.height
@@ -503,11 +523,11 @@ function getHomeStageViewportSize(orbStage: HTMLElement): { width: number; heigh
   const topbar = root.querySelector(".glitter-home-stage__topbar") as HTMLElement | null;
   const actionBar = root.querySelector(".glitter-home-stage__action-bar") as HTMLElement | null;
   const topbarSize = topbar
-    ? getElementSizeIfAvailable(topbar) ?? { width: rootSize.width, height: 0 }
-    : { width: rootSize.width, height: 0 };
+    ? getElementSizeIfAvailable(topbar) ?? { width: viewportSize.width, height: 0 }
+    : { width: viewportSize.width, height: 0 };
   const actionBarSize = actionBar
-    ? getElementSizeIfAvailable(actionBar) ?? { width: rootSize.width, height: 0 }
-    : { width: rootSize.width, height: 0 };
+    ? getElementSizeIfAvailable(actionBar) ?? { width: viewportSize.width, height: 0 }
+    : { width: viewportSize.width, height: 0 };
   const rootClassNames = typeof root.className === "string" ? root.className.split(/\s+/) : [];
   const actionBarClassNames = typeof actionBar?.className === "string" ? actionBar.className.split(/\s+/) : [];
   const isPopulatedStage = rootClassNames.includes("glitter-home-stage--populated");
@@ -526,10 +546,10 @@ function getHomeStageViewportSize(orbStage: HTMLElement): { width: number; heigh
   const layoutGapCount = actionBar && !isFloatingPopulatedActionBar ? 2 : isPopulatedStage ? 0 : 1;
 
   return {
-    width: Math.max(220, rootSize.width - paddingLeft - paddingRight),
+    width: Math.max(220, viewportSize.width - paddingLeft - paddingRight),
     height: Math.max(
       220,
-      rootSize.height - paddingTop - paddingBottom - layoutTopbarHeight - layoutActionBarHeight - gap * layoutGapCount
+      viewportSize.height - paddingTop - paddingBottom - layoutTopbarHeight - layoutActionBarHeight - gap * layoutGapCount
     )
   };
 }

@@ -2192,6 +2192,13 @@ describe("renderHomeView", () => {
       mainViewBlocks.some((block) => block.includes("height: 100%;") && block.includes("overflow: hidden;"))
     ).toBe(true);
     expect(mainViewBlocks.every((block) => !block.includes("display: flex;"))).toBe(true);
+
+    const homeStageBlocks = getRuleBlocks(stylesCss, ".glitter-home-stage");
+    expect(homeStageBlocks.length).toBeGreaterThan(0);
+    const homeStageHeight = homeStageBlocks
+      .map((block) => block.match(/(?:^|\n)\s*height\s*:\s*([^;]+);/)?.[1]?.trim())
+      .find((value) => value !== undefined);
+    expect(homeStageHeight).toBe("100%");
   });
 
   it("renders the populated action bar as a floating bottom overlay instead of a third grid row", () => {
@@ -2273,6 +2280,74 @@ describe("renderHomeView", () => {
       root!.style.setProperty("width", "1600px");
       root!.style.setProperty("height", "900px");
       root!.setRectSize?.(1600, 900);
+      topbar!.setRectSize?.(1600, 42);
+      actionBar!.setRectSize?.(360, 60);
+
+      const observer = ResizeObserverStub.instances.at(-1);
+      expect(observer).toBeDefined();
+      observer!.trigger();
+
+      const populatedStageSize = getPopulatedStageSize(container);
+      expect(populatedStageSize.height).toBe(886);
+    } finally {
+      (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver = previousResizeObserver;
+    }
+  });
+
+  it("keeps populated stage height anchored to the fixed main-view host instead of a self-expanded home stage", () => {
+    class ResizeObserverStub {
+      static instances: ResizeObserverStub[] = [];
+
+      constructor(private readonly callback: ResizeObserverCallback) {
+        ResizeObserverStub.instances.push(this);
+      }
+
+      observe(): void {}
+
+      disconnect(): void {}
+
+      trigger(): void {
+        this.callback([], this as unknown as ResizeObserver);
+      }
+    }
+
+    const previousResizeObserver = (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver;
+    (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver =
+      ResizeObserverStub as unknown as typeof ResizeObserver;
+
+    try {
+      const container = createContainer() as HTMLElement & {
+        className: string;
+        style: FakeStyle;
+        setRectSize?: (rectWidth: number, rectHeight: number) => void;
+      };
+      container.className = "glitter-idea-main-view-host";
+      container.style.setProperty("width", "1600px");
+      container.style.setProperty("height", "900px");
+      container.setRectSize?.(1600, 900);
+
+      renderHomeView(container, buildHomeViewState("home-populated"), {
+        onPrimaryAction() {},
+        onSecondaryAction() {},
+        onPoolSelect() {},
+        onSearchSubmit() {}
+      });
+
+      const stageRoot = container.querySelector(".glitter-home-stage") as
+        | (HTMLElement & { setRectSize?: (rectWidth: number, rectHeight: number) => void })
+        | null;
+      const topbar = container.querySelector(".glitter-home-stage__topbar") as
+        | (HTMLElement & { setRectSize?: (rectWidth: number, rectHeight: number) => void })
+        | null;
+      const actionBar = container.querySelector(".glitter-home-stage__action-bar--populated") as
+        | (HTMLElement & { setRectSize?: (rectWidth: number, rectHeight: number) => void })
+        | null;
+
+      expect(stageRoot).not.toBeNull();
+      expect(topbar).not.toBeNull();
+      expect(actionBar).not.toBeNull();
+
+      stageRoot!.setRectSize?.(1600, 1300);
       topbar!.setRectSize?.(1600, 42);
       actionBar!.setRectSize?.(360, 60);
 
@@ -3913,7 +3988,10 @@ describe("renderHomeView", () => {
       "var(--glitter-home-populated-orb-count)"
     );
 
-    expectRuleHasDeclarations(".glitter-home-stage", ["grid-template-rows: auto minmax(0, 1fr);"]);
+    expectRuleHasDeclarations(".glitter-home-stage", [
+      "grid-template-rows: auto minmax(0, 1fr);",
+      "box-sizing: border-box;"
+    ]);
 
     expectRuleHasDeclarations(".glitter-home-stage__action-bar--populated", [
       "position: absolute;",

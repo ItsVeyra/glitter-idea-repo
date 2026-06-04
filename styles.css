@@ -177,6 +177,8 @@
 
   position: relative;
   isolation: isolate;
+  box-sizing: border-box;
+  height: 100%;
   min-height: 100%;
   border: none;
   border-radius: 0;
