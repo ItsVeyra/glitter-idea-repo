@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -2791,13 +2775,14 @@ describe("renderPoolView", () => {
     expect(content?.children[2]).toBe(mediaBody);
     expect(content?.className).toContain("glitter-pool-stage__card-content--interactive");
     expect((content as unknown as FakeElement | null)?.dataset.mediaPath).toBe("assets/image-a.png");
+    const previewButton = mediaClip?.children[0] as unknown as FakeElement | undefined;
     expect(mediaStage?.children[0]).toBe(mediaClip);
-    expect(mediaClip?.children[0]).toBe(thumbnail);
+    expect(previewButton?.tagName).toBe("BUTTON");
+    expect(previewButton?.className).toContain("glitter-pool-stage__card-media-hitbox");
+    expect(previewButton?.children[0]).toBe(thumbnail);
     expect(thumbnail).not.toBeNull();
     expect((thumbnail as unknown as { src?: string })?.src).toBe("app://local/assets/image-a.png");
-    expect(thumbnail?.getAttribute?.("role")).toBe("button");
-    expect(thumbnail?.getAttribute?.("tabindex")).toBe("0");
-    expect(thumbnail?.getAttribute?.("aria-label")).toBe("Image idea，查看大图");
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Image idea，查看大图");
     expect(mediaBody).not.toBeNull();
     expect(mediaBody?.parent).toBe(content);
     expect(mediaBody?.textContent).toContain("supplemental body");
@@ -2853,13 +2838,17 @@ describe("renderPoolView", () => {
     const content = container.querySelector(".glitter-pool-stage__card-content--video") as unknown as FakeElement | null;
     const mediaStage = container.querySelector(".glitter-pool-stage__card-media-stage--video") as unknown as FakeElement | null;
     const mediaClip = container.querySelector(".glitter-pool-stage__card-media-clip") as unknown as FakeElement | null;
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
     const previewVideo = container.querySelector("video.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
     expect(content?.className).toContain("glitter-pool-stage__card-content--interactive");
     expect((content as unknown as FakeElement | null)?.dataset.mediaPath).toBe("assets/video-a.mp4");
+    expect(previewButton).not.toBeNull();
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Video idea，查看大图视频");
     expect(previewVideo).not.toBeNull();
     expect(content?.children[0]).toBe(mediaStage);
     expect(mediaStage?.children[0]).toBe(mediaClip);
-    expect(mediaClip?.children[0]).toBe(previewVideo);
+    expect(mediaClip?.children[0]).toBe(previewButton);
+    expect(previewButton?.children[0]).toBe(previewVideo);
     expect(previewVideo?.getAttribute?.("src")).toBe("app://local/assets/video-a.mp4");
     expect(previewVideo?.getAttribute?.("muted")).toBe("");
     expect(previewVideo?.getAttribute?.("playsinline")).toBe("");
@@ -2914,6 +2903,7 @@ describe("renderPoolView", () => {
     const content = container.querySelector(".glitter-pool-stage__card-content--video") as unknown as FakeElement | null;
     const mediaStage = container.querySelector(".glitter-pool-stage__card-media-stage--video") as unknown as FakeElement | null;
     const mediaClip = container.querySelector(".glitter-pool-stage__card-media-clip") as unknown as FakeElement | null;
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
     const previewVideo = container.querySelector("video.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
     const title = container.querySelector(".glitter-pool-stage__card-title") as unknown as FakeElement | null;
     const mediaBody = container.querySelector(".glitter-pool-stage__card-media-body") as unknown as FakeElement | null;
@@ -2923,7 +2913,8 @@ describe("renderPoolView", () => {
     expect(content?.children[1]).toBe(title);
     expect(content?.children[2]).toBe(mediaBody);
     expect(mediaStage?.children[0]).toBe(mediaClip);
-    expect(mediaClip?.children[0]).toBe(previewVideo);
+    expect(mediaClip?.children[0]).toBe(previewButton);
+    expect(previewButton?.children[0]).toBe(previewVideo);
     expect(mediaBody?.parent).toBe(content);
     expect(mediaBody?.textContent).toBe("video body layout");
     expect(container.querySelector(".glitter-pool-stage__card-supporting--video")).toBeNull();
@@ -2973,14 +2964,14 @@ describe("renderPoolView", () => {
       onPoolSwitch() {}
     });
 
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
     const thumbnail = container.querySelector("img.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
+    expect(previewButton).not.toBeNull();
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Image preview idea，查看大图");
     expect(thumbnail).not.toBeNull();
     expect(thumbnail?.tagName).toBe("IMG");
-    expect(thumbnail?.getAttribute?.("role")).toBe("button");
-    expect(thumbnail?.getAttribute?.("tabindex")).toBe("0");
-    expect(thumbnail?.getAttribute?.("aria-label")).toBe("Image preview idea，查看大图");
     expect(container.querySelector(".glitter-pool-stage__card-media-switcher")).toBeNull();
-    thumbnail?.click();
+    previewButton?.click();
 
     const previewOverlay = container.querySelector(".glitter-pool-stage__media-preview-overlay") as unknown as FakeElement | null;
     const previewImage = container.querySelector(".glitter-pool-stage__media-preview-image") as unknown as FakeElement | null;
@@ -2992,7 +2983,7 @@ describe("renderPoolView", () => {
     expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).toBeNull();
   });
 
-  it("opens image preview from keyboard on the thumbnail itself", () => {
+  it("renders image preview trigger as a native button for keyboard accessibility", () => {
     const container = createContainer();
     const state = createBrowseState({
       browse: {
@@ -3035,15 +3026,11 @@ describe("renderPoolView", () => {
       onPoolSwitch() {}
     });
 
-    const thumbnail = container.querySelector("img.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
-    expect(thumbnail).not.toBeNull();
-
-    thumbnail?.trigger("keydown", { key: "Enter" });
-    expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).not.toBeNull();
-    container.querySelector(".glitter-pool-stage__media-preview-overlay")?.remove();
-
-    thumbnail?.trigger("keydown", { key: " " });
-    expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).not.toBeNull();
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
+    expect(previewButton).not.toBeNull();
+    expect(previewButton?.tagName).toBe("BUTTON");
+    expect((previewButton as unknown as { type?: string } | null)?.type).toBe("button");
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Image preview keyboard idea，查看大图");
   });
 
   it("renders inline image switching controls on the media content without a separate preview button", () => {
@@ -3095,6 +3082,7 @@ describe("renderPoolView", () => {
     });
 
     const content = container.querySelector(".glitter-pool-stage__card-content--image") as unknown as FakeElement | null;
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
     const thumbnail = container.querySelector("img.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
     const previousButton = container.querySelector(".glitter-pool-stage__card-media-switch--previous") as unknown as FakeElement | null;
     const nextButton = container.querySelector(".glitter-pool-stage__card-media-switch--next") as unknown as FakeElement | null;
@@ -3102,12 +3090,13 @@ describe("renderPoolView", () => {
     const liveAnnouncement = container.querySelector(".glitter-pool-stage__card-media-live-announcement") as unknown as FakeElement | null;
 
     expect(content?.className).toContain("glitter-pool-stage__card-content--interactive");
+    expect(previewButton).not.toBeNull();
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Image gallery idea，查看大图（第 1 张，共 3 张）");
     expect(thumbnail).not.toBeNull();
     expect(content?.querySelector(".glitter-pool-stage__card-media-switcher")).not.toBeNull();
     expect(content?.querySelector("img.glitter-pool-stage__card-media-thumbnail")).toBe(thumbnail);
     expect(thumbnail?.src).toBe("app://local/assets/image-a.png");
     expect(thumbnail?.alt).toBe("Image gallery idea（第 1 张，共 3 张）");
-    expect(thumbnail?.getAttribute?.("aria-label")).toBe("Image gallery idea，查看大图（第 1 张，共 3 张）");
     expect(previousButton?.getAttribute?.("aria-label")).toBe("查看上一张图片");
     expect(nextButton?.getAttribute?.("aria-label")).toBe("查看下一张图片");
     expect(pagination?.textContent).toContain("1 / 3");
@@ -3119,7 +3108,7 @@ describe("renderPoolView", () => {
     nextButton?.click();
     expect(thumbnail?.src).toBe("app://local/assets/image-b.png");
     expect(thumbnail?.alt).toBe("Image gallery idea（第 2 张，共 3 张）");
-    expect(thumbnail?.getAttribute?.("aria-label")).toBe("Image gallery idea，查看大图（第 2 张，共 3 张）");
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Image gallery idea，查看大图（第 2 张，共 3 张）");
     expect(pagination?.textContent).toContain("2 / 3");
     expect(liveAnnouncement?.textContent).toBe("当前图片，第 2 张，共 3 张");
     expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).toBeNull();
@@ -3127,7 +3116,7 @@ describe("renderPoolView", () => {
     previousButton?.click();
     expect(thumbnail?.src).toBe("app://local/assets/image-a.png");
     expect(thumbnail?.alt).toBe("Image gallery idea（第 1 张，共 3 张）");
-    expect(thumbnail?.getAttribute?.("aria-label")).toBe("Image gallery idea，查看大图（第 1 张，共 3 张）");
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Image gallery idea，查看大图（第 1 张，共 3 张）");
     expect(pagination?.textContent).toContain("1 / 3");
     expect(liveAnnouncement?.textContent).toBe("当前图片，第 1 张，共 3 张");
   });
@@ -3180,18 +3169,18 @@ describe("renderPoolView", () => {
       onPoolSwitch() {}
     });
 
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
     const thumbnail = container.querySelector("img.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
     const nextButton = container.querySelector(".glitter-pool-stage__card-media-switch--next") as unknown as FakeElement | null;
+    expect(previewButton).not.toBeNull();
     expect(thumbnail).not.toBeNull();
-    expect(thumbnail?.getAttribute?.("role")).toBe("button");
-    expect(thumbnail?.getAttribute?.("tabindex")).toBe("0");
 
     nextButton?.click();
     nextButton?.click();
     expect(thumbnail?.src).toBe("app://local/assets/image-c.png");
-    expect(thumbnail?.getAttribute?.("aria-label")).toBe("Image gallery preview idea，查看大图（第 3 张，共 3 张）");
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Image gallery preview idea，查看大图（第 3 张，共 3 张）");
 
-    thumbnail?.click();
+    previewButton?.click();
 
     const previewImage = container.querySelector(".glitter-pool-stage__media-preview-image") as unknown as FakeElement | null;
     const previewPreviousButton = container.querySelector(".glitter-pool-stage__media-preview-nav--previous") as unknown as FakeElement | null;
@@ -3260,12 +3249,12 @@ describe("renderPoolView", () => {
       onPoolSwitch() {}
     });
 
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
     const thumbnail = container.querySelector("video.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
+    expect(previewButton).not.toBeNull();
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Video preview idea，查看大图视频");
     expect(thumbnail).not.toBeNull();
-    expect(thumbnail?.getAttribute?.("aria-label")).toBe("Video preview idea，查看大图视频");
-    expect(thumbnail?.getAttribute?.("role")).toBe("button");
-    expect(thumbnail?.getAttribute?.("tabindex")).toBe("0");
-    thumbnail?.click();
+    previewButton?.click();
 
     const previewVideo = container.querySelector(".glitter-pool-stage__media-preview-video") as unknown as FakeElement | null;
     expect(previewVideo).not.toBeNull();
@@ -6552,10 +6541,14 @@ describe("renderPoolView", () => {
       "border-radius: inherit;",
       "object-position: center;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__card-media-thumbnail[role=\"button\"]", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__card-media-hitbox", [
+      "width: 100%;",
+      "height: 100%;",
+      "display: grid;",
+      "place-items: center;",
       "cursor: zoom-in;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__card-media-thumbnail[role=\"button\"]:focus-visible", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__card-media-hitbox:focus-visible", [
       "outline: 1px solid color-mix(in srgb, var(--glitter-ui-border-strong) 72%, transparent);",
       "outline-offset: -1px;"
     ]);
@@ -6591,7 +6584,7 @@ describe("renderPoolView", () => {
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-pool-stage__card-media-clip:hover .glitter-pool-stage__card-media-switch,\n.glitter-pool-stage__card-media-thumbnail[role=\"button\"]:focus-visible ~ .glitter-pool-stage__card-media-switcher .glitter-pool-stage__card-media-switch,\n.glitter-pool-stage button.glitter-pool-stage__card-media-switch:focus-visible",
+      ".glitter-pool-stage__card-media-clip:hover .glitter-pool-stage__card-media-switch,\n.glitter-pool-stage__card-media-hitbox:focus-visible ~ .glitter-pool-stage__card-media-switcher .glitter-pool-stage__card-media-switch,\n.glitter-pool-stage button.glitter-pool-stage__card-media-switch:focus-visible",
       ["opacity: 1;", "pointer-events: auto;", "transform: translateY(-50%);"]
     );
     expectDeclarationsInSelectorBlock(

@@ -125,7 +125,7 @@ function normalizeSnapshot<TIdea, TPool>(value: unknown): PluginDataSnapshot<TId
   };
 }
 
-function normalizeLoaded<TIdea, TPool>(loaded: unknown): PluginDataShape<TIdea, TPool> {
+export function normalizeLoadedPluginData<TIdea, TPool>(loaded: unknown): PluginDataShape<TIdea, TPool> {
   if (!isRecord(loaded)) {
     return {
       settings: {},
@@ -159,7 +159,7 @@ export function createPluginDataStore<TIdea = unknown, TPool = unknown>(
   let writeQueue: Promise<void> = Promise.resolve();
 
   async function readCurrent(): Promise<PluginDataShape<TIdea, TPool>> {
-    return normalizeLoaded<TIdea, TPool>(await adapter.loadData());
+    return normalizeLoadedPluginData<TIdea, TPool>(await adapter.loadData());
   }
 
   async function persist(data: PluginDataShape<TIdea, TPool>): Promise<void> {

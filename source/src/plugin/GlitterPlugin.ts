@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 /**
  * Glitter 插件主入口，负责装配数据存储、领域服务、应用工作流与宿主视图。
  * 同时管理插件生命周期、命令注册、片段增强、视图导航与设置持久化。
@@ -49,11 +33,12 @@ import type { GlitterPluginSettings } from "../settings/settings";
 import { createIndexStore } from "../storage/index-store";
 import { createPluginDataStore, type PluginDataStore } from "../storage/plugin-data-store";
 import { createVaultFileStore } from "../storage/vault-file-store";
+import { resolveLegacyPluginDataPaths, shouldMigrateLegacyPluginData } from "./plugin-data-migration";
 import { GlitterMainView } from "../views/main-view";
 import type { PoolViewNavigationOptions } from "../views/pool-view-history";
 import { GlitterPoolView } from "../views/pool-view";
 import { GlitterSearchView } from "../views/search-view";
-import { GLITTER_ICON_ID, MAIN_VIEW_TYPE, POOL_VIEW_TYPE, SEARCH_VIEW_TYPE } from "./constants";
+import { GLITTER_ICON_ID, MAIN_VIEW_TYPE, PLUGIN_ID, POOL_VIEW_TYPE, SEARCH_VIEW_TYPE } from "./constants";
 
 // Glitter 视图识别辅助。
 const GLITTER_VIEW_TYPES = [MAIN_VIEW_TYPE, SEARCH_VIEW_TYPE, POOL_VIEW_TYPE] as const;
@@ -92,7 +77,12 @@ export default class GlitterPlugin extends Plugin {
 
   // 启动装配。
   override async onload(): Promise<void> {
-    this.dataStore = createPluginDataStore<Idea, Pool>(this);
+    this.dataStore = createPluginDataStore<Idea, Pool>({
+      loadData: async () => this.loadPluginDataWithLegacyMigration(),
+      saveData: async (data) => {
+        await this.saveData(data);
+      }
+    });
 
     const loaded = await this.dataStore.load();
     this.settings = mergePluginSettings(loaded.settings);
@@ -287,6 +277,37 @@ export default class GlitterPlugin extends Plugin {
     this.app.workspace.setActiveLeaf(leaf, { focus: true });
     this.app.workspace.revealLeaf(leaf);
     return leaf;
+  }
+
+  private async loadPluginDataWithLegacyMigration(): Promise<unknown> {
+    const currentData = await this.loadData();
+    const adapter = this.app?.vault?.adapter;
+    const configDir = this.app?.vault?.configDir;
+    const currentPluginId = this.manifest?.id ?? PLUGIN_ID;
+
+    if (!adapter || !configDir) {
+      return currentData;
+    }
+
+    for (const legacyPath of resolveLegacyPluginDataPaths(configDir, currentPluginId)) {
+      try {
+        if (!(await adapter.exists(legacyPath))) {
+          continue;
+        }
+
+        const legacyData = JSON.parse(await adapter.read(legacyPath));
+        if (!shouldMigrateLegacyPluginData(currentData, legacyData)) {
+          continue;
+        }
+
+        await this.saveData(legacyData);
+        return legacyData;
+      } catch {
+        continue;
+      }
+    }
+
+    return currentData;
   }
 
   // 片段聚焦与预览刷新。

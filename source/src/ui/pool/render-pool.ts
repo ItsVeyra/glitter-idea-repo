@@ -1,19 +1,3 @@
-/*
-Copyright (C) 2026 ItsVeyra
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-*/
-
 import { CREATE_NEW_POOL_ID, DEFAULT_POOL_ID, NEW_POOL_CREATED_ID, NEW_POOL_CREATED_LABEL } from "../../plugin/constants";
 import {
   DEFAULT_POOL_ROAM_PANEL_WIDTH_RATIO,
@@ -112,23 +96,16 @@ function createButton(
   return button;
 }
 
-function makeMediaPreviewable(
-  element: HTMLElement,
+function createMediaPreviewButton(
+  parent: HTMLElement,
   label: string,
   onClick: () => void
-): void {
-  element.setAttribute("role", "button");
-  element.setAttribute("tabindex", "0");
-  element.setAttribute("aria-label", label);
-  element.addEventListener("click", onClick);
-  element.addEventListener("keydown", (event) => {
-    const keyboardEvent = event as KeyboardEvent & { isComposing?: boolean };
-    if ((keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") || keyboardEvent.isComposing) {
-      return;
-    }
-    keyboardEvent.preventDefault();
-    onClick();
-  });
+): HTMLButtonElement {
+  const button = createNode(parent, "button", "glitter-pool-stage__card-media-hitbox") as HTMLButtonElement;
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", onClick);
+  return button;
 }
 
 function createAnchor(
@@ -3490,10 +3467,11 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
       if (card.contentKind === "image" && previewSrc) {
         const mediaStage = createNode(content, "div", "glitter-pool-stage__card-media-stage glitter-pool-stage__card-media-stage--image");
         const mediaClip = createNode(mediaStage, "div", "glitter-pool-stage__card-media-clip");
-        const thumbnail = createNode(mediaClip, "img", "glitter-pool-stage__card-media-thumbnail") as HTMLImageElement;
-        if (openPreview) {
-          makeMediaPreviewable(thumbnail, resolveCurrentImagePreviewLabel(), openPreview);
-        }
+        const mediaPreviewButton = openPreview
+          ? createMediaPreviewButton(mediaClip, resolveCurrentImagePreviewLabel(), openPreview)
+          : undefined;
+        const thumbnailHost = mediaPreviewButton ?? mediaClip;
+        const thumbnail = createNode(thumbnailHost, "img", "glitter-pool-stage__card-media-thumbnail") as HTMLImageElement;
         let pagination: HTMLElement | undefined;
         let liveAnnouncement: HTMLElement | undefined;
         const syncImageThumbnailState = (): void => {
@@ -3504,9 +3482,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
 
           thumbnail.src = currentImageUrl;
           thumbnail.alt = resolveCurrentImageThumbnailAlt();
-          if (openPreview) {
-            thumbnail.setAttribute("aria-label", resolveCurrentImagePreviewLabel());
-          }
+          mediaPreviewButton?.setAttribute("aria-label", resolveCurrentImagePreviewLabel());
           if (pagination) {
             pagination.textContent = `${currentImageIndex + 1} / ${imageThumbnailUrls.length}`;
           }
@@ -3550,7 +3526,11 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
       } else if (card.mediaThumbnailUrl && card.contentKind === "video") {
         const mediaStage = createNode(content, "div", "glitter-pool-stage__card-media-stage glitter-pool-stage__card-media-stage--video");
         const mediaClip = createNode(mediaStage, "div", "glitter-pool-stage__card-media-clip");
-        const thumbnail = createNode(mediaClip, "video", "glitter-pool-stage__card-media-thumbnail") as HTMLVideoElement;
+        const mediaPreviewButton = openPreview
+          ? createMediaPreviewButton(mediaClip, `${card.title}，查看大图视频`, openPreview)
+          : undefined;
+        const thumbnailHost = mediaPreviewButton ?? mediaClip;
+        const thumbnail = createNode(thumbnailHost, "video", "glitter-pool-stage__card-media-thumbnail") as HTMLVideoElement;
         thumbnail.setAttribute("src", card.mediaThumbnailUrl);
         thumbnail.setAttribute("muted", "");
         thumbnail.setAttribute("playsinline", "");
@@ -3561,9 +3541,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
         thumbnail.autoplay = true;
         thumbnail.loop = true;
         thumbnail.preload = "metadata";
-        if (openPreview) {
-          makeMediaPreviewable(thumbnail, `${card.title}，查看大图视频`, openPreview);
-        } else {
+        if (!mediaPreviewButton) {
           thumbnail.setAttribute("aria-label", `${card.title} 预览视频`);
         }
       }

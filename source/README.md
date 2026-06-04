@@ -24,4 +24,4 @@ The community-plugin release files stay in the repository root:
 - `../main.js`
 - `../styles.css`
 
-This workspace keeps `manifest.json` and `styles.css` mirrored for source review. `npm run build` writes the reproducible review bundle to `dist/main.js`.
+This workspace keeps `manifest.json`, `main.js`, and `styles.css` mirrored for source review. `npm run build` refreshes the local review bundle at `main.js`, and `npm run release:local` exports a sibling `glitter-plugin-release/` directory when local release verification is needed.

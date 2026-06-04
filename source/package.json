@@ -1,14 +1,19 @@
 {
   "name": "GlitterIdea",
   "version": "0.1.13",
-  "private": true,
-  "description": "Minimal buildable source workspace for Obsidian community plugin review",
-  "main": "dist/main.js",
+  "description": "Lightweight idea capture for Obsidian before note creation",
+  "main": "main.js",
   "scripts": {
+    "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
+    "release:local": "npm run build && node scripts/export-release-package.mjs",
+    "preview:dev": "node esbuild.config.mjs preview",
+    "preview:build": "node esbuild.config.mjs preview production",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "obsidian:test-vault": "node scripts/reload-obsidian-test-vault.mjs",
+    "obsidian:test-vault:link": "node scripts/link-obsidian-test-vault-plugin.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",

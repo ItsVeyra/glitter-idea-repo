@@ -148,6 +148,124 @@ describe("view command registration", () => {
     expect(plugin.settings.openMainViewOnNextLoad).toBe(false);
   });
 
+  it("migrates legacy plugin-folder data during onload when the current plugin id only has a fresh empty shell", async () => {
+    const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
+    const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
+    const currentData = {
+      GlitterIdeaSettings: {
+        ...DEFAULT_SETTINGS,
+        hasCompletedFirstUse: false
+      },
+      GlitterIdeaSnapshot: {
+        version: 1,
+        ideas: [],
+        pools: [
+          {
+            id: DEFAULT_POOL_ID,
+            name: DEFAULT_POOL_LABEL,
+            isDefault: true,
+            createdAt: "2026-06-04T00:00:00.000Z",
+            updatedAt: "2026-06-04T00:00:00.000Z"
+          }
+        ],
+        lastSelectedPoolId: null
+      }
+    };
+    const legacyData = {
+      glitterIdeaSettings: {
+        ...DEFAULT_SETTINGS,
+        hasCompletedFirstUse: true
+      },
+      glitterIdeaSnapshot: {
+        version: 1,
+        ideas: [
+          {
+            id: "idea-legacy",
+            title: "旧灵感",
+            body: "body",
+            poolId: DEFAULT_POOL_ID,
+            contentType: "text",
+            sourceType: "quick-capture",
+            attachmentPaths: [],
+            tags: [],
+            quoted: false,
+            fileCreated: false,
+            inbox: true,
+            snippetRefs: [],
+            createdAt: "2026-06-04T00:00:00.000Z",
+            updatedAt: "2026-06-04T00:00:00.000Z"
+          }
+        ],
+        pools: [
+          {
+            id: DEFAULT_POOL_ID,
+            name: DEFAULT_POOL_LABEL,
+            isDefault: true,
+            createdAt: "2026-06-04T00:00:00.000Z",
+            updatedAt: "2026-06-04T00:00:00.000Z"
+          }
+        ],
+        lastSelectedPoolId: null
+      }
+    };
+    const loadData = vi.fn(async () => currentData);
+    const saveData = vi.fn(async () => undefined);
+    const exists = vi.fn(async (path: string) => path === ".obsidian/plugins/glitter-idea-plugin/data.json");
+    const read = vi.fn(async () => JSON.stringify(legacyData));
+
+    plugin.settings = DEFAULT_SETTINGS;
+    plugin.loadData = loadData;
+    plugin.saveData = saveData;
+    plugin.registerView = vi.fn();
+    plugin.addSettingTab = vi.fn();
+    plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.activateMainView = vi.fn(async () => undefined);
+    plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
+    (plugin as unknown as { manifest: GlitterPlugin["manifest"] }).manifest = {
+      id: "glitter-idea"
+    } as GlitterPlugin["manifest"];
+
+    (plugin as unknown as {
+      app: {
+        workspace: object;
+        vault: {
+          configDir: string;
+          adapter: {
+            exists: typeof exists;
+            read: typeof read;
+          };
+        };
+      };
+    }).app = {
+      workspace: {
+        layoutReady: true,
+        onLayoutReady: vi.fn((callback: () => void) => callback()),
+        getMostRecentLeaf: vi.fn(() => null),
+        getLeavesOfType: vi.fn(() => []),
+        getLeaf: vi.fn(() => ({ setViewState: vi.fn(async () => undefined) })),
+        setActiveLeaf: vi.fn(),
+        revealLeaf: vi.fn(),
+        detachLeavesOfType: vi.fn()
+      },
+      vault: {
+        configDir: ".obsidian",
+        adapter: {
+          exists,
+          read
+        }
+      }
+    };
+
+    await plugin.onload();
+
+    expect(loadData).toHaveBeenCalled();
+    expect(exists).toHaveBeenCalledWith(".obsidian/plugins/glitter/data.json");
+    expect(exists).toHaveBeenCalledWith(".obsidian/plugins/glitter-idea-plugin/data.json");
+    expect(read).toHaveBeenCalledWith(".obsidian/plugins/glitter-idea-plugin/data.json");
+    expect(saveData).toHaveBeenCalledWith(legacyData);
+    expect(plugin.settings.hasCompletedFirstUse).toBe(true);
+  });
+
   it("passes idea existence and pool-label resolvers into the markdown snippet postprocessor", async () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const addRibbonIcon = vi.fn(() => ({ addClass: vi.fn() }));
