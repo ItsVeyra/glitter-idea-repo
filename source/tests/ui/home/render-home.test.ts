@@ -2287,6 +2287,103 @@ describe("renderHomeView", () => {
     }
   });
 
+  it("keeps populated stage height stable while populated chrome is still measured in normal flow", () => {
+    class ResizeObserverStub {
+      static instances: ResizeObserverStub[] = [];
+
+      constructor(private readonly callback: ResizeObserverCallback) {
+        ResizeObserverStub.instances.push(this);
+      }
+
+      observe(): void {}
+
+      disconnect(): void {}
+
+      trigger(): void {
+        this.callback([], this as unknown as ResizeObserver);
+      }
+    }
+
+    const previousResizeObserver = (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver;
+    const previousGetComputedStyle = (globalThis as typeof globalThis & { getComputedStyle?: unknown }).getComputedStyle;
+    (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver =
+      ResizeObserverStub as unknown as typeof ResizeObserver;
+    (globalThis as typeof globalThis & { getComputedStyle?: unknown }).getComputedStyle = ((element: {
+      className?: string;
+    }) => {
+      const className = typeof element.className === "string" ? element.className : "";
+      if (
+        className.includes("glitter-home-stage__topbar")
+        || className.includes("glitter-home-stage__action-bar--populated")
+      ) {
+        return { position: "static" };
+      }
+
+      return { position: "" };
+    }) as unknown as typeof getComputedStyle;
+
+    try {
+      const container = createContainer();
+
+      renderHomeView(container, buildHomeViewState("home-populated"), {
+        onPrimaryAction() {},
+        onSecondaryAction() {},
+        onPoolSelect() {},
+        onSearchSubmit() {}
+      });
+
+      const root = container.querySelector(".glitter-plugin-root") as
+        | (HTMLElement & { style: FakeStyle; setRectSize?: (rectWidth: number, rectHeight: number) => void })
+        | null;
+      const topbar = container.querySelector(".glitter-home-stage__topbar") as
+        | (HTMLElement & { setRectSize?: (rectWidth: number, rectHeight: number) => void })
+        | null;
+      const actionBar = container.querySelector(".glitter-home-stage__action-bar--populated") as
+        | (HTMLElement & { setRectSize?: (rectWidth: number, rectHeight: number) => void })
+        | null;
+      const orbStage = container.querySelector(".glitter-home-stage__pool-stage") as
+        | (HTMLElement & { style: FakeStyle })
+        | null;
+
+      expect(root).not.toBeNull();
+      expect(topbar).not.toBeNull();
+      expect(actionBar).not.toBeNull();
+      expect(orbStage).not.toBeNull();
+
+      root!.style.setProperty("width", "1600px");
+      topbar!.setRectSize?.(1600, 42);
+      actionBar!.setRectSize?.(360, 60);
+
+      const syncRootHeightToInFlowChrome = (): void => {
+        const stageMinHeight = orbStage!.style.getPropertyValue("minHeight").trim();
+        const stageHeight = stageMinHeight.endsWith("px") ? parsePixelStyle(stageMinHeight) : 420;
+        root!.setRectSize?.(1600, stageHeight + 42 + 60 + 14);
+      };
+
+      syncRootHeightToInFlowChrome();
+      const observer = ResizeObserverStub.instances.at(-1);
+      expect(observer).toBeDefined();
+
+      observer!.trigger();
+      const firstHeight = getPopulatedStageSize(container).height;
+
+      syncRootHeightToInFlowChrome();
+      observer!.trigger();
+      const secondHeight = getPopulatedStageSize(container).height;
+
+      syncRootHeightToInFlowChrome();
+      observer!.trigger();
+      const thirdHeight = getPopulatedStageSize(container).height;
+
+      expect(firstHeight).toBe(420);
+      expect(secondHeight).toBe(firstHeight);
+      expect(thirdHeight).toBe(firstHeight);
+    } finally {
+      (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver = previousResizeObserver;
+      (globalThis as typeof globalThis & { getComputedStyle?: unknown }).getComputedStyle = previousGetComputedStyle;
+    }
+  });
+
   it("keeps the populated orb cluster centered while exposing viewport-wide drag bounds without page scrolling", () => {
     class ResizeObserverStub {
       static instances: ResizeObserverStub[] = [];

@@ -449,6 +449,40 @@ function findHomeStageRoot(orbStage: HTMLElement): HTMLElement | null {
   return null;
 }
 
+function isElementFloatingOutOfFlow(element: HTMLElement | null, fallback: boolean): boolean {
+  if (!element) {
+    return false;
+  }
+
+  const inlinePosition = element.style.getPropertyValue("position").trim();
+  if (inlinePosition === "absolute" || inlinePosition === "fixed") {
+    return true;
+  }
+  if (inlinePosition.length > 0) {
+    return false;
+  }
+
+  const getComputedStyleFn = (globalThis as typeof globalThis & {
+    getComputedStyle?: (target: Element) => { position?: string };
+  }).getComputedStyle;
+
+  if (typeof getComputedStyleFn === "function") {
+    try {
+      const computedPosition = getComputedStyleFn(element as unknown as Element)?.position?.trim() ?? "";
+      if (computedPosition === "absolute" || computedPosition === "fixed") {
+        return true;
+      }
+      if (computedPosition.length > 0) {
+        return false;
+      }
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+}
+
 function getHomeStageViewportSize(orbStage: HTMLElement): { width: number; height: number } {
   const root = findHomeStageRoot(orbStage);
   if (!root) {
@@ -477,7 +511,9 @@ function getHomeStageViewportSize(orbStage: HTMLElement): { width: number; heigh
   const rootClassNames = typeof root.className === "string" ? root.className.split(/\s+/) : [];
   const actionBarClassNames = typeof actionBar?.className === "string" ? actionBar.className.split(/\s+/) : [];
   const isPopulatedStage = rootClassNames.includes("glitter-home-stage--populated");
-  const isFloatingPopulatedActionBar = actionBarClassNames.includes("glitter-home-stage__action-bar--populated");
+  const isFloatingPopulatedTopbar = isPopulatedStage && isElementFloatingOutOfFlow(topbar, true);
+  const isFloatingPopulatedActionBar = actionBarClassNames.includes("glitter-home-stage__action-bar--populated")
+    && isElementFloatingOutOfFlow(actionBar, true);
 
   const rootStyle = root.style;
   const paddingTop = parsePixelLength(rootStyle.getPropertyValue("padding-top")) ?? (isPopulatedStage ? 0 : 14);
@@ -485,7 +521,7 @@ function getHomeStageViewportSize(orbStage: HTMLElement): { width: number; heigh
   const paddingLeft = parsePixelLength(rootStyle.getPropertyValue("padding-left")) ?? 28;
   const paddingRight = parsePixelLength(rootStyle.getPropertyValue("padding-right")) ?? 28;
   const gap = parsePixelLength(rootStyle.getPropertyValue("gap")) ?? (isPopulatedStage ? 0 : 14);
-  const layoutTopbarHeight = isPopulatedStage ? 0 : topbarSize.height;
+  const layoutTopbarHeight = isFloatingPopulatedTopbar ? 0 : topbarSize.height;
   const layoutActionBarHeight = isFloatingPopulatedActionBar ? 0 : actionBarSize.height;
   const layoutGapCount = actionBar && !isFloatingPopulatedActionBar ? 2 : isPopulatedStage ? 0 : 1;
 
