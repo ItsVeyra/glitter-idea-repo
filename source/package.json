@@ -1,6 +1,6 @@
 {
   "name": "GlitterIdea",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Lightweight idea capture for Obsidian before note creation",
   "main": "main.js",
   "scripts": {
