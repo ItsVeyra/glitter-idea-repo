@@ -13,6 +13,9 @@ permissions:
   id-token: write
   attestations: write
 
+env:
+  TZ: Asia/Shanghai
+
 jobs:
   release:
     name: Build, attest, and publish release assets
