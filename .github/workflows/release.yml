@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish, for example 0.1.16"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    name: Build, attest, and publish release assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+
+      - name: Install dependencies
+        working-directory: source
+        run: npm ci
+
+      - name: Run tests
+        working-directory: source
+        run: npm run test
+
+      - name: Run typecheck
+        working-directory: source
+        run: npm run check
+
+      - name: Build release bundle
+        working-directory: source
+        run: npm run release:local
+
+      - name: Verify release version matches tag
+        working-directory: source
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          node -e "const fs = require('fs'); const manifest = JSON.parse(fs.readFileSync('../glitter-plugin-release/manifest.json', 'utf8')); if (manifest.version !== process.env.RELEASE_TAG) { throw new Error(`manifest version ${manifest.version} does not match release tag ${process.env.RELEASE_TAG}`); }"
+
+      - name: Generate artifact attestations
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            glitter-plugin-release/manifest.json
+            glitter-plugin-release/main.js
+            glitter-plugin-release/styles.css
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes "Glitter $RELEASE_TAG"
+          gh release upload "$RELEASE_TAG" \
+            glitter-plugin-release/manifest.json \
+            glitter-plugin-release/main.js \
+            glitter-plugin-release/styles.css \
+            --clobber
