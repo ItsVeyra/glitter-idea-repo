@@ -25,7 +25,9 @@ function clearContainer(containerEl: HTMLElement): void {
     return;
   }
 
-  containerEl.innerHTML = "";
+  while (containerEl.firstChild) {
+    containerEl.removeChild(containerEl.firstChild);
+  }
 }
 
 export function createPoolViewRoamController(deps: { canvasHost?: PoolRoamCanvasHost } = {}): PoolViewRoamController {

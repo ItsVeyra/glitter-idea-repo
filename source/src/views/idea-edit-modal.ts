@@ -75,7 +75,7 @@ function normalizeEditableSourceUrl(value?: string): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function clearElement(element: { empty?: () => void; clear?: () => void; innerHTML?: string }): void {
+function clearElement(element: HTMLElement & { empty?: () => void; clear?: () => void }): void {
   if (typeof element.empty === "function") {
     element.empty();
     return;
@@ -86,8 +86,8 @@ function clearElement(element: { empty?: () => void; clear?: () => void; innerHT
     return;
   }
 
-  if ("innerHTML" in element) {
-    element.innerHTML = "";
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
   }
 }
 
@@ -1046,7 +1046,7 @@ export class IdeaEditModal extends Modal {
     inputEl.type = "file";
     inputEl.accept = options.accept ?? "image/*,video/*";
     inputEl.multiple = options.multiple ?? true;
-    inputEl.style.display = "none";
+    inputEl.hidden = true;
 
     this.contentEl?.appendChild?.(inputEl);
 

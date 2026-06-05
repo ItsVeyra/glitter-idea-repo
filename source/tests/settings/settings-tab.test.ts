@@ -21,6 +21,7 @@ type DetailRecord = {
 type SettingRecord = {
   name: string;
   isHeading?: boolean;
+  classes?: string[];
   sectionTitle?: string;
   group?: "common" | "advanced";
   desc?: string;
@@ -207,6 +208,7 @@ vi.mock("obsidian", () => {
       this.container = containerEl as MockElement;
       this.record = {
         name: "",
+        classes: [],
         sectionTitle: this.container.sectionTitle,
         group: this.container.settingGroup,
         dropdownOptions: []
@@ -225,6 +227,11 @@ vi.mock("obsidian", () => {
 
     setDesc(desc: string): this {
       this.record.desc = desc;
+      return this;
+    }
+
+    setClass(className: string): this {
+      this.record.classes?.push(className);
       return this;
     }
 
@@ -420,8 +427,13 @@ describe("GlitterSettingTab", () => {
     const tab = new GlitterSettingTab({} as never, plugin as never);
     tab.display();
 
-    expect(obsidianMockState.headings).toEqual(["Glitter Settings"]);
-    expect(obsidianMockState.settings.filter((setting) => setting.isHeading).map((setting) => setting.name)).toEqual([
+    const headingSettings = obsidianMockState.settings.filter((setting) => setting.isHeading);
+
+    expect(headingSettings[0]).toMatchObject({
+      name: "Glitter Settings",
+      classes: ["glitter-settings-tab__page-title"]
+    });
+    expect(headingSettings.slice(1).map((setting) => setting.name)).toEqual([
       "Workspace & Entry",
       "Quick Capture",
       "AI & Quick Capture Polish",
@@ -453,11 +465,20 @@ describe("GlitterSettingTab", () => {
     const tab = new GlitterSettingTab({} as never, plugin as never);
     tab.display();
 
+    const headingSettings = obsidianMockState.settings.filter((setting) => setting.isHeading);
+    const pageTitleSetting = headingSettings.find((setting) =>
+      setting.classes?.includes("glitter-settings-tab__page-title")
+    );
+
     expect(obsidianMockState.elements.filter((element) => element.cls === "glitter-settings-tab__header")).toHaveLength(1);
-    expect(obsidianMockState.elements.filter((element) => element.cls === "glitter-settings-tab__page-title")).toHaveLength(1);
+    expect(pageTitleSetting).toMatchObject({
+      name: "Glitter 设置",
+      isHeading: true
+    });
     expect(obsidianMockState.elements.filter((element) => element.cls === "glitter-settings-tab__page-subtitle")).toHaveLength(0);
     expect(obsidianMockState.elements.filter((element) => element.cls === "glitter-settings-tab__section")).toHaveLength(9);
-    expect(obsidianMockState.settings.filter((setting) => setting.isHeading)).toHaveLength(9);
+    expect(headingSettings).toHaveLength(10);
+    expect(obsidianMockState.elements.some((element) => element.tag === "h2")).toBe(false);
     expect(obsidianMockState.elements.some((element) => element.tag === "h3")).toBe(false);
     expect(stylesCss).toContain(".glitter-settings-tab__header,");
     expect(stylesCss).toContain(".glitter-settings-tab__section {");
@@ -651,13 +672,15 @@ describe("GlitterSettingTab", () => {
     tab.display();
 
     const getSetting = (name: string) => obsidianMockState.settings.find((setting) => setting.name === name);
+    const sectionHeadingNames = obsidianMockState.settings
+      .filter((setting) => setting.isHeading)
+      .map((setting) => setting.name)
+      .slice(1);
 
-    expect(obsidianMockState.settings.filter((setting) => setting.isHeading).map((setting) => setting.name)).toEqual(
+    expect(sectionHeadingNames).toEqual(
       expect.arrayContaining(["Quick Capture", "AI & Quick Capture Polish", "Snippets & Selection"])
     );
-    expect(
-      obsidianMockState.settings.filter((setting) => setting.isHeading).map((setting) => setting.name).slice(1, 4)
-    ).toEqual(["Quick Capture", "AI & Quick Capture Polish", "Snippets & Selection"]);
+    expect(sectionHeadingNames.slice(1, 4)).toEqual(["Quick Capture", "AI & Quick Capture Polish", "Snippets & Selection"]);
 
     const enableAiSetting = getSetting("Enable AI");
     expect(enableAiSetting).toMatchObject({
@@ -1096,8 +1119,13 @@ describe("GlitterSettingTab", () => {
     const tab = new GlitterSettingTab({} as never, plugin as never);
     tab.display();
 
-    expect(obsidianMockState.headings).toEqual(["Glitter 设置"]);
-    expect(obsidianMockState.settings.filter((setting) => setting.isHeading).map((setting) => setting.name)).toEqual([
+    const headingSettings = obsidianMockState.settings.filter((setting) => setting.isHeading);
+
+    expect(headingSettings[0]).toMatchObject({
+      name: "Glitter 设置",
+      classes: ["glitter-settings-tab__page-title"]
+    });
+    expect(headingSettings.slice(1).map((setting) => setting.name)).toEqual([
       "工作区与入口",
       "快速记录",
       "AI 与快速记录润色",

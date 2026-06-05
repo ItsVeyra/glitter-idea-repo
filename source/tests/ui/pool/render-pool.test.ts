@@ -54,10 +54,62 @@ type FakeEventPayload = Record<string, unknown> & {
   stopPropagation?: () => void;
 };
 
+function toKebabCase(value: string): string {
+  return value.startsWith("--") ? value : value.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+}
+
+function toCamelCase(value: string): string {
+  if (value.startsWith("--")) {
+    return value;
+  }
+
+  return value.replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase());
+}
+
+class FakeStyle {
+  public setCssStylesCallCount = 0;
+  public setCssPropsCallCount = 0;
+
+  setProperty(name: string, value: string): void {
+    const propertyBag = this as unknown as Record<string, string>;
+    propertyBag[name] = value;
+    propertyBag[toKebabCase(name)] = value;
+    propertyBag[toCamelCase(name)] = value;
+  }
+
+  removeProperty(name: string): string {
+    const propertyBag = this as unknown as Record<string, string>;
+    const currentValue = this.getPropertyValue(name);
+    propertyBag[name] = "";
+    propertyBag[toKebabCase(name)] = "";
+    propertyBag[toCamelCase(name)] = "";
+    return currentValue;
+  }
+
+  setCssStyles(styles: Record<string, string>): void {
+    this.setCssStylesCallCount += 1;
+    Object.entries(styles).forEach(([name, value]) => {
+      this.setProperty(name, value);
+    });
+  }
+
+  setCssProps(props: Record<string, string>): void {
+    this.setCssPropsCallCount += 1;
+    Object.entries(props).forEach(([name, value]) => {
+      this.setProperty(name, value);
+    });
+  }
+
+  getPropertyValue(name: string): string {
+    const propertyBag = this as unknown as Record<string, string>;
+    return propertyBag[name] ?? propertyBag[toCamelCase(name)] ?? propertyBag[toKebabCase(name)] ?? "";
+  }
+}
+
 class FakeElement {
   public children: FakeElement[] = [];
   public parent: FakeElement | null = null;
-  public style: Record<string, string> = {};
+  public style: FakeStyle & Record<string, string> = new FakeStyle() as FakeStyle & Record<string, string>;
   public dataset: Record<string, string> = {};
   public type = "";
   public checked = false;
@@ -92,6 +144,10 @@ class FakeElement {
     this.ownerDocument.configureElement?.(this);
   }
 
+  get firstChild(): FakeElement | null {
+    return this.children[0] ?? null;
+  }
+
   appendChild(child: FakeElement): FakeElement {
     if (child.parent) {
       const previousIndex = child.parent.children.indexOf(child);
@@ -102,6 +158,14 @@ class FakeElement {
     child.parent = this;
     this.children.push(child);
     return child;
+  }
+
+  setCssStyles(styles: Record<string, string>): void {
+    this.style.setCssStyles(styles);
+  }
+
+  setCssProps(props: Record<string, string>): void {
+    this.style.setCssProps(props);
   }
 
   addEventListener(
@@ -253,6 +317,10 @@ class FakeElement {
   }
 
   set innerHTML(_value: string) {
+    if (this.ownerDocument.throwOnInnerHtmlAssignment) {
+      throw new Error("innerHTML assignment is disabled in this test");
+    }
+
     this.children = [];
     this.textContent = "";
   }
@@ -262,6 +330,7 @@ class FakeDocument {
   public readonly selection = new FakeSelection();
   public readonly body: FakeElement;
   public configureElement?: (element: FakeElement) => void;
+  public throwOnInnerHtmlAssignment = false;
 
   private readonly listeners = new Map<string, Array<(event?: FakeEventPayload) => void>>();
 
@@ -344,9 +413,13 @@ function matchesSelector(node: FakeElement, selector: string): boolean {
   return true;
 }
 
-function createContainer(options?: { configureElement?: (element: FakeElement) => void }): HTMLElement {
+function createContainer(options?: {
+  configureElement?: (element: FakeElement) => void;
+  throwOnInnerHtmlAssignment?: boolean;
+}): HTMLElement {
   const document = new FakeDocument();
   document.configureElement = options?.configureElement;
+  document.throwOnInnerHtmlAssignment = options?.throwOnInnerHtmlAssignment ?? false;
   const container = document.createElement("div");
   document.body.appendChild(container);
   return container as unknown as HTMLElement;
@@ -531,6 +604,26 @@ describe("renderPoolView", () => {
     expect(
       (container.querySelectorAll(".glitter-pool-stage__card-menu-shell")[0] as unknown as FakeElement | undefined)?.parent?.className
     ).toContain("glitter-pool-stage__card-surface");
+  });
+
+  it("clears stale container children without falling back to innerHTML when empty is unavailable", () => {
+    const container = createContainer({ throwOnInnerHtmlAssignment: true });
+    const ownerDocument = (container as unknown as FakeElement).ownerDocument as FakeDocument;
+    const staleNode = ownerDocument.createElement("div");
+    staleNode.className = "stale-node";
+    (container as unknown as FakeElement).appendChild(staleNode);
+
+    expect(() => {
+      renderPoolView(container, createBrowseState(), {
+        onBack() {},
+        onItemSelect() {},
+        onCreateIdea() {}
+      });
+    }).not.toThrow();
+
+    expect(staleNode.parent).toBeNull();
+    expect(container.querySelector(".stale-node")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__topbar")).not.toBeNull();
   });
 
   it("renders roam source handles with a divider-centered seam trace and hover actions without duplicated boundary anchors", () => {
@@ -753,6 +846,8 @@ describe("renderPoolView", () => {
 
     expect((workbench as FakeElement).style.gridTemplateColumns).toBe("minmax(0, 40.0000%) minmax(0, 60.0000%)");
     expect((divider as FakeElement).style.left).toBe("40.0000%");
+    expect((workbench as FakeElement).style.setCssStylesCallCount).toBeGreaterThan(0);
+    expect((divider as FakeElement).style.setCssStylesCallCount).toBeGreaterThan(0);
 
     divider?.trigger("mousedown", { clientX: 80, button: 0 });
     expect((workbench as FakeElement).style.gridTemplateColumns).toBe("minmax(0, 20.0000%) minmax(0, 80.0000%)");
@@ -1714,6 +1809,7 @@ describe("renderPoolView", () => {
       expect(cardGridShell?.children[1]).toBe(indicator);
       expect(cardGrid?.className).not.toContain("glitter-pool-stage__card-grid--scrolling");
       expect((indicator?.style as Record<string, string>)["--glitter-pool-scroll-indicator-center"]).toBe("7.00px");
+      expect((indicator as FakeElement).style.setCssPropsCallCount).toBeGreaterThan(0);
 
       cardGrid?.setScrollMetrics(900, 300);
       cardGrid!.scrollTop = 300;

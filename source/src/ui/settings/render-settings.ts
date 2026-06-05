@@ -13,7 +13,9 @@ function clearContainer(containerEl: HTMLElement): void {
     return;
   }
 
-  containerEl.innerHTML = "";
+  while (containerEl.firstChild) {
+    containerEl.removeChild(containerEl.firstChild);
+  }
 }
 
 function createNode(parent: HTMLElement, tag: string, className?: string, text?: string): HTMLElement {

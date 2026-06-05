@@ -86,6 +86,10 @@ class FakeElement {
     this.clear();
   }
 
+  setCssStyles(styles: Record<string, string>): void {
+    Object.assign(this.style, styles);
+  }
+
   createEl(tag: string, options?: { cls?: string; text?: string }): FakeElement {
     const node = new FakeElement();
     node.type = tag;

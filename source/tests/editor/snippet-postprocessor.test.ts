@@ -253,14 +253,14 @@ describe("enhanceGlitterSnippets", () => {
 
     expect(snippet.footer.textContent).toBe("⚠ 来自 Glitter · 请重新搜索并替换该片段");
     expect(snippet.footer.dataset.glitterInvalidSource).toBe("true");
-    expect(snippet.footer.dataset.glitterOriginalHtml).toBe("✨ 来自 Glitter · 默认池");
+    expect(snippet.footer.dataset.glitterOriginalText).toBe("✨ 来自 Glitter · 默认池");
 
     ideaStillExists = true;
     await enhanceGlitterSnippets(container as any, onSnippetClick, resolveIdeaExists);
 
     expect(snippet.footer.textContent).toBe("✨ 来自 Glitter · 默认池");
     expect(snippet.footer.dataset.glitterInvalidSource).toBeUndefined();
-    expect(snippet.footer.dataset.glitterOriginalHtml).toBeUndefined();
+    expect(snippet.footer.dataset.glitterOriginalText).toBeUndefined();
   });
 
   it("refreshes the callout footer pool label when the idea moves pools", async () => {

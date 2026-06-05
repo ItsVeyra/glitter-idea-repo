@@ -92,17 +92,17 @@ function syncInvalidSourceCopy(node: HTMLElement, isValid: boolean): void {
   }
 
   if (isValid) {
-    const originalHtml = sourceNode.dataset.glitterOriginalHtml;
-    if (originalHtml !== undefined) {
-      sourceNode.innerHTML = originalHtml;
-      delete sourceNode.dataset.glitterOriginalHtml;
+    const originalText = sourceNode.dataset.glitterOriginalText;
+    if (originalText !== undefined) {
+      sourceNode.textContent = originalText;
+      delete sourceNode.dataset.glitterOriginalText;
     }
     delete sourceNode.dataset.glitterInvalidSource;
     return;
   }
 
-  if (sourceNode.dataset.glitterOriginalHtml === undefined) {
-    sourceNode.dataset.glitterOriginalHtml = sourceNode.innerHTML;
+  if (sourceNode.dataset.glitterOriginalText === undefined) {
+    sourceNode.dataset.glitterOriginalText = sourceNode.textContent ?? "";
   }
 
   sourceNode.textContent = INVALID_SNIPPET_SOURCE_COPY;

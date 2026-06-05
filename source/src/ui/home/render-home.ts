@@ -9,7 +9,62 @@ import { HOME_FIELD_VIEW_LABELS, HOME_FIELD_VIEW_OPTIONS, type HomeViewState } f
 import { resolveHomeOrbRgb, resolveHomeOrbRingRgb } from "./home-orb-tone";
 import { renderHomeSpringRainStage } from "./home-spring-rain-stage";
 
-// 基础 DOM、类名与内联编辑工具。
+type StyleWritableElement = HTMLElement & {
+  setCssStyles?: (styles: Record<string, string>) => void;
+  setCssProps?: (props: Record<string, string>) => void;
+  style: CSSStyleDeclaration & {
+    setCssStyles?: (styles: Record<string, string>) => void;
+    setCssProps?: (props: Record<string, string>) => void;
+  };
+};
+
+function camelCaseToKebabCase(name: string): string {
+  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+}
+
+function setElementStyles(targetEl: HTMLElement, styles: Record<string, string>): void {
+  const writableTarget = targetEl as StyleWritableElement;
+  const targetStyle = writableTarget.style;
+  const targetSetCssStyles = writableTarget.setCssStyles;
+  const styleSetCssStyles = targetStyle.setCssStyles;
+
+  if (typeof targetSetCssStyles === "function") {
+    targetSetCssStyles.call(writableTarget, styles);
+    return;
+  }
+
+  if (typeof styleSetCssStyles === "function") {
+    styleSetCssStyles.call(targetStyle, styles);
+    return;
+  }
+
+  Object.entries(styles).forEach(([name, value]) => {
+    targetStyle.setProperty(camelCaseToKebabCase(name), value);
+  });
+}
+
+function setElementCssProps(targetEl: HTMLElement, props: Record<string, string>): void {
+  const writableTarget = targetEl as StyleWritableElement;
+  const targetStyle = writableTarget.style;
+  const targetSetCssProps = writableTarget.setCssProps;
+  const styleSetCssProps = targetStyle.setCssProps;
+
+  if (typeof targetSetCssProps === "function") {
+    targetSetCssProps.call(writableTarget, props);
+    return;
+  }
+
+  if (typeof styleSetCssProps === "function") {
+    styleSetCssProps.call(targetStyle, props);
+    return;
+  }
+
+  Object.entries(props).forEach(([name, value]) => {
+    targetStyle.setProperty(name, value);
+  });
+}
+
+// 基础 DOM、类名、样式写入与内联编辑工具。
 function clearContainer(containerEl: HTMLElement): void {
   disconnectPopulatedOrbLayoutObservers(containerEl);
 
@@ -19,7 +74,9 @@ function clearContainer(containerEl: HTMLElement): void {
     return;
   }
 
-  containerEl.innerHTML = "";
+  while (containerEl.firstChild) {
+    containerEl.removeChild(containerEl.firstChild);
+  }
 }
 
 function createNode(parent: HTMLElement, tag: string, className?: string, text?: string): HTMLElement {
@@ -786,20 +843,26 @@ function updateOrbBackdropSample(orbButton: HTMLButtonElement): void {
   const shiftY = parsePixelLength(orbButton.style.getPropertyValue("--glitter-home-orb-shift-y")) ?? 0;
 
   if (centerX === null || centerY === null || diameter === null) {
-    orbButton.style.setProperty("--glitter-home-stage-sample-x", "0px");
-    orbButton.style.setProperty("--glitter-home-stage-sample-y", "0px");
+    setElementCssProps(orbButton, {
+      "--glitter-home-stage-sample-x": "0px",
+      "--glitter-home-stage-sample-y": "0px"
+    });
     return;
   }
 
   const sampleX = centerX - diameter / 2 + shiftX + shellInset;
   const sampleY = centerY - diameter / 2 + shiftY + shellInset;
-  orbButton.style.setProperty("--glitter-home-stage-sample-x", `${sampleX.toFixed(3)}px`);
-  orbButton.style.setProperty("--glitter-home-stage-sample-y", `${sampleY.toFixed(3)}px`);
+  setElementCssProps(orbButton, {
+    "--glitter-home-stage-sample-x": `${sampleX.toFixed(3)}px`,
+    "--glitter-home-stage-sample-y": `${sampleY.toFixed(3)}px`
+  });
 }
 
 function applyOrbCenterPosition(orbButton: HTMLButtonElement, centerX: number, centerY: number): void {
-  orbButton.style.left = `${centerX}px`;
-  orbButton.style.top = `${centerY}px`;
+  setElementStyles(orbButton, {
+    left: `${centerX}px`,
+    top: `${centerY}px`
+  });
   updateOrbBackdropSample(orbButton);
 }
 
@@ -813,27 +876,35 @@ function applyOrbLayoutSize(
   const metrics = getHomeOrbTextMetrics(diameter, isPrimaryOrb);
   const shellDiameter = Math.max(0, diameter - metrics.shellInset * 2);
 
-  orbButton.style.width = `${diameter}px`;
-  orbButton.style.height = `${diameter}px`;
-  orbButton.style.setProperty("--glitter-home-orb-shell-inset", `${metrics.shellInset}px`);
-  orbButton.style.setProperty("--glitter-home-orb-text-padding", `${metrics.textPadding}px`);
-  orbButton.style.setProperty("--glitter-home-orb-text-gap", `${metrics.textGap}px`);
-  orbButton.style.setProperty("--glitter-home-orb-name-font-size", `${metrics.nameFontSize}px`);
-  orbButton.style.setProperty("--glitter-home-orb-name-line-height", `${metrics.nameLineHeight}`);
-  orbButton.style.setProperty("--glitter-home-orb-count-font-size", `${metrics.countFontSize}px`);
-  orbButton.style.setProperty("--glitter-home-orb-count-line-height", `${metrics.countLineHeight}`);
+  setElementStyles(orbButton, {
+    width: `${diameter}px`,
+    height: `${diameter}px`
+  });
+  setElementCssProps(orbButton, {
+    "--glitter-home-orb-shell-inset": `${metrics.shellInset}px`,
+    "--glitter-home-orb-text-padding": `${metrics.textPadding}px`,
+    "--glitter-home-orb-text-gap": `${metrics.textGap}px`,
+    "--glitter-home-orb-name-font-size": `${metrics.nameFontSize}px`,
+    "--glitter-home-orb-name-line-height": `${metrics.nameLineHeight}`,
+    "--glitter-home-orb-count-font-size": `${metrics.countFontSize}px`,
+    "--glitter-home-orb-count-line-height": `${metrics.countLineHeight}`
+  });
 
   const dashedShell = orbButton.querySelector(".glitter-home-stage__water-surface--dashed") as HTMLElement | null;
   if (dashedShell) {
-    dashedShell.style.setProperty("--glitter-home-dashed-ring-mask-image", buildDashedCoreRingMaskImage(shellDiameter));
+    setElementCssProps(dashedShell, {
+      "--glitter-home-dashed-ring-mask-image": buildDashedCoreRingMaskImage(shellDiameter)
+    });
   }
 
   updateOrbBackdropSample(orbButton);
 }
 
 function applyOrbShiftStyles(orbButton: HTMLButtonElement, shiftX: number, shiftY: number): void {
-  orbButton.style.setProperty("--glitter-home-orb-shift-x", `${shiftX.toFixed(3)}px`);
-  orbButton.style.setProperty("--glitter-home-orb-shift-y", `${shiftY.toFixed(3)}px`);
+  setElementCssProps(orbButton, {
+    "--glitter-home-orb-shift-x": `${shiftX.toFixed(3)}px`,
+    "--glitter-home-orb-shift-y": `${shiftY.toFixed(3)}px`
+  });
   updateOrbBackdropSample(orbButton);
 }
 
@@ -1138,16 +1209,22 @@ function solvePopulatedOrbLayout(
     placements: anchoredPlacements
   };
 
-  orbStage.style.minHeight = `${effectiveInteractionHeight}px`;
-  orbStage.style.setProperty("--glitter-home-derived-stage-width", `${interactionStageSize.width}px`);
-  orbStage.style.setProperty("--glitter-home-derived-stage-height", `${effectiveInteractionHeight}px`);
+  setElementStyles(orbStage, {
+    minHeight: `${effectiveInteractionHeight}px`
+  });
+  setElementCssProps(orbStage, {
+    "--glitter-home-derived-stage-width": `${interactionStageSize.width}px`,
+    "--glitter-home-derived-stage-height": `${effectiveInteractionHeight}px`
+  });
 
   if (primaryOrbButton) {
     const primaryPlacement = anchoredResolved.placements.get(primaryOrbButton);
     if (primaryPlacement) {
       applyOrbLayoutSize(primaryOrbButton, primaryPlacement.radius, anchoredResolved.scale, true);
-      primaryOrbButton.style.opacity = "1";
-      primaryOrbButton.style.pointerEvents = "auto";
+      setElementStyles(primaryOrbButton, {
+        opacity: "1",
+        pointerEvents: "auto"
+      });
       applyOrbCenterPosition(primaryOrbButton, primaryPlacement.x, primaryPlacement.y);
     }
   }
@@ -1159,8 +1236,10 @@ function solvePopulatedOrbLayout(
     }
 
     applyOrbLayoutSize(orbButton, placement.radius, anchoredResolved.scale, false);
-    orbButton.style.opacity = "1";
-    orbButton.style.pointerEvents = "auto";
+    setElementStyles(orbButton, {
+      opacity: "1",
+      pointerEvents: "auto"
+    });
     applyOrbCenterPosition(orbButton, placement.x, placement.y);
   });
 
@@ -1294,10 +1373,12 @@ function createHomeOrbInteractionController(
       Math.max(corridorHeight / 2, stageSize.height - corridorHeight / 2)
     );
 
-    actionCorridor.style.left = `${corridorLeft}px`;
-    actionCorridor.style.top = `${corridorTop}px`;
-    actionCorridor.style.width = `${Math.max(0, corridorRight - corridorLeft)}px`;
-    actionCorridor.style.height = `${corridorHeight}px`;
+    setElementStyles(actionCorridor, {
+      left: `${corridorLeft}px`,
+      top: `${corridorTop}px`,
+      width: `${Math.max(0, corridorRight - corridorLeft)}px`,
+      height: `${corridorHeight}px`
+    });
   };
 
   const positionActionRail = (): void => {
@@ -1310,8 +1391,10 @@ function createHomeOrbInteractionController(
       return;
     }
 
-    actionRail.style.left = `${railPosition.left}px`;
-    actionRail.style.top = `${railPosition.top}px`;
+    setElementStyles(actionRail, {
+      left: `${railPosition.left}px`,
+      top: `${railPosition.top}px`
+    });
     positionActionCorridor();
   };
 
@@ -1948,16 +2031,18 @@ function applyOrbMotionPreset(
   rippleOpacityTrail = clamp(rippleOpacityTrail, 0.05, 0.09);
   const rippleOpacityTail = clamp(rippleOpacityTrail * 0.38, 0.02, 0.04);
 
-  orbButton.style.setProperty("--glitter-home-ripple-duration", formatSeconds(rippleDurationSeconds));
-  orbButton.style.setProperty("--glitter-home-ripple-delay", formatSeconds(rippleDelaySeconds));
-  orbButton.style.setProperty("--glitter-home-breathe-duration", formatSeconds(breatheDurationSeconds));
-  orbButton.style.setProperty("--glitter-home-breathe-delay", formatSeconds(breatheDelaySeconds));
-  orbButton.style.setProperty("--glitter-home-ripple-scale-rise", formatNumber(rippleScaleRise));
-  orbButton.style.setProperty("--glitter-home-ripple-scale-mid", formatNumber(rippleScaleMid));
-  orbButton.style.setProperty("--glitter-home-ripple-scale-end", formatNumber(rippleScaleEnd));
-  orbButton.style.setProperty("--glitter-home-ripple-opacity-peak", formatNumber(rippleOpacityPeak));
-  orbButton.style.setProperty("--glitter-home-ripple-opacity-trail", formatNumber(rippleOpacityTrail));
-  orbButton.style.setProperty("--glitter-home-ripple-opacity-tail", formatNumber(rippleOpacityTail));
+  setElementCssProps(orbButton, {
+    "--glitter-home-ripple-duration": formatSeconds(rippleDurationSeconds),
+    "--glitter-home-ripple-delay": formatSeconds(rippleDelaySeconds),
+    "--glitter-home-breathe-duration": formatSeconds(breatheDurationSeconds),
+    "--glitter-home-breathe-delay": formatSeconds(breatheDelaySeconds),
+    "--glitter-home-ripple-scale-rise": formatNumber(rippleScaleRise),
+    "--glitter-home-ripple-scale-mid": formatNumber(rippleScaleMid),
+    "--glitter-home-ripple-scale-end": formatNumber(rippleScaleEnd),
+    "--glitter-home-ripple-opacity-peak": formatNumber(rippleOpacityPeak),
+    "--glitter-home-ripple-opacity-trail": formatNumber(rippleOpacityTrail),
+    "--glitter-home-ripple-opacity-tail": formatNumber(rippleOpacityTail)
+  });
 }
 
 function buildOrbTextStrengthById(orbs: ReadonlyArray<HomeStageOrb>): ReadonlyMap<string, OrbTextStrength> {
@@ -2036,8 +2121,10 @@ function applyOrbColorVariables(orbButton: HTMLButtonElement, orb: HomeStageOrb)
     return;
   }
 
-  orbButton.style.setProperty("--glitter-home-orb-rgb", orbRgb);
-  orbButton.style.setProperty("--glitter-home-orb-ring-rgb", ringRgb);
+  setElementCssProps(orbButton, {
+    "--glitter-home-orb-rgb": orbRgb,
+    "--glitter-home-orb-ring-rgb": ringRgb
+  });
 }
 
 // 单个池球体渲染：这里决定尺寸、颜色、虚实描边、名称计数、隔离态按钮和内联改名入口。
@@ -2057,8 +2144,10 @@ function renderOrb(
   ) as HTMLButtonElement;
 
   orbButton.type = "button";
-  orbButton.style.left = `${orb.x}%`;
-  orbButton.style.top = `${orb.y}%`;
+  setElementStyles(orbButton, {
+    left: `${orb.x}%`,
+    top: `${orb.y}%`
+  });
   applyOrbMotionPreset(orbButton, motionPresetIndex, isPrimaryOrb);
   orbButton.dataset.poolId = orb.id;
   orbButton.dataset.poolIsDefault = orb.isDefault ? "true" : "false";

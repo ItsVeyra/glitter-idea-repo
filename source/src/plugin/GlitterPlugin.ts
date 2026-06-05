@@ -201,11 +201,7 @@ export default class GlitterPlugin extends Plugin {
   }
 
   // 卸载与入口同步。
-  override onunload(): void {
-    this.app.workspace.detachLeavesOfType(MAIN_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(SEARCH_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(POOL_VIEW_TYPE);
-  }
+  override onunload(): void {}
 
   // 首页入口同步。
   syncHomeRibbonIcon(): void {

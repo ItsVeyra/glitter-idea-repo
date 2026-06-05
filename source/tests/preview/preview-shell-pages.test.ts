@@ -73,6 +73,18 @@ class FakeElement {
     return child;
   }
 
+  get firstChild(): FakeElement | null {
+    return this.children[0] ?? null;
+  }
+
+  removeChild(child: FakeElement): FakeElement {
+    this.children = this.children.filter((existingChild) => existingChild !== child);
+    if (child.parent === this) {
+      child.parent = null;
+    }
+    return child;
+  }
+
   addEventListener(type: string, listener: () => void): void {
     const listeners = this.listeners.get(type) ?? [];
     listeners.push(listener);

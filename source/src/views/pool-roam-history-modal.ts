@@ -178,6 +178,29 @@ function applyThumbnailEdgeStyle(edgeEl: HTMLElement, edge: PoolRoamThumbnailPre
   );
 }
 
+type DisplayStyleElement = HTMLElement & {
+  setCssStyles?: (styles: Partial<CSSStyleDeclaration>) => void;
+};
+
+function setElementDisplay(element: HTMLElement | null, display: string): void {
+  if (!element) {
+    return;
+  }
+
+  const displayStyleElement = element as DisplayStyleElement;
+  if (typeof displayStyleElement.setCssStyles === "function") {
+    displayStyleElement.setCssStyles({ display });
+    return;
+  }
+
+  if (typeof displayStyleElement.style?.setProperty === "function") {
+    displayStyleElement.style.setProperty("display", display);
+    return;
+  }
+
+  Object.assign(displayStyleElement.style, { display });
+}
+
 function setButtonLabel(button: HTMLButtonElement | null, label: string): void {
   button?.setAttribute?.("aria-label", label);
   button?.setAttribute?.("title", label);
@@ -407,9 +430,7 @@ export class PoolRoamHistoryModal extends Modal {
       this.batchToggleEl.disabled = this.deletingSelection;
     }
 
-    if (this.batchFooterEl) {
-      this.batchFooterEl.style.display = this.batchMode ? "flex" : "none";
-    }
+    setElementDisplay(this.batchFooterEl, this.batchMode ? "flex" : "none");
 
     if (this.batchCancelEl) {
       setButtonLabel(this.batchCancelEl, "取消批量整理");

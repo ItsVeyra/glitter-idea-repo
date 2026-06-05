@@ -90,7 +90,7 @@ export async function pickQuickCaptureAttachmentFiles(
     inputEl.type = "file";
     inputEl.accept = options.accept ?? "image/*,video/*";
     inputEl.multiple = options.multiple ?? true;
-    inputEl.style.display = "none";
+    inputEl.hidden = true;
 
     contentEl.appendChild(inputEl);
 

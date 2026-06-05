@@ -93,10 +93,10 @@ export default class GlitterSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     const headerEl = containerEl.createDiv({ cls: "glitter-settings-tab__header" });
-    headerEl.createEl("h2", {
-      text: text.pageTitle,
-      cls: "glitter-settings-tab__page-title"
-    });
+    new Setting(headerEl)
+      .setName(text.pageTitle)
+      .setClass("glitter-settings-tab__page-title")
+      .setHeading();
     const workspaceSection = this.renderSection(
       containerEl,
       text.sections.workspace.title,

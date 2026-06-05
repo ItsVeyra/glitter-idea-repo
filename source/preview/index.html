@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- 说明：该页面只负责承载浏览器预览壳层，实际 UI 会由 preview.js 挂载到 #app。 -->
+<html lang="en">
+  <head>
+    <!-- 说明：head 保持最小集合，只声明预览所需的元信息与共享样式。 -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glitter Browser Preview</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="glitter-preview-page">
+    <!-- 说明：预览根节点由脚本接管，便于与插件样式保持同源。 -->
+    <div id="app"></div>
+    <script src="./preview.js"></script>
+  </body>
+</html>

@@ -29,6 +29,10 @@ type HiddenLeafChrome = {
   display: string;
 };
 
+type DisplayStyleElement = HTMLElement & {
+  setCssStyles?: (styles: Partial<CSSStyleDeclaration>) => void;
+};
+
 type WorkspaceLeafConstructor = new (appOrWorkspace: unknown) => WorkspaceLeaf;
 
 function clearContainer(containerEl: HTMLElement): void {
@@ -38,7 +42,9 @@ function clearContainer(containerEl: HTMLElement): void {
     return;
   }
 
-  containerEl.innerHTML = "";
+  while (containerEl.firstChild) {
+    containerEl.removeChild(containerEl.firstChild);
+  }
 }
 
 function resolveBoardBaseName(path: string): string {
@@ -49,6 +55,21 @@ function resolveBoardBaseName(path: string): string {
 function resolveBoardDisplayName(file: TFile): string {
   const withBasename = file as TFile & { basename?: string; path: string };
   return formatPoolRoamBoardDisplayName(withBasename.basename ?? resolveBoardBaseName(withBasename.path));
+}
+
+function setDisplayStyle(element: HTMLElement, display: string): void {
+  const displayStyleElement = element as DisplayStyleElement;
+  if (typeof displayStyleElement.setCssStyles === "function") {
+    displayStyleElement.setCssStyles({ display });
+    return;
+  }
+
+  if (typeof displayStyleElement.style?.setProperty === "function") {
+    displayStyleElement.style.setProperty("display", display);
+    return;
+  }
+
+  Object.assign(displayStyleElement.style, { display });
 }
 
 function syncMountedBoardDisplayText(viewContainerEl: HTMLElement, displayName: string): void {
@@ -189,7 +210,7 @@ export function createPoolRoamCanvasHost(app: App): PoolRoamCanvasHost {
 
   function restoreHiddenLeafChrome(): void {
     hiddenLeafChrome.forEach(({ element, display }) => {
-      element.style.display = display;
+      setDisplayStyle(element, display);
     });
     hiddenLeafChrome = [];
   }
@@ -216,7 +237,7 @@ export function createPoolRoamCanvasHost(app: App): PoolRoamCanvasHost {
     }
 
     hiddenLeafChrome.forEach(({ element }) => {
-      element.style.display = "none";
+      setDisplayStyle(element, "none");
     });
   }
 

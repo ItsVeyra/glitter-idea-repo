@@ -41,6 +41,18 @@ function createContainer(): MockContainer {
   } as unknown as MockContainer;
 }
 
+function createChromeElement(initialDisplay: string) {
+  const style = { display: initialDisplay };
+  return {
+    style,
+    setCssStyles: vi.fn((styles: { display?: string }) => {
+      if (styles.display !== undefined) {
+        style.display = styles.display;
+      }
+    })
+  };
+}
+
 beforeEach(() => {
   createDetachedLeafMock.mockReset();
   createDetachedLeafMock.mockImplementation(() => {
@@ -304,6 +316,62 @@ describe("createPoolRoamCanvasHost", () => {
 
     host.destroy();
 
+    expect(backingLeafShell.style.display).toBe("flex");
+    expect(tabHeaderEl.style.display).toBe("grid");
+  });
+
+  it("restores leaf chrome through setCssStyles when the safe API is available", async () => {
+    const board = createMockFile("Boards/safe-api.canvas");
+    const backingLeafShell = createChromeElement("flex");
+    const tabHeaderEl = createChromeElement("grid");
+    let resolveOpenFile: (() => void) | undefined;
+    const viewContainerEl = {
+      dataset: { boardPath: board.path } as Record<string, string>,
+      closest: vi.fn((selector: string) => (selector === ".workspace-leaf" ? backingLeafShell : null))
+    } as unknown as HTMLElement & {
+      dataset: Record<string, string>;
+      closest: (selector: string) => ReturnType<typeof createChromeElement> | null;
+    };
+    const leaf = {
+      view: { containerEl: viewContainerEl },
+      tabHeaderEl,
+      openFile: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveOpenFile = resolve;
+          })
+      ),
+      detach: vi.fn()
+    };
+    const app = {
+      vault: {
+        getAbstractFileByPath: vi.fn(() => board)
+      },
+      workspace: {
+        getLeaf: vi.fn(() => leaf)
+      }
+    } as any;
+
+    const host = createPoolRoamCanvasHost(app);
+    const container = createContainer();
+    const mountPromise = host.mountModalBoard(container, board.path);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(leaf.openFile).toHaveBeenCalledWith(board, { active: false });
+    expect(backingLeafShell.setCssStyles).toHaveBeenCalledWith({ display: "none" });
+    expect(tabHeaderEl.setCssStyles).toHaveBeenCalledWith({ display: "none" });
+    expect(backingLeafShell.style.display).toBe("none");
+    expect(tabHeaderEl.style.display).toBe("none");
+
+    resolveOpenFile?.();
+    await mountPromise;
+
+    host.destroy();
+
+    expect(backingLeafShell.setCssStyles).toHaveBeenLastCalledWith({ display: "flex" });
+    expect(tabHeaderEl.setCssStyles).toHaveBeenLastCalledWith({ display: "grid" });
     expect(backingLeafShell.style.display).toBe("flex");
     expect(tabHeaderEl.style.display).toBe("grid");
   });

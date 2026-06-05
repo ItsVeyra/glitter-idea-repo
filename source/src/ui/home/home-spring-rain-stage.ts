@@ -6,6 +6,7 @@
 import type { HomeViewActions } from "./home-actions";
 import type { HomeStageOrb } from "./home-demo-data";
 import { resolveHomeOrbRgb, resolveHomeOrbRingRgb } from "./home-orb-tone";
+import { setElementCssProps } from "../shared/theme-state";
 
 type SpringRainDepth = "foreground" | "midground" | "background";
 type SpringRainSlotName =
@@ -337,12 +338,17 @@ function applySpringRainColorVariables(pool: HTMLElement, orb: HomeStageOrb): vo
   const orbRgb = resolveHomeOrbRgb(orb.color);
   const ringRgb = resolveHomeOrbRingRgb(orb.color);
 
+  const cssProps: Record<string, string> = {};
   if (orbRgb) {
-    pool.style.setProperty("--glitter-home-orb-rgb", orbRgb);
+    cssProps["--glitter-home-orb-rgb"] = orbRgb;
   }
 
   if (ringRgb) {
-    pool.style.setProperty("--glitter-home-orb-ring-rgb", ringRgb);
+    cssProps["--glitter-home-orb-ring-rgb"] = ringRgb;
+  }
+
+  if (Object.keys(cssProps).length > 0) {
+    setElementCssProps(pool, cssProps);
   }
 }
 
@@ -391,11 +397,13 @@ export function renderHomeSpringRainStage(
     pool.dataset.springRainSlot = springRainSlot.name;
     pool.dataset.springRainSize = orb.size;
     pool.dataset.textTier = textTierById.get(orb.id) ?? SPRING_RAIN_TEXT_TIERS[0];
-    pool.style.setProperty("--glitter-home-spring-rain-origin-x", springRainSlot.originX);
-    pool.style.setProperty("--glitter-home-spring-rain-origin-y", springRainSlot.originY);
-    pool.style.setProperty("--glitter-home-spring-rain-wave-delay", `${springRainSlot.waveDelaySeconds}s`);
-    pool.style.setProperty("--glitter-home-spring-rain-wave-step", `${springRainSlot.waveStepSeconds}s`);
-    pool.style.setProperty("--glitter-home-spring-rain-ripple-duration", `${springRainSlot.rippleDurationSeconds}s`);
+    setElementCssProps(pool, {
+      "--glitter-home-spring-rain-origin-x": springRainSlot.originX,
+      "--glitter-home-spring-rain-origin-y": springRainSlot.originY,
+      "--glitter-home-spring-rain-wave-delay": `${springRainSlot.waveDelaySeconds}s`,
+      "--glitter-home-spring-rain-wave-step": `${springRainSlot.waveStepSeconds}s`,
+      "--glitter-home-spring-rain-ripple-duration": `${springRainSlot.rippleDurationSeconds}s`
+    });
     applySpringRainColorVariables(pool, orb);
     renderedPools.push(pool);
 

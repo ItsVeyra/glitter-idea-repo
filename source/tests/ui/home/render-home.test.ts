@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../../../src/settings/defaults";
 import { buildHomeViewState, buildHomeViewStateFromRuntime } from "../../../src/ui/home/home-state";
 import { renderHomeView } from "../../../src/ui/home/render-home";
+import { applyThemeSnapshot } from "../../../src/ui/shared/theme-state";
 
 type OrbStyleLike = {
   getPropertyValue: (name: string) => string;
@@ -55,11 +56,48 @@ class FakeSelection {
   }
 }
 
+function toKebabCase(value: string): string {
+  return value.startsWith("--") ? value : value.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+}
+
+function toCamelCase(value: string): string {
+  if (value.startsWith("--")) {
+    return value;
+  }
+
+  return value.replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase());
+}
+
 class FakeStyle {
+  public setCssStylesCallCount = 0;
+  public setCssPropsCallCount = 0;
+
   private readonly values: Record<string, string> = {};
 
-  setProperty(name: string, value: string): void {
+  private storeValue(name: string, value: string): void {
     this.values[name] = value;
+    const kebabName = toKebabCase(name);
+    const camelName = toCamelCase(name);
+    this.values[kebabName] = value;
+    this.values[camelName] = value;
+  }
+
+  setProperty(name: string, value: string): void {
+    this.storeValue(name, value);
+  }
+
+  setCssStyles(styles: Record<string, string>): void {
+    this.setCssStylesCallCount += 1;
+    Object.entries(styles).forEach(([name, value]) => {
+      this.setProperty(name, value);
+    });
+  }
+
+  setCssProps(props: Record<string, string>): void {
+    this.setCssPropsCallCount += 1;
+    Object.entries(props).forEach(([name, value]) => {
+      this.setProperty(name, value);
+    });
   }
 
   getPropertyValue(name: string): string {
@@ -159,10 +197,31 @@ class FakeElement {
 
   constructor(public readonly tagName: string, public readonly ownerDocument: FakeDocument) {}
 
+  get firstChild(): FakeElement | null {
+    return this.children[0] ?? null;
+  }
+
   appendChild(child: FakeElement): FakeElement {
     child.parent = this;
     this.children.push(child);
     return child;
+  }
+
+  removeChild(child: FakeElement): FakeElement {
+    const index = this.children.indexOf(child);
+    if (index >= 0) {
+      this.children.splice(index, 1);
+      child.parent = null;
+    }
+    return child;
+  }
+
+  setCssStyles(styles: Record<string, string>): void {
+    this.style.setCssStyles(styles);
+  }
+
+  setCssProps(props: Record<string, string>): void {
+    this.style.setCssProps(props);
   }
 
   addEventListener(type: string, listener: (event?: FakeEvent) => void): void {
@@ -926,6 +985,50 @@ describe("renderHomeView", () => {
     expect(stage.dataset.glitterTheme).toBeUndefined();
   });
 
+  it("safely detaches the previous stage tree when rerendering without empty()", () => {
+    const container = createContainer();
+    const actions = {
+      onPrimaryAction() {},
+      onSecondaryAction() {},
+      onPoolSelect() {},
+      onSearchSubmit() {}
+    };
+
+    renderHomeView(container, buildHomeViewState("home-empty"), actions);
+    const previousStage = (container as unknown as { children: FakeElement[] }).children[0] ?? null;
+
+    expect(previousStage).not.toBeNull();
+    expect(previousStage?.parent).toBe(container as unknown as FakeElement);
+
+    renderHomeView(container, buildHomeViewState("home-populated"), actions);
+
+    expect(previousStage?.parent).toBeNull();
+    expect((container as unknown as { children: FakeElement[] }).children).not.toContain(previousStage);
+  });
+
+  it("prefers the CSS prop bridge when applying a runtime theme snapshot", () => {
+    const container = createContainer();
+    const target = getDocumentFromContainer(container).createElement("div") as unknown as HTMLElement & {
+      dataset: Record<string, string>;
+      style: FakeStyle;
+    };
+
+    applyThemeSnapshot(target, {
+      mode: "obsidian-dark",
+      baseBackground: "#111729",
+      secondaryBackground: "#162034",
+      accent: "#7397ff",
+      accentHover: "#8ea9e3",
+      textNormal: "#dce5ff",
+      textMuted: "#aeb7d0"
+    });
+
+    expect(target.dataset.glitterTheme).toBe("obsidian-dark");
+    expect(target.style.setCssPropsCallCount).toBeGreaterThan(0);
+    expect(target.style.getPropertyValue("--glitter-runtime-bg-base")).toBe("#111729");
+    expect(target.style.getPropertyValue("--glitter-runtime-text-muted")).toBe("#aeb7d0");
+  });
+
   it("matches rule blocks when a block comment sits directly above the selector", () => {
     const css = "/* stage contract */\n.glitter-home-stage {\n  display: grid;\n  align-content: stretch;\n}";
     const blocks = getRuleBlocks(css, ".glitter-home-stage");
@@ -1171,6 +1274,28 @@ describe("renderHomeView", () => {
     expect(primaryButton?.querySelector(".glitter-home-stage__action-label")?.textContent).toBe("灵感速记");
   });
 
+  it("prefers CSS write bridge helpers for populated-home stage and orb layout writes", () => {
+    const container = createContainer();
+
+    renderHomeView(container, buildHomeViewState("home-populated"), {
+      onPrimaryAction() {},
+      onSecondaryAction() {},
+      onPoolSelect() {},
+      onSearchSubmit() {}
+    });
+
+    const orbStage = container.querySelector(".glitter-home-stage__pool-stage") as
+      | (HTMLElement & { style: FakeStyle })
+      | null;
+    const primaryOrb = getPrimaryOrbElement(container) as HTMLElement & { style: FakeStyle };
+
+    expect(orbStage).not.toBeNull();
+    expect(orbStage?.style.setCssStylesCallCount).toBeGreaterThan(0);
+    expect(orbStage?.style.setCssPropsCallCount).toBeGreaterThan(0);
+    expect(primaryOrb.style.setCssStylesCallCount).toBeGreaterThan(0);
+    expect(primaryOrb.style.setCssPropsCallCount).toBeGreaterThan(0);
+  });
+
   it("renders populated topbar with a real input and submits entered query on Enter", () => {
     const container = createContainer();
     const submittedQueries: string[] = [];
@@ -1321,6 +1446,24 @@ describe("renderHomeView", () => {
     expect(selectedViews).toEqual(["water"]);
     expect(fieldViewMenu?.className).not.toContain("glitter-home-stage__field-view-menu--open");
     expect(fieldViewMenu?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("prefers the CSS prop bridge for spring-rain pool runtime variables", () => {
+    const container = createContainer();
+
+    renderHomeView(container, buildHomeViewState("home-populated", { homeFieldView: "spring-rain" }), {
+      onPrimaryAction() {},
+      onSecondaryAction() {},
+      onPoolSelect() {},
+      onSearchSubmit() {}
+    });
+
+    const centeredPool = container.querySelector(".glitter-home-stage__spring-rain-pool--slot-center") as
+      | (HTMLElement & { style: FakeStyle })
+      | null;
+
+    expect(centeredPool).not.toBeNull();
+    expect(centeredPool?.style.setCssPropsCallCount).toBeGreaterThan(0);
   });
 
   it("renders spring-rain pools with a centered primary pool, visible text labels, and ripple metadata keyed by size and count tiers", () => {

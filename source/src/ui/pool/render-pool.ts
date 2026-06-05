@@ -65,7 +65,9 @@ function clearContainer(containerEl: HTMLElement): void {
     return;
   }
 
-  containerEl.innerHTML = "";
+  while (containerEl.firstChild) {
+    containerEl.firstChild.remove();
+  }
 }
 
 function createNode(parent: HTMLElement, tag: string, className?: string, text?: string): HTMLElement {
@@ -332,30 +334,51 @@ function readElementHeight(node: HTMLElement): number {
   return node.offsetHeight ?? 0;
 }
 
-function setInlineStyle(node: HTMLElement, property: string, value: string): void {
-  const style = node.style as CSSStyleDeclaration & Record<string, string> & {
+type StyleWritableElement = HTMLElement & {
+  setCssStyles?: (styles: Record<string, string>) => void;
+  setCssProps?: (props: Record<string, string>) => void;
+  style: CSSStyleDeclaration & Record<string, string> & {
+    setCssStyles?: (styles: Record<string, string>) => void;
+    setCssProps?: (props: Record<string, string>) => void;
     setProperty?: (name: string, value: string) => void;
   };
+};
 
-  if (typeof style.setProperty === "function" && property.startsWith("--")) {
-    style.setProperty(property, value);
-    return;
+function camelCaseToKebabCase(name: string): string {
+  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+}
+
+function setInlineStyle(node: HTMLElement, property: string, value: string): void {
+  const writableTarget = node as StyleWritableElement;
+  const targetStyle = writableTarget.style;
+
+  if (property.startsWith("--")) {
+    if (typeof writableTarget.setCssProps === "function") {
+      writableTarget.setCssProps({ [property]: value });
+      return;
+    }
+
+    if (typeof targetStyle.setCssProps === "function") {
+      targetStyle.setCssProps({ [property]: value });
+      return;
+    }
+  } else {
+    if (typeof writableTarget.setCssStyles === "function") {
+      writableTarget.setCssStyles({ [property]: value });
+      return;
+    }
+
+    if (typeof targetStyle.setCssStyles === "function") {
+      targetStyle.setCssStyles({ [property]: value });
+      return;
+    }
   }
 
-  style[property] = value;
+  targetStyle.setProperty(camelCaseToKebabCase(property), value);
 }
 
 function clearInlineStyle(node: HTMLElement, property: string): void {
-  const style = node.style as CSSStyleDeclaration & Record<string, string> & {
-    removeProperty?: (name: string) => string;
-  };
-
-  if (typeof style.removeProperty === "function" && property.startsWith("--")) {
-    style.removeProperty(property);
-    return;
-  }
-
-  style[property] = "";
+  setInlineStyle(node, property, "");
 }
 
 function clampPoolRoamPaneRatio(ratio: number | undefined): number {
@@ -774,7 +797,7 @@ function bindPoolCardScrollVisibility(containerEl: HTMLElement, cardGrid: HTMLEl
 
 function applyPoolCardMasonry(cardGrid: HTMLElement, cardStack: HTMLElement, cardShells: HTMLElement[]): void {
   if (cardShells.length === 0) {
-    cardStack.style.height = "0px";
+    setInlineStyle(cardStack, "height", "0px");
     return;
   }
 
@@ -795,7 +818,7 @@ function applyPoolCardMasonry(cardGrid: HTMLElement, cardStack: HTMLElement, car
   const columnHeights = Array.from({ length: columnCount }, () => 0);
 
   cardShells.forEach((cardShell) => {
-    cardShell.style.width = `${Math.max(columnWidth, 0)}px`;
+    setInlineStyle(cardShell, "width", `${Math.max(columnWidth, 0)}px`);
   });
 
   cardShells.forEach((cardShell) => {
@@ -812,7 +835,7 @@ function applyPoolCardMasonry(cardGrid: HTMLElement, cardStack: HTMLElement, car
 
     const nextX = POOL_CARD_MASONRY_SAFE_INSET_X_PX + targetColumnIndex * (columnWidth + POOL_CARD_MASONRY_GAP);
     const nextY = targetColumnHeight;
-    cardShell.style.transform = `translate3d(${nextX}px, ${nextY}px, 0)`;
+    setInlineStyle(cardShell, "transform", `translate3d(${nextX}px, ${nextY}px, 0)`);
 
     const cardHeight = readElementHeight(cardShell);
     columnHeights[targetColumnIndex] = nextY + cardHeight + POOL_CARD_MASONRY_GAP;
@@ -821,7 +844,7 @@ function applyPoolCardMasonry(cardGrid: HTMLElement, cardStack: HTMLElement, car
   const stackHeight = columnHeights.length > 0
     ? Math.max(...columnHeights) - POOL_CARD_MASONRY_GAP
     : 0;
-  cardStack.style.height = `${Math.max(stackHeight, 0)}px`;
+  setInlineStyle(cardStack, "height", `${Math.max(stackHeight, 0)}px`);
 }
 
 function bindPoolCardMasonry(
@@ -1043,10 +1066,10 @@ function updatePoolRoamSourceDragPreviewLine(
   const length = Math.max(12, Math.hypot(deltaX, deltaY));
   const angle = Math.atan2(deltaY, deltaX);
 
-  previewLine.style.left = `${startX}px`;
-  previewLine.style.top = `${startY}px`;
-  previewLine.style.width = `${length}px`;
-  previewLine.style.transform = `translateY(-50%) rotate(${angle}rad)`;
+  setInlineStyle(previewLine, "left", `${startX}px`);
+  setInlineStyle(previewLine, "top", `${startY}px`);
+  setInlineStyle(previewLine, "width", `${length}px`);
+  setInlineStyle(previewLine, "transform", `translateY(-50%) rotate(${angle}rad)`);
 }
 
 function syncPoolRoamSourceDragPreview(
@@ -1755,10 +1778,10 @@ function syncRoamBridgeLaneLayout(workbench: HTMLElement): void {
       return;
     }
 
-    trace.style.top = `${layout.traceTop}px`;
-    trace.style.left = `${layout.traceLeft}px`;
-    trace.style.width = `${layout.traceWidth}px`;
-    trace.style.height = `${layout.traceHeight}px`;
+    setInlineStyle(trace, "top", `${layout.traceTop}px`);
+    setInlineStyle(trace, "left", `${layout.traceLeft}px`);
+    setInlineStyle(trace, "width", `${layout.traceWidth}px`);
+    setInlineStyle(trace, "height", `${layout.traceHeight}px`);
 
     const segmentHost = trace.querySelector("[data-glitter-pool-roam-bridge-segments]") as HTMLElement | null;
     const hoverZone = trace.querySelector(".glitter-pool-stage__roam-bridge-hover-zone") as HTMLElement | null;
@@ -1774,28 +1797,28 @@ function syncRoamBridgeLaneLayout(workbench: HTMLElement): void {
           `glitter-pool-stage__roam-bridge-line glitter-pool-stage__roam-bridge-line--${segment.axis}`
         );
         line.setAttribute("data-glitter-pool-roam-bridge-segment", segment.axis);
-        line.style.left = `${segment.left}px`;
-        line.style.top = `${segment.top}px`;
-        line.style.width = `${segment.width}px`;
-        line.style.height = `${segment.height}px`;
+        setInlineStyle(line, "left", `${segment.left}px`);
+        setInlineStyle(line, "top", `${segment.top}px`);
+        setInlineStyle(line, "width", `${segment.width}px`);
+        setInlineStyle(line, "height", `${segment.height}px`);
       });
     }
 
     if (hoverZone) {
-      hoverZone.style.left = `${Math.min(layout.markerX, layout.popoverX) - 12}px`;
-      hoverZone.style.top = `${layout.markerY - 24}px`;
-      hoverZone.style.width = `${Math.max(48, Math.abs(layout.markerX - layout.popoverX) + 24)}px`;
-      hoverZone.style.height = "48px";
+      setInlineStyle(hoverZone, "left", `${Math.min(layout.markerX, layout.popoverX) - 12}px`);
+      setInlineStyle(hoverZone, "top", `${layout.markerY - 24}px`);
+      setInlineStyle(hoverZone, "width", `${Math.max(48, Math.abs(layout.markerX - layout.popoverX) + 24)}px`);
+      setInlineStyle(hoverZone, "height", "48px");
     }
 
     if (marker) {
-      marker.style.left = `${layout.markerX}px`;
-      marker.style.top = `${layout.markerY}px`;
+      setInlineStyle(marker, "left", `${layout.markerX}px`);
+      setInlineStyle(marker, "top", `${layout.markerY}px`);
     }
 
     if (popover) {
-      popover.style.left = `${layout.popoverX}px`;
-      popover.style.top = `${layout.popoverY}px`;
+      setInlineStyle(popover, "left", `${layout.popoverX}px`);
+      setInlineStyle(popover, "top", `${layout.popoverY}px`);
     }
   });
 }
@@ -1861,7 +1884,7 @@ function renderRoamBridgeLane(workbench: HTMLElement, state: PoolViewState, acti
     trace.dataset.anchorIndex = `${anchorIndex}`;
     trace.dataset.anchorCount = `${visibleAnchors.length}`;
     trace.setAttribute("data-glitter-pool-roam-bridge-trace", anchor.anchorId);
-    trace.style.color = anchor.poolColor;
+    setInlineStyle(trace, "color", anchor.poolColor);
 
     const segmentHost = createNode(trace, "div", "glitter-pool-stage__roam-bridge-segments");
     segmentHost.setAttribute("data-glitter-pool-roam-bridge-segments", anchor.anchorId);
@@ -1871,7 +1894,7 @@ function renderRoamBridgeLane(workbench: HTMLElement, state: PoolViewState, acti
 
     const marker = createNode(trace, "button", "glitter-pool-stage__roam-bridge-marker") as HTMLButtonElement;
     marker.type = "button";
-    marker.style.background = anchor.poolColor;
+    setInlineStyle(marker, "background", anchor.poolColor);
     marker.setAttribute("aria-label", `查看「${anchor.ideaTitle}」的漫游链接`);
     marker.addEventListener("click", (event) => {
       event.preventDefault();
@@ -2549,7 +2572,7 @@ function syncPoolCardMoreMenuMaxHeight(cardShell: HTMLElement): void {
   const menuBottomInset = 10;
   const triggerHeight = Math.max(readElementHeight(moreTrigger), 28);
   const maxMenuHeight = Math.max(0, cardHeight - menuTopInset - triggerHeight - menuGap - menuBottomInset);
-  moreMenu.style.maxHeight = `${maxMenuHeight}px`;
+  setInlineStyle(moreMenu, "maxHeight", `${maxMenuHeight}px`);
 }
 
 // 顶部栏渲染：承接返回、池标题与池切换、内联改名以及进入灵感速记的主入口。
@@ -3745,7 +3768,7 @@ export function renderPoolView(
             : "glitter-pool-stage__swatch";
         const swatch = createNode(swatches, "button", swatchClass) as HTMLButtonElement;
         swatch.type = "button";
-        swatch.style.background = color;
+        setInlineStyle(swatch, "background", color);
         swatch.dataset.poolColor = color;
         swatch.addEventListener("click", () => {
           syncSelectedSwatch(color);

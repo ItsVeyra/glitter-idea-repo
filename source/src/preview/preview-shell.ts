@@ -153,7 +153,20 @@ function writeStorage(storage: StorageLike, key: string, value: string): void {
 
 // DOM 辅助与附件选择。
 function clearContainer(containerEl: HTMLElement): void {
-  containerEl.innerHTML = "";
+  const withClearMethods = containerEl as HTMLElement & { empty?: () => void; clear?: () => void };
+  if (typeof withClearMethods.empty === "function") {
+    withClearMethods.empty();
+    return;
+  }
+
+  if (typeof withClearMethods.clear === "function") {
+    withClearMethods.clear();
+    return;
+  }
+
+  while (containerEl.firstChild) {
+    containerEl.removeChild(containerEl.firstChild);
+  }
 }
 
 function setClassFlag(element: HTMLElement, className: string, enabled: boolean): void {
@@ -178,7 +191,7 @@ function openPreviewAttachmentPicker(
   inputEl.type = "file";
   inputEl.accept = "image/*,video/*";
   inputEl.multiple = true;
-  inputEl.style.display = "none";
+  inputEl.hidden = true;
 
   hostEl.appendChild(inputEl);
 
@@ -202,7 +215,7 @@ function openPreviewAttachmentPicker(
 // 预览壳挂载与交互。
 export function mountPreviewShell(containerEl: HTMLElement): void {
   // 外层壳体结构。
-  containerEl.innerHTML = "";
+  clearContainer(containerEl);
 
   const shell = document.createElement("div");
   shell.className = "glitter-preview-shell";
@@ -278,7 +291,7 @@ export function mountPreviewShell(containerEl: HTMLElement): void {
   };
 
   const updateScenarioSelect = (page: PreviewPage, scenario: PreviewScenario): void => {
-    scenarioSelect.innerHTML = "";
+    clearContainer(scenarioSelect);
 
     scenariosForPage(page).forEach((optionValue) => {
       const option = document.createElement("option");

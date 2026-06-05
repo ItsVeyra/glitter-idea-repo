@@ -29,6 +29,61 @@ export interface ThemeState {
   runtime: RuntimeThemeSnapshot;
 }
 
+type StyleWritableElement = HTMLElement & {
+  setCssStyles?: (styles: Record<string, string>) => void;
+  setCssProps?: (props: Record<string, string>) => void;
+  style: CSSStyleDeclaration & {
+    setCssStyles?: (styles: Record<string, string>) => void;
+    setCssProps?: (props: Record<string, string>) => void;
+  };
+};
+
+function camelCaseToKebabCase(name: string): string {
+  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+}
+
+export function setElementStyles(targetEl: HTMLElement, styles: Record<string, string>): void {
+  const writableTarget = targetEl as StyleWritableElement;
+  const targetStyle = writableTarget.style;
+  const targetSetCssStyles = writableTarget.setCssStyles;
+  const styleSetCssStyles = targetStyle.setCssStyles;
+
+  if (typeof targetSetCssStyles === "function") {
+    targetSetCssStyles.call(writableTarget, styles);
+    return;
+  }
+
+  if (typeof styleSetCssStyles === "function") {
+    styleSetCssStyles.call(targetStyle, styles);
+    return;
+  }
+
+  Object.entries(styles).forEach(([name, value]) => {
+    targetStyle.setProperty(camelCaseToKebabCase(name), value);
+  });
+}
+
+export function setElementCssProps(targetEl: HTMLElement, props: Record<string, string>): void {
+  const writableTarget = targetEl as StyleWritableElement;
+  const targetStyle = writableTarget.style;
+  const targetSetCssProps = writableTarget.setCssProps;
+  const styleSetCssProps = targetStyle.setCssProps;
+
+  if (typeof targetSetCssProps === "function") {
+    targetSetCssProps.call(writableTarget, props);
+    return;
+  }
+
+  if (typeof styleSetCssProps === "function") {
+    styleSetCssProps.call(targetStyle, props);
+    return;
+  }
+
+  Object.entries(props).forEach(([name, value]) => {
+    targetStyle.setProperty(name, value);
+  });
+}
+
 // 从宿主文档读取主题变量的基础工具。
 function readCssVar(styles: CSSStyleDeclaration, name: string, fallback: string): string {
   const value = styles.getPropertyValue(name).trim();
@@ -96,12 +151,14 @@ export function readRuntimeThemeSnapshot(
 // 将主题快照写回 Glitter 容器。
 export function applyThemeSnapshot(targetEl: HTMLElement, snapshot: RuntimeThemeSnapshot): void {
   targetEl.dataset.glitterTheme = snapshot.mode;
-  targetEl.style.setProperty("--glitter-runtime-bg-base", snapshot.baseBackground);
-  targetEl.style.setProperty("--glitter-runtime-bg-secondary", snapshot.secondaryBackground);
-  targetEl.style.setProperty("--glitter-runtime-accent", snapshot.accent);
-  targetEl.style.setProperty("--glitter-runtime-accent-hover", snapshot.accentHover);
-  targetEl.style.setProperty("--glitter-runtime-text-normal", snapshot.textNormal);
-  targetEl.style.setProperty("--glitter-runtime-text-muted", snapshot.textMuted);
+  setElementCssProps(targetEl, {
+    "--glitter-runtime-bg-base": snapshot.baseBackground,
+    "--glitter-runtime-bg-secondary": snapshot.secondaryBackground,
+    "--glitter-runtime-accent": snapshot.accent,
+    "--glitter-runtime-accent-hover": snapshot.accentHover,
+    "--glitter-runtime-text-normal": snapshot.textNormal,
+    "--glitter-runtime-text-muted": snapshot.textMuted
+  });
 }
 
 // 共享主题状态构建入口。

@@ -55,6 +55,27 @@ describe("view command registration", () => {
     addIconMock.mockReset();
   });
 
+  it("onunload does not detach Glitter leaves", () => {
+    const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
+    const detachLeavesOfType = vi.fn();
+
+    (plugin as unknown as {
+      app: {
+        workspace: {
+          detachLeavesOfType: typeof detachLeavesOfType;
+        };
+      };
+    }).app = {
+      workspace: {
+        detachLeavesOfType
+      }
+    };
+
+    plugin.onunload();
+
+    expect(detachLeavesOfType).not.toHaveBeenCalled();
+  });
+
   it("onload auto-opens main view once when automation flag is enabled", async () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const activateMainView = vi.fn(async () => undefined);

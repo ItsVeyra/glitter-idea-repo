@@ -117,11 +117,13 @@ export function createPoolMarkdownPreviewRenderer(host: PoolMarkdownPreviewRende
       }
 
       const nextRenderComponent = createRenderComponent();
-      const previewMountWithEmpty = previewMount as HTMLElement & { empty?: () => void; innerHTML?: string };
+      const previewMountWithEmpty = previewMount as HTMLElement & { empty?: () => void };
       if (typeof previewMountWithEmpty.empty === "function") {
         previewMountWithEmpty.empty();
-      } else if (typeof previewMountWithEmpty.innerHTML === "string") {
-        previewMountWithEmpty.innerHTML = "";
+      } else {
+        while (previewMount.firstChild) {
+          previewMount.removeChild(previewMount.firstChild);
+        }
       }
 
       try {
