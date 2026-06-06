@@ -5,6 +5,7 @@
 
 import type { HomeViewActions } from "./home-actions";
 import type { HomeStageOrb } from "./home-demo-data";
+import type { HomePoolActionLabels } from "./home-state";
 import { resolveHomeOrbRgb, resolveHomeOrbRingRgb } from "./home-orb-tone";
 import { setElementCssProps } from "../shared/theme-state";
 
@@ -355,7 +356,8 @@ function applySpringRainColorVariables(pool: HTMLElement, orb: HomeStageOrb): vo
 export function renderHomeSpringRainStage(
   stage: HTMLElement,
   orbs: ReadonlyArray<HomeStageOrb>,
-  actions: HomeViewActions
+  actions: HomeViewActions,
+  actionLabels: HomePoolActionLabels
 ): void {
   addClassName(stage, "glitter-home-stage__pool-stage--spring-rain");
 
@@ -549,19 +551,19 @@ export function renderHomeSpringRainStage(
     createActionButton(
       "glitter-home-stage__pool-orb-action glitter-home-stage__pool-orb-action--edit",
       "edit",
-      "编辑池",
+      actionLabels.edit,
       orb.isDefault ? undefined : startTitleInlineEdit
     );
     createActionButton(
       "glitter-home-stage__pool-orb-action glitter-home-stage__pool-orb-action--delete",
       "delete",
-      "删除池",
+      actionLabels.delete,
       !orb.isDefault && actions.onPoolDelete ? () => actions.onPoolDelete?.(orb.id) : undefined
     );
     createActionButton(
       "glitter-home-stage__pool-orb-action glitter-home-stage__pool-orb-action--enter",
       "enter",
-      "进入池",
+      actionLabels.enter,
       () => (actions.onPoolTitleSelect ?? actions.onPoolSelect)(orb.id)
     );
     titleActions.addEventListener("pointerenter", () => {

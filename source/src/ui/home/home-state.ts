@@ -58,6 +58,12 @@ interface HomeSearchFeedback {
   message: string;
 }
 
+export interface HomePoolActionLabels {
+  edit: string;
+  delete: string;
+  enter: string;
+}
+
 // 视图顺序同时驱动顶部切换菜单的展示顺序：圆满固定在前，涟漪固定在后。
 export const HOME_FIELD_VIEW_OPTIONS: ReadonlyArray<HomeFieldView> = Object.freeze([
   "water",
@@ -80,6 +86,7 @@ export interface HomeViewState {
   secondaryAction?: HomeAction;
   primaryOrb: HomeStageOrb | null;
   poolOrbs: HomeStageOrb[];
+  poolActionLabels: HomePoolActionLabels;
   banner?: HomeBanner;
   searchFeedback?: HomeSearchFeedback;
 }
@@ -248,6 +255,14 @@ function resolveHomeFieldView(
   return homeFieldView ?? "water";
 }
 
+function buildHomePoolActionLabels(text: ReturnType<typeof getInterfaceText>): HomePoolActionLabels {
+  return {
+    edit: text.home.editPool,
+    delete: text.home.deletePool,
+    enter: text.home.enterPool
+  };
+}
+
 // 运行时首页状态适配。
 export function buildHomeViewStateFromRuntime(
   runtime: HomeRuntimeState,
@@ -312,7 +327,8 @@ export function buildHomeViewState(
       },
       primaryOrb: null,
       poolOrbs: [],
-      };
+      poolActionLabels: buildHomePoolActionLabels(text)
+    };
   }
 
   if (scenario === "home-populated" || scenario === "settings-conflict") {
@@ -344,6 +360,7 @@ export function buildHomeViewState(
       },
       primaryOrb: { ...HOME_PRIMARY_ORB },
       poolOrbs: HOME_SUPPORTING_ORBS.map((orb) => ({ ...orb })),
+      poolActionLabels: buildHomePoolActionLabels(text),
       banner:
         scenario === "settings-conflict"
           ? {

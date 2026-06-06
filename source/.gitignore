@@ -1,2 +1,18 @@
+# 说明：该文件收口本项目无需纳入版本管理的本地工作树、依赖目录、构建产物与环境残留。
+
+# 本地工作树与依赖目录
+.worktrees/
+.superpowers/
 node_modules/
-dist/
+
+# 构建输出与覆盖率产物
+main.js
+*.map
+coverage/
+
+# 本地环境与系统残留
+.env
+.DS_Store
+.hotreload
+.last-sync.json
+data.json

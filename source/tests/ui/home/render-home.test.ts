@@ -1586,6 +1586,28 @@ describe("renderHomeView", () => {
     expect(container.querySelector(".glitter-home-stage__water-surface")).toBeNull();
   });
 
+  it("renders English labels for spring-rain isolated pool title actions", () => {
+    const container = createContainer();
+
+    renderHomeView(
+      container,
+      buildHomeViewState("home-populated", { homeFieldView: "spring-rain", interfaceLanguage: "en" }),
+      {
+        onPrimaryAction() {},
+        onSecondaryAction() {},
+        onPoolSelect() {},
+        onSearchSubmit() {}
+      }
+    );
+
+    const titleActions = container.querySelector(".glitter-home-stage__spring-rain-actions") as
+      | (HTMLElement & { children: Array<HTMLElement & { textContent: string }> })
+      | null;
+
+    expect(titleActions).not.toBeNull();
+    expect(titleActions?.children.map((child) => child.textContent)).toEqual(["Edit", "Delete", "Enter"]);
+  });
+
   it("keeps the centered spring-rain pool bound to the runtime highest-count primary pool instead of input order", () => {
     const container = createContainer();
     const state = buildHomeViewStateFromRuntime(
@@ -5038,6 +5060,58 @@ describe("renderHomeView", () => {
     } finally {
       globalThis.requestAnimationFrame = previousRequestAnimationFrame;
       globalThis.cancelAnimationFrame = previousCancelAnimationFrame;
+    }
+  });
+
+  it("renders English labels for water-view isolated orb hover actions", () => {
+    vi.useFakeTimers();
+
+    try {
+      const state = buildHomeViewStateFromRuntime(
+        {
+          mode: "populated",
+          pools: [
+            { id: "pool-default", name: "Default pool", ideaCount: 8, isDefault: true, color: "#6AB5FF" },
+            { id: "pool-writing", name: "Writing pool", ideaCount: 3, isDefault: false, color: "#74CCBA" }
+          ]
+        },
+        {
+          interfaceLanguage: "en",
+          homeFieldView: "water",
+          poolColors: {
+            unsorted: "#6AB5FF",
+            product: "#74CCBA",
+            research: "#FFA980",
+            writing: "#FFD468",
+            unnamed: "#B794FF"
+          }
+        }
+      );
+      const container = createContainer();
+
+      renderHomeView(container, state, {
+        onPrimaryAction: () => undefined,
+        onSecondaryAction: () => undefined,
+        onPoolSelect: () => undefined,
+        onPoolDelete: () => undefined,
+        onSearchSubmit() {}
+      });
+
+      const supportingOrb = container.querySelector(".glitter-home-stage__supporting-orb") as
+        | (HTMLElement & { dispatch: (type: string) => void })
+        | null;
+      expect(supportingOrb).not.toBeNull();
+
+      supportingOrb?.dispatch("pointerenter");
+      vi.advanceTimersByTime(3000);
+
+      const actionRail = container.querySelector(".glitter-home-stage__pool-orb-actions") as
+        | (HTMLElement & { children: Array<{ textContent: string }> })
+        | null;
+      expect(actionRail).not.toBeNull();
+      expect(actionRail?.children.map((child) => child.textContent)).toEqual(["Edit", "Delete", "Enter"]);
+    } finally {
+      vi.useRealTimers();
     }
   });
 

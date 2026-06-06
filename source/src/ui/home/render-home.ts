@@ -5,7 +5,7 @@
 
 import type { HomeViewActions } from "./home-actions";
 import type { HomeStageOrb } from "./home-demo-data";
-import { HOME_FIELD_VIEW_LABELS, HOME_FIELD_VIEW_OPTIONS, type HomeViewState } from "./home-state";
+import { HOME_FIELD_VIEW_LABELS, HOME_FIELD_VIEW_OPTIONS, type HomePoolActionLabels, type HomeViewState } from "./home-state";
 import { resolveHomeOrbRgb, resolveHomeOrbRingRgb } from "./home-orb-tone";
 import { renderHomeSpringRainStage } from "./home-spring-rain-stage";
 
@@ -1252,6 +1252,7 @@ function createHomeOrbInteractionController(
   primaryOrbButton: HTMLButtonElement | null,
   supportingOrbButtons: HTMLButtonElement[],
   onPoolEnter: (poolId: string) => void,
+  actionLabels: HomePoolActionLabels,
   onPoolDelete?: (poolId: string) => void
 ): HomeOrbInteractionController | null {
   if (!primaryOrbButton && supportingOrbButtons.length === 0) {
@@ -1490,19 +1491,19 @@ function createHomeOrbInteractionController(
     createActionButton(
       "glitter-home-stage__pool-orb-action glitter-home-stage__pool-orb-action--edit",
       "edit",
-      "编辑池",
+      actionLabels.edit,
       onEdit
     );
     createActionButton(
       "glitter-home-stage__pool-orb-action glitter-home-stage__pool-orb-action--delete",
       "delete",
-      "删除池",
+      actionLabels.delete,
       onDelete
     );
     createActionButton(
       "glitter-home-stage__pool-orb-action glitter-home-stage__pool-orb-action--enter",
       "enter",
-      "进入池",
+      actionLabels.enter,
       poolId ? () => onPoolEnter(poolId) : undefined
     );
 
@@ -1943,6 +1944,7 @@ function bindPopulatedOrbLayoutReflow(
   primaryOrbButton: HTMLButtonElement | null,
   supportingOrbButtons: HTMLButtonElement[],
   onPoolEnter: (poolId: string) => void,
+  actionLabels: HomePoolActionLabels,
   onPoolDelete?: (poolId: string) => void
 ): void {
   const withObserverHandle = orbStage as HTMLElement & {
@@ -1956,6 +1958,7 @@ function bindPopulatedOrbLayoutReflow(
     primaryOrbButton,
     supportingOrbButtons,
     onPoolEnter,
+    actionLabels,
     onPoolDelete
   );
   if (interactionController) {
@@ -2577,7 +2580,7 @@ export function renderHomeView(
 
     // populated 首页只替换底层池场渲染器；顶部、搜索、操作栏等首页外壳继续共用同一套结构。
     if (state.fieldView === "spring-rain") {
-      renderHomeSpringRainStage(orbStage, renderedOrbs, actions);
+      renderHomeSpringRainStage(orbStage, renderedOrbs, actions, state.poolActionLabels);
     } else {
       let motionPresetIndex = 0;
       let renderedPrimaryOrbButton: HTMLButtonElement | null = null;
@@ -2616,6 +2619,7 @@ export function renderHomeView(
         renderedPrimaryOrbButton,
         renderedSupportingOrbButtons,
         actions.onPoolSelect,
+        state.poolActionLabels,
         actions.onPoolDelete
       );
     }

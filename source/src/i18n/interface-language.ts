@@ -10,6 +10,9 @@ export interface InterfaceText {
     fileFilter: string;
     createPool: string;
     emptySearchFeedback: string;
+    editPool: string;
+    deletePool: string;
+    enterPool: string;
     deletePoolConfirm: (poolName: string) => string;
   };
   search: {
@@ -326,6 +329,9 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       fileFilter: "已引用 / 已建文件快速筛选",
       createPool: "创建池",
       emptySearchFeedback: "未读取到搜索内容",
+      editPool: "编辑池",
+      deletePool: "删除池",
+      enterPool: "进入池",
       deletePoolConfirm: (poolName) => `确认删除“${poolName}”吗？池内灵感将归入默认池。`
     },
     search: {
@@ -658,6 +664,9 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       fileFilter: "Referenced / file-created quick filter",
       createPool: "Create pool",
       emptySearchFeedback: "No matching content found",
+      editPool: "Edit",
+      deletePool: "Delete",
+      enterPool: "Enter",
       deletePoolConfirm: (poolName) => `Delete \"${poolName}\"? Ideas in this pool will move to the default pool.`
     },
     search: {

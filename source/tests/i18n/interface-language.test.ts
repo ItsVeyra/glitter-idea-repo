@@ -13,6 +13,9 @@ describe("interface language", () => {
     const text = getInterfaceText("zh-CN");
 
     expect(text.home.searchPlaceholder).toBe("搜索灵感、片段或池");
+    expect(text.home.editPool).toBe("编辑池");
+    expect(text.home.deletePool).toBe("删除池");
+    expect(text.home.enterPool).toBe("进入池");
     expect(text.roamExport.emptyTitle).toBe("暂无可导出的白板节点");
     expect(text.roamExport.missingStatus).toBe("缺失");
   });
@@ -22,6 +25,9 @@ describe("interface language", () => {
 
     expect(text.home.searchPlaceholder).toBe("Search ideas, snippets, or pools");
     expect(text.home.emptySearchFeedback).toBe("No matching content found");
+    expect(text.home.editPool).toBe("Edit");
+    expect(text.home.deletePool).toBe("Delete");
+    expect(text.home.enterPool).toBe("Enter");
     expect(text.home.deletePoolConfirm("Product")).toBe("Delete \"Product\"? Ideas in this pool will move to the default pool.");
     expect(text.pool.markdownPreviewPanelTitle("Product")).toBe("Product Markdown file");
     expect(text.pool.markdownPreviewSaveLabel).toBe("Save Markdown file");
