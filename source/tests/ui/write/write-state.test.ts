@@ -106,6 +106,129 @@ describe("buildWriteViewState", () => {
     });
   });
 
+  it("builds English fixed quick capture interface text when requested", () => {
+    const state = buildWriteViewState({
+      flowContext: "global",
+      phase: "capture",
+      contentKind: "text",
+      importState: "idle",
+      interfaceLanguage: "en"
+    });
+
+    expect(state.title).toBe("Quick Capture");
+    expect(state.fields.title.label).toBe("Title (auto)");
+    expect(state.fields.title.placeholder).toBe("Auto-generated title");
+    expect(state.fields.body.label).toBe("Idea content");
+    expect(state.fields.body.inputPlaceholder).toBe("Write an idea, snippet, or link");
+    expect(state.fields.poolHint).toBe("Pool: Default pool");
+    expect(state.poolPicker?.selectedLabel).toBe("Default pool");
+    expect(state.poolPicker?.createActionLabel).toBe("New pool...");
+    expect(state.quickCapture?.clipHint).toBe("Paste attachments or links to auto-detect");
+    expect(state.quickCapture?.createFileActionLabel).toBe("Save idea and create file");
+    expect(state.footer.primaryAction.label).toBe("Complete capture");
+  });
+
+  it("exposes English quick capture detail labels for renderer-only controls", () => {
+    const state = buildWriteViewState({
+      flowContext: "global",
+      phase: "capture",
+      contentKind: "media",
+      importState: "idle",
+      interfaceLanguage: "en",
+      attachedMediaCount: 2,
+      attachedMediaPreviewUrl: "app://image.png",
+      attachedMediaPreviewKind: "image",
+      mediaOverlayMode: "image-gallery",
+      aiPolishVisible: true,
+      aiPolishState: "reviewing",
+      aiPolishSourceValue: "rough note",
+      aiPolishPolishedValue: "polished note"
+    });
+
+    expect(state.quickCapture?.labels).toMatchObject({
+      aiPolishTrigger: "AI polish",
+      aiPolishLoading: "AI polishing...",
+      aiPolishAccept: "Accept result",
+      aiPolishRedo: "Redo",
+      aiPolishBack: "Cancel",
+      defaultSaveHelperText: "Saved as an idea by default (no .md file created)",
+      closeQuickCapture: "Close quick capture",
+      attachmentPick: "Add image or video attachments",
+      linkAttachmentRemove: "Remove loaded link",
+      mediaPreviewOpen: "View large preview",
+      selectedImage: "Selected media image thumbnail",
+      selectedVideo: "Selected media video thumbnail",
+      previousImage: "Previous image",
+      nextImage: "Next image",
+      addImage: "Add image",
+      replaceImage: "Replace current image",
+      removeImage: "Remove current image",
+      replaceVideo: "Replace video",
+      removeVideo: "Remove video",
+      mediaPreviewClose: "Close large preview",
+      mediaPreviewImage: "Media large preview"
+    });
+  });
+
+  it("builds English global quick capture save feedback states", () => {
+    const saving = buildWriteViewState({
+      flowContext: "global",
+      phase: "saving",
+      contentKind: "text",
+      importState: "idle",
+      interfaceLanguage: "en"
+    });
+    const failed = buildWriteViewState({
+      flowContext: "global",
+      phase: "save-failed",
+      contentKind: "text",
+      importState: "idle",
+      interfaceLanguage: "en"
+    });
+    const saved = buildWriteViewState({
+      flowContext: "global",
+      phase: "saved-feedback",
+      contentKind: "text",
+      importState: "idle",
+      interfaceLanguage: "en",
+      selectedPoolLabel: "Product"
+    });
+
+    expect(saving.title).toBe("Saving idea");
+    expect(saving.choice?.options[0]?.description).toBe("· Saving title and body\n· Syncing pool assignment and status markers");
+    expect(saving.footer.primaryAction.label).toBe("Saving...");
+    expect(failed.title).toBe("Idea save failed");
+    expect(failed.footer.secondaryAction.label).toBe("Back to edit");
+    expect(saved.title).toBe("Idea saved to pool");
+    expect(saved.choice?.options[0]?.description).toBe("· Saved to Product\n· You can keep editing and creating files in the pool");
+    expect(saved.footer.secondaryAction.label).toBe("Keep capturing");
+    expect(saved.footer.primaryAction.label).toBe("Enter pool");
+  });
+
+  it("builds English first-use saved feedback state", () => {
+    const state = buildWriteViewState({
+      flowContext: "first-use",
+      phase: "saved-feedback",
+      contentKind: "text",
+      importState: "idle",
+      interfaceLanguage: "en",
+      inputText: "First idea"
+    });
+
+    expect(state.title).toBe("Idea saved");
+    expect(state.subtitle).toBe("Choose which idea pool this idea should enter next.");
+    expect(state.fields.title.label).toBe("Title (auto)");
+    expect(state.fields.body.label).toBe("Idea content");
+    expect(state.fields.body.placeholder).toBe("Saved successfully");
+    expect(state.choice?.title).toBe("Next step");
+    expect(state.choice?.options[0]).toMatchObject({
+      label: "Choose pool",
+      description: "Continue by choosing a target pool for this idea."
+    });
+    expect(state.footer.secondaryAction.label).toBe("Back home");
+    expect(state.footer.primaryAction.label).toBe("Choose pool");
+  });
+
   it("keeps global text auto titles timestamp-based by default", () => {
     const state = buildWriteViewState({
       flowContext: "global",

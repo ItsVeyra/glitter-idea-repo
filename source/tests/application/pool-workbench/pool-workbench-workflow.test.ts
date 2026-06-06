@@ -1379,6 +1379,39 @@ describe("createPoolWorkbenchWorkflow", () => {
     expect(state.pool.description).toBe("继续在当前池中筛选、整理并沉淀灵感。");
     expect(state.cards).toHaveLength(0);
   });
+
+  it("loads localized default pool metadata when English interface language is requested", async () => {
+    const ideaService = createIdeaService();
+    const poolService = createPoolService([], () => ideaService.listIdeas());
+    const vaultFileStore = {
+      ensureFolder: vi.fn(async () => undefined),
+      createUniquePath: vi.fn(async (_folder: string, fileName: string) => `Glitter/${fileName}.md`),
+      buildIdeaFileContent: vi.fn((idea: { title: string; body: string }) => `# ${idea.title}\n\n${idea.body}`)
+    };
+    const workflow = createPoolWorkbenchWorkflow({
+      ideaService,
+      poolService,
+      vaultFileStore: vaultFileStore as any,
+      vault
+    });
+
+    const state = await workflow.loadPoolState({
+      poolId: "pool-missing",
+      query: "",
+      status: "all",
+      contentFilter: "all",
+      sort: "updated-desc",
+      selectedIdeaIds: [],
+      interfaceLanguage: "en"
+    });
+
+    expect(state.pool.title).toBe("Default pool");
+    expect(state.pool.description).toBe("Keep filtering, organizing, and developing ideas in this pool.");
+    expect(state.header).toEqual({
+      eyebrow: "Idea pool",
+      hint: "Keep organizing and filtering in the current pool"
+    });
+  });
   it("loads overview state with required ordering and Chinese card metadata", async () => {
     const ideaService = createIdeaService();
     const poolService = createPoolService([], () => ideaService.listIdeas());

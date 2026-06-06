@@ -3,7 +3,8 @@
  * 负责把首页运行时池数据整理成首页舞台、顶部控件与提示区可直接渲染的视图模型。
  */
 
-import type { HomeFieldView, PoolColorSettings } from "../../settings/settings";
+import { getInterfaceText } from "../../i18n/interface-language";
+import type { HomeFieldView, PluginInterfaceLanguage, PoolColorSettings } from "../../settings/settings";
 import type { ReviewScenario } from "../../review/scenarios";
 import {
   HOME_PRIMARY_ORB,
@@ -85,6 +86,7 @@ export interface HomeViewState {
 
 export interface BuildHomeViewStateOptions {
   homeFieldView?: HomeFieldView;
+  interfaceLanguage?: PluginInterfaceLanguage;
   poolColors?: PoolColorSettings;
   searchFeedbackMessage?: string;
 }
@@ -285,6 +287,7 @@ export function buildHomeViewState(
 ): HomeViewState {
   const mode = scenario === "home-empty" ? "empty" : "populated";
   const fieldView = resolveHomeFieldView(mode, options.homeFieldView);
+  const text = getInterfaceText(options.interfaceLanguage);
 
   if (scenario === "home-empty") {
     return {
@@ -304,7 +307,7 @@ export function buildHomeViewState(
         prompt: "点击空灵感球开始流程"
       },
       primaryAction: {
-        label: "灵感速记",
+        label: text.home.quickCapture,
         tone: "primary"
       },
       primaryOrb: null,
@@ -323,20 +326,20 @@ export function buildHomeViewState(
       },
       topbar: {
         search: {
-          placeholder: "可搜索标题/标签/池名，按状态筛选。"
+          placeholder: text.home.searchPlaceholder
         },
         controls: [
-          { id: "view-switch", label: "切换视图", kind: "text" },
-          { id: "settings", label: "设置", kind: "text" },
-          { id: "file-filter", label: "已引用 / 已建文件快速筛选", kind: "icon" }
+          { id: "view-switch", label: text.home.viewSwitch, kind: "text" },
+          { id: "settings", label: text.home.settings, kind: "text" },
+          { id: "file-filter", label: text.home.fileFilter, kind: "icon" }
         ]
       },
       primaryAction: {
-        label: "灵感速记",
+        label: text.home.quickCapture,
         tone: "primary"
       },
       secondaryAction: {
-        label: "创建池",
+        label: text.home.createPool,
         tone: "secondary"
       },
       primaryOrb: { ...HOME_PRIMARY_ORB },

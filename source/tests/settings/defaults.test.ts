@@ -30,6 +30,7 @@ describe("DEFAULT_SETTINGS", () => {
     expect(DEFAULT_SETTINGS.reviewScenario).toBe(DEFAULT_REVIEW_SCENARIO);
     expect(DEFAULT_SETTINGS.uiThemeMode).toBe("follow-obsidian");
     expect(DEFAULT_SETTINGS.homeFieldView).toBe("water");
+    expect(DEFAULT_SETTINGS.interfaceLanguage).toBe("zh-CN");
     expect(DEFAULT_SETTINGS.ai).toEqual({
       enabled: false,
       quickCapturePolishEnabled: true,
@@ -206,6 +207,20 @@ describe("mergePluginSettings", () => {
     } as unknown as Parameters<typeof mergePluginSettings>[0]);
 
     expect(merged.homeFieldView).toBe("water");
+  });
+
+  it("keeps a valid Glitter interface language from loaded settings", () => {
+    const merged = mergePluginSettings({ interfaceLanguage: "en" });
+
+    expect(merged.interfaceLanguage).toBe("en");
+  });
+
+  it("normalizes an invalid Glitter interface language to zh-CN", () => {
+    const merged = mergePluginSettings({ interfaceLanguage: "follow-obsidian" } as unknown as Parameters<
+      typeof mergePluginSettings
+    >[0]);
+
+    expect(merged.interfaceLanguage).toBe("zh-CN");
   });
 
   it("defaults and preserves showHomeRibbonIcon", () => {

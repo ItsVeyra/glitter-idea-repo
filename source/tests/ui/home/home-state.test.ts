@@ -72,10 +72,23 @@ describe("buildHomeViewState", () => {
       helper: "点击中央灵感球，打开首次记录窗口",
       prompt: "点击空灵感球开始流程"
     });
-    expect(state.primaryAction).toEqual({ label: "灵感速记", tone: "primary" });
+    expect(state.primaryAction).toEqual({ label: "快速记录", tone: "primary" });
     expect(state.secondaryAction).toBeUndefined();
     expect(state.primaryOrb).toBeNull();
     expect(state.poolOrbs).toEqual([]);
+  });
+
+  it("builds English fixed home interface text when requested", () => {
+    const state = buildHomeViewState("home-populated", { interfaceLanguage: "en" });
+
+    expect(state.topbar.search?.placeholder).toBe("Search ideas, snippets, or pools");
+    expect(state.topbar.controls).toEqual([
+      { id: "view-switch", label: "Switch view", kind: "text" },
+      { id: "settings", label: "Settings", kind: "text" },
+      { id: "file-filter", label: "Referenced / file-created quick filter", kind: "icon" }
+    ]);
+    expect(state.primaryAction.label).toBe("Quick capture");
+    expect(state.secondaryAction?.label).toBe("Create pool");
   });
 
   it("builds the populated state with tone/kind on ranked orbs and topbar search/controls", () => {
@@ -100,10 +113,10 @@ describe("buildHomeViewState", () => {
       { id: "pool-unnamed", label: "未命名", count: 7, size: "xs", x: 26, y: 85, tone: "unnamed", kind: "pool", isDefault: false }
     ]);
     expect(state.hero.title).toBe("Glitter · 灵感池");
-    expect(state.topbar.search?.placeholder).toBe("可搜索标题/标签/池名，按状态筛选。");
+    expect(state.topbar.search?.placeholder).toBe("搜索灵感、片段或池");
     expect(state.topbar.controls).toEqual(POPULATED_TOPBAR_CONTROLS);
     expect(state.secondaryAction).toEqual({ label: "创建池", tone: "secondary" });
-    expect(state.primaryAction).toEqual({ label: "灵感速记", tone: "primary" });
+    expect(state.primaryAction).toEqual({ label: "快速记录", tone: "primary" });
   });
 
   it("adds a conflict banner without replacing the populated home stage", () => {

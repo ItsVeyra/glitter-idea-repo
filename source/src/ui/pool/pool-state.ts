@@ -1,4 +1,5 @@
-import { buildIdeaStatusLabels, formatIdeaTimestamp } from "../../domain/idea/idea-model";
+import { formatIdeaTimestamp } from "../../domain/idea/idea-model";
+import { getInterfaceText } from "../../i18n/interface-language";
 import {
   CREATE_NEW_POOL_ID,
   DEFAULT_POOL_DESCRIPTION,
@@ -6,7 +7,7 @@ import {
   NEW_POOL_CREATED_LABEL,
   resolvePoolDescription
 } from "../../plugin/constants";
-import type { PoolColorSettings } from "../../settings/settings";
+import type { PluginInterfaceLanguage, PoolColorSettings } from "../../settings/settings";
 
 export type PoolScenario =
   | "pool-browse"
@@ -84,6 +85,66 @@ interface PoolBrowseCard {
 
 export type PoolBrowseOverlay = "pool-switcher" | "status" | "filter" | "sort" | "batch";
 
+export interface PoolBrowseLabels {
+  browseSearchPlaceholder: string;
+  bodyCollapseLabel: string;
+  bodyExpandLabel: string;
+  bodyCollapseText: string;
+  bodyExpandText: string;
+  moveToLabel: string;
+  closeMoveToLabel: string;
+  moveSearchPlaceholder: string;
+  noMoveTargets: string;
+  statusFilterOptions: Record<"all" | "referenced" | "file-created" | "with-markers", string>;
+  contentFilterOptions: Record<"all" | "text" | "link" | "image" | "video", string>;
+  sortOptions: Record<"updated-desc" | "created-desc" | "title-asc", string>;
+  newPoolLabel: string;
+  selectCardLabel: string;
+  deselectCardLabel: string;
+  moreActionsLabel: string;
+  editAction: string;
+  moveToPoolAction: string;
+  shareAction: string;
+  deleteAction: string;
+  backHomeLabel: string;
+  switchPoolLabel: string;
+  quickCaptureLabel: string;
+  roamBackTitle: string;
+  roamBackDescription: string;
+  roamBackContinue: string;
+  roamBackHome: string;
+  statusFilterLabel: string;
+  filterLabel: string;
+  sortLabel: string;
+  previewCurrentPoolMarkdown: string;
+  previewUnavailableInRoam: string;
+  batchOrganizeLabel: string;
+  deleteSelectedIdeasLabel: string;
+  moveSelectedToPoolLabel: string;
+  resizeRoamAreaLabel: string;
+  emptyPoolTitle: string;
+  emptyPoolDescription: string;
+  filterResultEyebrow: string;
+  noFilterResultsTitle: string;
+  noFilterResultsDescription: string;
+  mediaPreviewCloseLabel: string;
+  mediaPreviewImageAlt: (ideaTitle: string) => string;
+  mediaPreviewImageAltWithPosition: (ideaTitle: string, positionLabel: string) => string;
+  mediaPreviewPreviousImageLabel: string;
+  mediaPreviewNextImageLabel: string;
+  mediaPreviewVideoLabel: (ideaTitle: string) => string;
+  cardImagePositionLabel: (current: number, total: number) => string;
+  cardCurrentImageAnnouncement: (positionLabel: string) => string;
+  cardViewLargeImageLabel: (ideaTitle: string) => string;
+  cardViewLargeImageWithPositionLabel: (ideaTitle: string, positionLabel: string) => string;
+  cardImageThumbnailAltWithPosition: (ideaTitle: string, positionLabel: string) => string;
+  cardPreviousImageLabel: string;
+  cardNextImageLabel: string;
+  cardViewLargeVideoLabel: (ideaTitle: string) => string;
+  cardVideoPreviewLabel: (ideaTitle: string) => string;
+  cardEmptyFallback: string;
+}
+
 interface PoolBrowseState {
   description: string;
   descriptionValue?: string;
@@ -93,6 +154,7 @@ interface PoolBrowseState {
   contentFilter: "all" | "text" | "link" | "image" | "video";
   queryPlaceholder: string;
   resultSummary: string;
+  labels?: PoolBrowseLabels;
   cards: PoolBrowseCard[];
 }
 
@@ -102,8 +164,8 @@ interface PoolEmptyState {
 }
 
 const DEFAULT_POOL_EMPTY_STATE: PoolEmptyState = {
-  title: "这个池里还没有灵感",
-  description: "先记录一条灵感，之后就能在这里查看、筛选和整理。"
+  title: getInterfaceText("zh-CN").pool.emptyPoolTitle,
+  description: getInterfaceText("zh-CN").pool.emptyPoolDescription
 };
 
 export interface PoolMarkdownPreviewState {
@@ -130,6 +192,25 @@ export interface PoolRoamBoundaryAnchorState {
   visibleBridge: boolean;
 }
 
+export interface PoolRoamPanelLabels {
+  toggleOpen: string;
+  toggleClose: string;
+  modeLabel: string;
+  downloadCurrentBoard: string;
+  shareCurrentBoard: string;
+  openHistory: string;
+  errorTitle: string;
+  errorDescription: string;
+  emptyTitle: string;
+  emptyDescription: string;
+  sourceHandleTitle: string;
+  sourceHandleLabel: (ideaTitle: string) => string;
+  bridgeMarkerLabel: (ideaTitle: string) => string;
+  bridgeMeta: (poolName: string) => string;
+  locateSource: string;
+  deleteLink: string;
+}
+
 export interface PoolRoamPanelState {
   open: boolean;
   mode: "empty" | "board" | "error";
@@ -137,6 +218,7 @@ export interface PoolRoamPanelState {
   historyEnabled: boolean;
   floatingActions: PoolRoamFloatingAction[];
   boundaryAnchors: PoolRoamBoundaryAnchorState[];
+  labels?: PoolRoamPanelLabels;
   panelWidthRatio?: number;
   errorMessage?: string;
 }
@@ -150,6 +232,9 @@ export interface PoolChoiceOption {
 interface PoolChoice {
   title: string;
   options: PoolChoiceOption[];
+  closeLabel?: string;
+  backLabel?: string;
+  continueLabel?: string;
 }
 
 export interface PoolCreateForm {
@@ -164,6 +249,7 @@ export interface PoolCreateForm {
   tipTitle: string;
   tipText: string;
   confirmLabel: string;
+  closeLabel?: string;
   createdPoolId: string;
   createdPoolLabel: string;
 }
@@ -200,22 +286,26 @@ export interface PoolViewState {
   }>;
 }
 
-export function buildFirstUseChoosePoolState(options: { pools: Array<{ id: string; name: string; ideaCount: number }> }): PoolViewState {
+export function buildFirstUseChoosePoolState(options: {
+  pools: Array<{ id: string; name: string; ideaCount: number }>;
+  interfaceLanguage?: PluginInterfaceLanguage;
+}): PoolViewState {
+  const text = getInterfaceText(options.interfaceLanguage).pool;
   const defaultPool = options.pools[0];
   const defaultPoolId = defaultPool?.id ?? "pool-default";
-  const defaultPoolName = defaultPool?.name ?? "默认池";
+  const defaultPoolName = defaultPool?.name ?? text.firstUseChooseDefaultPoolName;
 
   return {
     mode: "first-use-choose",
     pool: {
       id: "pool-first-use",
-      title: "归池选择（首次）",
+      title: text.firstUseChooseTitle,
       itemCount: options.pools.length,
       tone: "bluegray"
     },
     header: {
-      eyebrow: "首次归池",
-      hint: "第一条灵感已保存。你可以直接归入默认池，或现在创建一个新池来分类。"
+      eyebrow: text.firstUseChooseEyebrow,
+      hint: text.firstUseChooseHint
     },
     items: [],
     detail: {
@@ -224,19 +314,22 @@ export function buildFirstUseChoosePoolState(options: { pools: Array<{ id: strin
       body: ""
     },
     choice: {
-      title: "选择归池方式",
+      title: text.firstUseChooseChoiceTitle,
       options: [
         {
           id: CREATE_NEW_POOL_ID,
-          label: "方案 A：新建池后归类（推荐）",
-          description: "先创建池名称、描述与池色，再将这条灵感归入新池。"
+          label: text.firstUseChooseCreateLabel,
+          description: text.firstUseChooseCreateDescription
         },
         {
           id: defaultPoolId,
-          label: "方案 B：归入默认池",
-          description: `立即完成首次流程，并归入当前默认池「${defaultPoolName}」。系统随后展示后续使用指引。`
+          label: text.firstUseChooseDefaultLabel,
+          description: text.firstUseChooseDefaultDescription(defaultPoolName)
         }
-      ]
+      ],
+      closeLabel: text.firstUseChooseCloseLabel,
+      backLabel: text.firstUseChooseBackLabel,
+      continueLabel: text.firstUseChooseContinueLabel
     }
   };
 }
@@ -266,24 +359,26 @@ export function buildFirstUseCreatePoolState(
     defaultName?: string;
     flowContext?: "first-use" | "global";
     poolColors?: PoolColorSettings;
+    interfaceLanguage?: PluginInterfaceLanguage;
   } = {}
 ): PoolViewState {
   const flowContext = options.flowContext ?? "first-use";
   const isGlobalFlow = flowContext === "global";
+  const text = getInterfaceText(options.interfaceLanguage).pool;
 
   return {
     mode: "first-use-create",
     pool: {
       id: "pool-create",
-      title: isGlobalFlow ? "新建池" : "新建池分类（首次）",
+      title: isGlobalFlow ? text.createPoolGlobalTitle : text.createPoolFirstUseTitle,
       itemCount: 0,
       tone: "bluegray"
     },
     header: {
-      eyebrow: isGlobalFlow ? "池管理" : "首次归池",
+      eyebrow: isGlobalFlow ? text.createPoolGlobalEyebrow : text.createPoolFirstUseEyebrow,
       hint: isGlobalFlow
-        ? "创建一个新池，便于后续筛选与整理。"
-        : "为这条灵感创建一个新池，后续筛选和整理会更清晰。"
+        ? text.createPoolGlobalHint
+        : text.createPoolFirstUseHint
     },
     items: [],
     detail: {
@@ -292,23 +387,24 @@ export function buildFirstUseCreatePoolState(
       body: ""
     },
     createForm: {
-      title: isGlobalFlow ? "新建池" : "新建池分类（首次）",
+      title: isGlobalFlow ? text.createPoolGlobalTitle : text.createPoolFirstUseTitle,
       subtitle: isGlobalFlow
-        ? "创建一个新池，便于后续筛选与整理。"
-        : "为这条灵感创建一个新池，后续筛选和整理会更清晰。",
-      nameLabel: "池名称",
-      namePlaceholder: "例如：产品池 / 写作池 / 研究池",
-      descriptionLabel: "池描述",
-      descriptionPlaceholder: "填写该池聚焦的方向与使用场景，便于后续筛选和整理。",
-      colorLabel: "池颜色",
+        ? text.createPoolGlobalHint
+        : text.createPoolFirstUseHint,
+      nameLabel: text.createPoolNameLabel,
+      namePlaceholder: text.createPoolNamePlaceholder,
+      descriptionLabel: text.createPoolDescriptionLabel,
+      descriptionPlaceholder: text.createPoolDescriptionPlaceholder,
+      colorLabel: text.createPoolColorLabel,
       colorOptions: resolveCreateColorOptions(options.poolColors),
-      tipTitle: isGlobalFlow ? "提示" : "首次说明",
+      tipTitle: isGlobalFlow ? text.createPoolGlobalTipTitle : text.createPoolFirstUseTipTitle,
       tipText: isGlobalFlow
-        ? "创建完成后会返回首页并刷新数据。"
-        : "创建后会自动把当前灵感归入该池，并在首页显示首次入池反馈。",
-      confirmLabel: "创建池",
+        ? text.createPoolGlobalTipText
+        : text.createPoolFirstUseTipText,
+      confirmLabel: text.createPoolConfirmLabel,
+      closeLabel: text.createPoolCloseLabel,
       createdPoolId: NEW_POOL_CREATED_ID,
-      createdPoolLabel: options.defaultName ?? NEW_POOL_CREATED_LABEL
+      createdPoolLabel: options.defaultName ?? text.newPoolLabel
     }
   };
 }
@@ -372,12 +468,14 @@ function resolveBrowseContentKind(
 function resolvePrimaryFileMenuAction(input: {
   fileCreated: boolean;
   filePath?: string;
+  interfaceLanguage?: PluginInterfaceLanguage;
 }): PoolBrowseCardMenuAction {
+  const text = getInterfaceText(input.interfaceLanguage).pool;
   if (input.fileCreated && input.filePath) {
-    return { kind: "open-primary-file", label: "打开主文件" };
+    return { kind: "open-primary-file", label: text.cardOpenPrimaryFile };
   }
 
-  return { kind: "create-file", label: "创建文件" };
+  return { kind: "create-file", label: text.cardCreateFile };
 }
 
 function normalizeSnippetLocations(snippetLocations?: PoolBrowseSnippetLocation[]): PoolBrowseSnippetLocation[] {
@@ -414,7 +512,9 @@ function buildBrowseMenuActions(input: {
   fileCreated: boolean;
   filePath?: string;
   snippetLocations: PoolBrowseSnippetLocation[];
+  interfaceLanguage?: PluginInterfaceLanguage;
 }): PoolBrowseCardMenuAction[] {
+  const text = getInterfaceText(input.interfaceLanguage).pool;
   const actions: PoolBrowseCardMenuAction[] = [resolvePrimaryFileMenuAction(input)];
 
   if (input.snippetLocations.length === 1) {
@@ -422,41 +522,138 @@ function buildBrowseMenuActions(input: {
       input.snippetLocations[0].stale
         ? {
             kind: "open-snippet-locations",
-            label: `查看插入位置（${input.snippetLocations.length}）`
+            label: text.cardOpenSnippetLocations(input.snippetLocations.length)
           }
         : {
             kind: "open-snippet-note",
-            label: "打开插入笔记"
+            label: text.cardOpenSnippetNote
           }
     );
   } else if (input.snippetLocations.length > 1) {
     actions.push({
       kind: "open-snippet-locations",
-      label: `查看插入位置（${input.snippetLocations.length}）`
+      label: text.cardOpenSnippetLocations(input.snippetLocations.length)
     });
   }
 
   return actions;
 }
 
-function buildBrowseResultSummary(visible: number, total: number): string {
-  if (visible === total) {
-    return `共 ${total} 条灵感`;
+function buildBrowseResultSummary(visible: number, total: number, interfaceLanguage?: PluginInterfaceLanguage): string {
+  return getInterfaceText(interfaceLanguage).pool.browseResultSummary(visible, total);
+}
+
+function buildLocalizedIdeaStatusLabels(input: { fileCreated: boolean; snippetCount: number; interfaceLanguage?: PluginInterfaceLanguage }): string[] {
+  const text = getInterfaceText(input.interfaceLanguage).pool;
+  const labels: string[] = [];
+
+  if (input.fileCreated) {
+    labels.push(text.cardFileCreatedStatus);
   }
 
-  return `命中 ${visible} / 共 ${total} 条灵感`;
+  if (input.snippetCount > 0) {
+    labels.push(text.cardSnippetStatus(input.snippetCount));
+  }
+
+  return labels;
 }
 
-function buildUpdatedLabel(createdAt: string | undefined, updatedAt: string, editedAt?: string): string {
+function buildPoolBrowseLabels(interfaceLanguage?: PluginInterfaceLanguage): PoolBrowseLabels {
+  const text = getInterfaceText(interfaceLanguage).pool;
+  return {
+    browseSearchPlaceholder: text.browseSearchPlaceholder,
+    bodyCollapseLabel: text.bodyCollapseLabel,
+    bodyExpandLabel: text.bodyExpandLabel,
+    bodyCollapseText: text.bodyCollapseText,
+    bodyExpandText: text.bodyExpandText,
+    moveToLabel: text.moveToLabel,
+    closeMoveToLabel: text.closeMoveToLabel,
+    moveSearchPlaceholder: text.moveSearchPlaceholder,
+    noMoveTargets: text.noMoveTargets,
+    statusFilterOptions: text.statusFilterOptions,
+    contentFilterOptions: text.contentFilterOptions,
+    sortOptions: text.sortOptions,
+    newPoolLabel: text.newPoolLabel,
+    selectCardLabel: text.selectCardLabel,
+    deselectCardLabel: text.deselectCardLabel,
+    moreActionsLabel: text.moreActionsLabel,
+    editAction: text.editAction,
+    moveToPoolAction: text.moveToPoolAction,
+    shareAction: text.shareAction,
+    deleteAction: text.deleteAction,
+    backHomeLabel: text.backHomeLabel,
+    switchPoolLabel: text.switchPoolLabel,
+    quickCaptureLabel: text.quickCaptureLabel,
+    roamBackTitle: text.roamBackTitle,
+    roamBackDescription: text.roamBackDescription,
+    roamBackContinue: text.roamBackContinue,
+    roamBackHome: text.roamBackHome,
+    statusFilterLabel: text.statusFilterLabel,
+    filterLabel: text.filterLabel,
+    sortLabel: text.sortLabel,
+    previewCurrentPoolMarkdown: text.previewCurrentPoolMarkdown,
+    previewUnavailableInRoam: text.previewUnavailableInRoam,
+    batchOrganizeLabel: text.batchOrganizeLabel,
+    deleteSelectedIdeasLabel: text.deleteSelectedIdeasLabel,
+    moveSelectedToPoolLabel: text.moveSelectedToPoolLabel,
+    resizeRoamAreaLabel: text.resizeRoamAreaLabel,
+    emptyPoolTitle: text.emptyPoolTitle,
+    emptyPoolDescription: text.emptyPoolDescription,
+    filterResultEyebrow: text.filterResultEyebrow,
+    noFilterResultsTitle: text.noFilterResultsTitle,
+    noFilterResultsDescription: text.noFilterResultsDescription,
+    mediaPreviewCloseLabel: text.mediaPreviewCloseLabel,
+    mediaPreviewImageAlt: text.mediaPreviewImageAlt,
+    mediaPreviewImageAltWithPosition: text.mediaPreviewImageAltWithPosition,
+    mediaPreviewPreviousImageLabel: text.mediaPreviewPreviousImageLabel,
+    mediaPreviewNextImageLabel: text.mediaPreviewNextImageLabel,
+    mediaPreviewVideoLabel: text.mediaPreviewVideoLabel,
+    cardImagePositionLabel: text.cardImagePositionLabel,
+    cardCurrentImageAnnouncement: text.cardCurrentImageAnnouncement,
+    cardViewLargeImageLabel: text.cardViewLargeImageLabel,
+    cardViewLargeImageWithPositionLabel: text.cardViewLargeImageWithPositionLabel,
+    cardImageThumbnailAltWithPosition: text.cardImageThumbnailAltWithPosition,
+    cardPreviousImageLabel: text.cardPreviousImageLabel,
+    cardNextImageLabel: text.cardNextImageLabel,
+    cardViewLargeVideoLabel: text.cardViewLargeVideoLabel,
+    cardVideoPreviewLabel: text.cardVideoPreviewLabel,
+    cardEmptyFallback: text.cardEmptyFallback
+  };
+}
+
+function buildUpdatedLabel(createdAt: string | undefined, updatedAt: string, editedAt?: string, interfaceLanguage?: PluginInterfaceLanguage): string {
   const displayTime = formatIdeaTimestamp(editedAt ?? createdAt ?? updatedAt);
-  return editedAt ? `${displayTime} 已更新` : displayTime;
+  return editedAt ? getInterfaceText(interfaceLanguage).pool.updatedLabel(displayTime) : displayTime;
 }
 
-function clonePoolRoamPanelState(state: PoolRoamPanelState): PoolRoamPanelState {
+function buildPoolRoamPanelLabels(interfaceLanguage?: PluginInterfaceLanguage): PoolRoamPanelLabels {
+  const text = getInterfaceText(interfaceLanguage).pool;
+  return {
+    toggleOpen: text.roamToggleOpen,
+    toggleClose: text.roamToggleClose,
+    modeLabel: text.roamModeLabel,
+    downloadCurrentBoard: text.roamDownloadCurrentBoard,
+    shareCurrentBoard: text.roamShareCurrentBoard,
+    openHistory: text.roamOpenHistory,
+    errorTitle: text.roamErrorTitle,
+    errorDescription: text.roamErrorDescription,
+    emptyTitle: text.roamEmptyTitle,
+    emptyDescription: text.roamEmptyDescription,
+    sourceHandleTitle: text.roamSourceHandleTitle,
+    sourceHandleLabel: text.roamSourceHandleLabel,
+    bridgeMarkerLabel: text.roamBridgeMarkerLabel,
+    bridgeMeta: text.roamBridgeMeta,
+    locateSource: text.roamLocateSource,
+    deleteLink: text.roamDeleteLink
+  };
+}
+
+function clonePoolRoamPanelState(state: PoolRoamPanelState, interfaceLanguage?: PluginInterfaceLanguage): PoolRoamPanelState {
   return {
     ...state,
     floatingActions: [...state.floatingActions],
-    boundaryAnchors: state.boundaryAnchors.map((anchor) => ({ ...anchor }))
+    boundaryAnchors: state.boundaryAnchors.map((anchor) => ({ ...anchor })),
+    labels: state.labels ?? buildPoolRoamPanelLabels(interfaceLanguage)
   };
 }
 
@@ -511,6 +708,7 @@ export function buildPoolViewStateFromRuntime(input: {
   batchMode: boolean;
   activeOverlay?: PoolBrowseOverlay;
   poolSwitcherActivePoolId?: string;
+  interfaceLanguage?: PluginInterfaceLanguage;
   viewOptions?: {
     showPoolSwitcher?: boolean;
     metadataEditable?: boolean;
@@ -520,6 +718,7 @@ export function buildPoolViewStateFromRuntime(input: {
   roam?: PoolRoamPanelState;
   roamBackConfirmVisible?: boolean;
 }): PoolViewState {
+  const interfaceText = getInterfaceText(input.interfaceLanguage).pool;
   const hasBrowseContext = input.pool.totalItemCount > 0 || input.cards.length > 0;
   const selectedPoolOption = input.poolOptions.find((pool) => pool.selected);
   const poolSwitcherExpanded = input.activeOverlay === "pool-switcher";
@@ -532,8 +731,9 @@ export function buildPoolViewStateFromRuntime(input: {
       ? (input.poolSwitcherActivePoolId ?? selectedPoolOption?.id ?? input.pool.id)
       : undefined,
     contentFilter: input.controls.contentFilter,
-    queryPlaceholder: input.viewOptions?.queryPlaceholder ?? "搜索当前池中的灵感",
-    resultSummary: buildBrowseResultSummary(input.pool.visibleItemCount, input.pool.totalItemCount),
+    queryPlaceholder: input.viewOptions?.queryPlaceholder ?? interfaceText.browseSearchPlaceholder,
+    resultSummary: buildBrowseResultSummary(input.pool.visibleItemCount, input.pool.totalItemCount, input.interfaceLanguage),
+    labels: buildPoolBrowseLabels(input.interfaceLanguage),
     cards: input.cards.map((card) => {
       const mediaPath = firstAttachmentPath(card.attachmentPaths);
       const normalizedLinkUrl = normalizeLinkUrl(card.sourceUrl);
@@ -574,16 +774,18 @@ export function buildPoolViewStateFromRuntime(input: {
         mediaThumbnailUrls: contentKind === "image" && mediaThumbnailUrls.length > 0 ? mediaThumbnailUrls : undefined,
         linkUrl: contentKind === "link" ? normalizedLinkUrl : undefined,
         linkDisplayText: undefined,
-        updatedLabel: buildUpdatedLabel(card.createdAt, card.updatedAt, card.editedAt),
+        updatedLabel: buildUpdatedLabel(card.createdAt, card.updatedAt, card.editedAt, input.interfaceLanguage),
         fileCreated: card.fileCreated,
-        statusLabels: buildIdeaStatusLabels({
+        statusLabels: buildLocalizedIdeaStatusLabels({
           fileCreated: card.fileCreated,
-          snippetCount: snippetNoteCount
+          snippetCount: snippetNoteCount,
+          interfaceLanguage: input.interfaceLanguage
         }),
         menuActions: buildBrowseMenuActions({
           fileCreated: card.fileCreated,
           filePath: card.filePath,
-          snippetLocations
+          snippetLocations,
+          interfaceLanguage: input.interfaceLanguage
         }),
         snippetLocations
       };
@@ -604,7 +806,7 @@ export function buildPoolViewStateFromRuntime(input: {
     },
     browse,
     preview: input.preview ? { ...input.preview } : undefined,
-    roam: input.roam ? clonePoolRoamPanelState(input.roam) : undefined,
+    roam: input.roam ? clonePoolRoamPanelState(input.roam, input.interfaceLanguage) : undefined,
     roamBackConfirmVisible: input.roamBackConfirmVisible === true,
     items: [],
     detail: {
@@ -615,7 +817,8 @@ export function buildPoolViewStateFromRuntime(input: {
     emptyState: hasBrowseContext
       ? undefined
       : {
-          ...DEFAULT_POOL_EMPTY_STATE
+          title: interfaceText.emptyPoolTitle,
+          description: interfaceText.emptyPoolDescription
         },
     showPoolSwitcher: input.viewOptions?.showPoolSwitcher ?? true,
     metadataEditable: input.viewOptions?.metadataEditable ?? true,
@@ -628,6 +831,8 @@ export function buildPoolViewStateFromRuntime(input: {
 }
 
 export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
+  const zhPoolLabels = buildPoolBrowseLabels("zh-CN");
+
   if (scenario === "pool-browse") {
     return {
       mode: "browse",
@@ -649,6 +854,7 @@ export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
         queryPlaceholder: "搜索当前池中的灵感",
         poolSwitcherExpanded: false,
         resultSummary: "共 3 条灵感",
+        labels: zhPoolLabels,
         cards: [
           {
             id: "idea-product-1",
@@ -728,6 +934,7 @@ export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
         queryPlaceholder: "搜索当前池中的灵感",
         poolSwitcherExpanded: false,
         resultSummary: "共 0 条灵感",
+        labels: zhPoolLabels,
         cards: []
       },
       emptyState: {
@@ -757,6 +964,7 @@ export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
         queryPlaceholder: "搜索当前池中的灵感",
         poolSwitcherExpanded: false,
         resultSummary: "共 2 条灵感",
+        labels: zhPoolLabels,
         cards: [
           {
             id: "idea-archive-1",
@@ -821,6 +1029,7 @@ export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
         queryPlaceholder: "搜索当前池中的灵感",
         poolSwitcherExpanded: false,
         resultSummary: "",
+        labels: zhPoolLabels,
         cards: []
       },
       choice: {
@@ -836,7 +1045,10 @@ export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
             label: "方案 B：归入默认池",
             description: "立即完成首次流程，并归入当前默认池「未整理」。系统随后展示后续使用指引。"
           }
-        ]
+        ],
+        closeLabel: "关闭归池窗口",
+        backLabel: "返回上一步",
+        continueLabel: "继续"
       }
     };
   }
@@ -867,6 +1079,7 @@ export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
         queryPlaceholder: "搜索当前池中的灵感",
         poolSwitcherExpanded: false,
         resultSummary: "",
+        labels: zhPoolLabels,
         cards: []
       },
       createForm: {
@@ -881,6 +1094,7 @@ export function buildPoolViewState(scenario: PoolScenario): PoolViewState {
         tipTitle: "首次说明",
         tipText: "创建后会自动把当前灵感归入该池，并在首页显示首次入池反馈。",
         confirmLabel: "创建池",
+        closeLabel: "关闭新建池窗口",
         createdPoolId: NEW_POOL_CREATED_ID,
         createdPoolLabel: NEW_POOL_CREATED_LABEL
       }

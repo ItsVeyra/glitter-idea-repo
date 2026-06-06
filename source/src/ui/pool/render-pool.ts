@@ -3,6 +3,7 @@ import {
   DEFAULT_POOL_ROAM_PANEL_WIDTH_RATIO,
   MAX_POOL_ROAM_PANEL_WIDTH_RATIO,
   MIN_POOL_ROAM_PANEL_WIDTH_RATIO,
+  type PoolBrowseLabels,
   type PoolBrowseOverlay,
   type PoolRoamBoundaryAnchorState,
   type PoolViewState
@@ -143,8 +144,8 @@ function closePoolMediaPreviewOverlay(stage: HTMLElement): void {
 function openPoolMediaPreviewOverlay(
   stage: HTMLElement,
   input:
-    | { src: string; title: string; kind: "video" }
-    | { src: string; title: string; kind: "image"; imageSources?: string[]; initialIndex?: number }
+    | { src: string; title: string; kind: "video"; labels: PoolBrowseLabels }
+    | { src: string; title: string; kind: "image"; imageSources?: string[]; initialIndex?: number; labels: PoolBrowseLabels }
 ): void {
   closePoolMediaPreviewOverlay(stage);
 
@@ -159,7 +160,7 @@ function openPoolMediaPreviewOverlay(
   const closeButton = createButton(dialog, "glitter-pool-stage__media-preview-close", "", () => {
     overlay.remove();
   });
-  closeButton.setAttribute("aria-label", "关闭大图预览");
+  closeButton.setAttribute("aria-label", input.labels.mediaPreviewCloseLabel);
   createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
   if (input.kind === "image") {
@@ -174,8 +175,11 @@ function openPoolMediaPreviewOverlay(
       previewImage.setAttribute(
         "alt",
         imageSources.length > 1
-          ? `${input.title} 大图预览（第 ${currentImageIndex + 1} 张，共 ${imageSources.length} 张）`
-          : `${input.title} 大图预览`
+          ? input.labels.mediaPreviewImageAltWithPosition(
+              input.title,
+              input.labels.cardImagePositionLabel(currentImageIndex + 1, imageSources.length)
+            )
+          : input.labels.mediaPreviewImageAlt(input.title)
       );
       if (pagination) {
         pagination.textContent = `${currentImageIndex + 1} / ${imageSources.length}`;
@@ -192,7 +196,7 @@ function openPoolMediaPreviewOverlay(
           syncPreviewImage();
         }
       );
-      previousButton.setAttribute("aria-label", "查看上一张大图");
+      previousButton.setAttribute("aria-label", input.labels.mediaPreviewPreviousImageLabel);
       createNode(previousButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--chevron-left");
 
       const nextButton = createButton(
@@ -204,7 +208,7 @@ function openPoolMediaPreviewOverlay(
           syncPreviewImage();
         }
       );
-      nextButton.setAttribute("aria-label", "查看下一张大图");
+      nextButton.setAttribute("aria-label", input.labels.mediaPreviewNextImageLabel);
       createNode(nextButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--chevron-right");
 
       pagination = createNode(dialog, "span", "glitter-pool-stage__media-preview-pagination", "");
@@ -219,7 +223,7 @@ function openPoolMediaPreviewOverlay(
   previewVideo.setAttribute("controls", "");
   previewVideo.setAttribute("playsinline", "");
   previewVideo.setAttribute("preload", "metadata");
-  previewVideo.setAttribute("aria-label", `${input.title} 大图预览`);
+  previewVideo.setAttribute("aria-label", input.labels.mediaPreviewVideoLabel(input.title));
   previewVideo.controls = true;
   previewVideo.playsInline = true;
   previewVideo.preload = "metadata";
@@ -911,6 +915,7 @@ function renderMoveTargetButtons(
     includeCounts?: boolean;
     disabled?: boolean;
     query?: string;
+    labels?: PoolBrowseLabelState;
   } = {}
 ): void {
   const normalizedQuery = options.query?.trim().toLocaleLowerCase() ?? "";
@@ -941,7 +946,7 @@ function renderMoveTargetButtons(
       parent,
       "div",
       "glitter-pool-stage__toolbar-menu-item glitter-pool-stage__toolbar-menu-item--hint",
-      "暂无可移动目标池"
+      options.labels?.noMoveTargets ?? DEFAULT_BROWSE_LABELS.noMoveTargets
     );
     hint.setAttribute("aria-hidden", "true");
   }
@@ -1147,7 +1152,7 @@ function attachCardBodyToggle(
   parent: HTMLElement,
   bodyEl: HTMLElement,
   text: string,
-  options: { maxLines: number; estimatedCharsPerLine: number; onToggle?: () => void }
+  options: { maxLines: number; estimatedCharsPerLine: number; onToggle?: () => void; labels?: PoolBrowseLabelState }
 ): void {
   if (!text.trim()) {
     return;
@@ -1179,8 +1184,8 @@ function attachCardBodyToggle(
     setClassToken(bodyEl, "glitter-pool-stage__card-copy--collapsed", !expanded);
     setClassToken(bodyEl, "glitter-pool-stage__card-copy--expanded", expanded);
     toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-    toggle.setAttribute("aria-label", expanded ? "收起正文" : "展开全部正文");
-    toggleText.textContent = expanded ? "收起" : "展开全部";
+    toggle.setAttribute("aria-label", expanded ? options.labels?.bodyCollapseLabel ?? DEFAULT_BROWSE_LABELS.bodyCollapseLabel : options.labels?.bodyExpandLabel ?? DEFAULT_BROWSE_LABELS.bodyExpandLabel);
+    toggleText.textContent = expanded ? options.labels?.bodyCollapseText ?? DEFAULT_BROWSE_LABELS.bodyCollapseText : options.labels?.bodyExpandText ?? DEFAULT_BROWSE_LABELS.bodyExpandText;
     toggleIcon.className = `glitter-write-stage__icon glitter-write-stage__icon--${expanded ? "chevron-up" : "chevron-down"}`;
   };
 
@@ -1193,17 +1198,18 @@ function renderCardMoveDialogOverlay(
   state: PoolViewState,
   actions: PoolViewActions
 ): void {
+  const labels = resolveBrowseLabels(state);
   const overlay = createNode(stage, "div", "glitter-pool-stage__card-move-overlay");
   const scrim = createNode(overlay, "div", "glitter-pool-stage__card-move-scrim");
   scrim.setAttribute("aria-hidden", "true");
 
   const dialog = createNode(overlay, "div", "glitter-pool-stage__card-move-dialog");
   dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-label", "移动到");
+  dialog.setAttribute("aria-label", labels.moveToLabel);
 
   const header = createNode(dialog, "div", "glitter-pool-stage__card-move-dialog-header");
   const headerCopy = createNode(header, "div", "glitter-pool-stage__card-move-dialog-header-copy");
-  createNode(headerCopy, "strong", "glitter-pool-stage__card-move-dialog-title", "移动到");
+  createNode(headerCopy, "strong", "glitter-pool-stage__card-move-dialog-title", labels.moveToLabel);
 
   const isSubmitting = Boolean(actions.isCardMovePickerSubmitting?.(card.id));
 
@@ -1216,7 +1222,7 @@ function renderCardMoveDialogOverlay(
     }
   );
   closeButton.disabled = isSubmitting;
-  closeButton.setAttribute("aria-label", "关闭移动到");
+  closeButton.setAttribute("aria-label", labels.closeMoveToLabel);
   createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
   const searchInput = createNode(
@@ -1225,7 +1231,7 @@ function renderCardMoveDialogOverlay(
     "glitter-write-stage__input glitter-pool-stage__card-move-dialog-search"
   ) as HTMLInputElement;
   searchInput.type = "text";
-  searchInput.placeholder = "搜索目标池";
+  searchInput.placeholder = labels.moveSearchPlaceholder;
   searchInput.value = actions.getCardMovePickerSearchQuery?.() ?? "";
   searchInput.disabled = isSubmitting;
   searchInput.addEventListener("input", (event) => {
@@ -1244,6 +1250,7 @@ function renderCardMoveDialogOverlay(
     includeCounts: true,
     disabled: isSubmitting,
     query: searchInput.value,
+    labels,
     onSelect(poolId) {
       actions.onMoveIdeaToPool?.(card.id, poolId);
     }
@@ -1279,9 +1286,76 @@ type RenderedBrowseControls = {
   selectedCount: number;
   hasSelection: boolean;
   batchMode: boolean;
+  labels?: PoolBrowseLabels;
 };
 
 type BrowseCard = NonNullable<NonNullable<PoolViewState["browse"]>["cards"]>[number];
+
+type PoolBrowseLabelState = Partial<PoolBrowseLabels>;
+
+const DEFAULT_BROWSE_LABELS: PoolBrowseLabels = {
+  browseSearchPlaceholder: "搜索当前池中的灵感",
+  bodyCollapseLabel: "收起正文",
+  bodyExpandLabel: "展开全部正文",
+  bodyCollapseText: "收起",
+  bodyExpandText: "展开全部",
+  moveToLabel: "移动到",
+  closeMoveToLabel: "关闭移动到",
+  moveSearchPlaceholder: "搜索目标池",
+  noMoveTargets: "暂无可移动目标池",
+  statusFilterOptions: { all: "全部灵感", referenced: "已引用", "file-created": "已建文件", "with-markers": "带状态" },
+  contentFilterOptions: { all: "全部", text: "文本", link: "链接", image: "图片", video: "视频" },
+  sortOptions: { "updated-desc": "最近更新", "created-desc": "最近创建", "title-asc": "标题排序" },
+  newPoolLabel: "新建池",
+  selectCardLabel: "选择卡片",
+  deselectCardLabel: "取消选择",
+  moreActionsLabel: "更多操作",
+  editAction: "编辑",
+  moveToPoolAction: "移动到池",
+  shareAction: "分享",
+  deleteAction: "删除",
+  backHomeLabel: "返回首页",
+  switchPoolLabel: "切换池",
+  quickCaptureLabel: "灵感速记",
+  roamBackTitle: "提示",
+  roamBackDescription: "漫游模式下返回首页将直接结束本次灵感漫游，可在漫游历史中重新进入。",
+  roamBackContinue: "继续漫游",
+  roamBackHome: "返回首页",
+  statusFilterLabel: "状态筛选",
+  filterLabel: "筛选",
+  sortLabel: "排序",
+  previewCurrentPoolMarkdown: "查看当前池 Markdown 文件",
+  previewUnavailableInRoam: "漫游模式下暂不支持查看当前池 Markdown 文件",
+  batchOrganizeLabel: "批量整理",
+  deleteSelectedIdeasLabel: "删除选中灵感",
+  moveSelectedToPoolLabel: "移动到池",
+  resizeRoamAreaLabel: "调整漫游区宽度",
+  emptyPoolTitle: "这个池里还没有灵感",
+  emptyPoolDescription: "先记录一条灵感，之后就能在这里查看、筛选和整理。",
+  filterResultEyebrow: "筛选结果",
+  noFilterResultsTitle: "没有找到匹配的灵感",
+  noFilterResultsDescription: "换个筛选条件或搜索词，再试一次。",
+  mediaPreviewCloseLabel: "Close large preview",
+  mediaPreviewImageAlt: (ideaTitle) => `${ideaTitle} large preview`,
+  mediaPreviewImageAltWithPosition: (ideaTitle, positionLabel) => `${ideaTitle} large preview (${positionLabel})`,
+  mediaPreviewPreviousImageLabel: "View previous large image",
+  mediaPreviewNextImageLabel: "View next large image",
+  mediaPreviewVideoLabel: (ideaTitle) => `${ideaTitle} large preview`,
+  cardImagePositionLabel: (current, total) => `image ${current} of ${total}`,
+  cardCurrentImageAnnouncement: (positionLabel) => `Current image, ${positionLabel}`,
+  cardViewLargeImageLabel: (ideaTitle) => `${ideaTitle}, view large image`,
+  cardViewLargeImageWithPositionLabel: (ideaTitle, positionLabel) => `${ideaTitle}, view large image (${positionLabel})`,
+  cardImageThumbnailAltWithPosition: (ideaTitle, positionLabel) => `${ideaTitle} (${positionLabel})`,
+  cardPreviousImageLabel: "View previous image",
+  cardNextImageLabel: "View next image",
+  cardViewLargeVideoLabel: (ideaTitle) => `${ideaTitle}, view large video`,
+  cardVideoPreviewLabel: (ideaTitle) => `${ideaTitle} video preview`,
+  cardEmptyFallback: "No content yet"
+};
+
+function resolveBrowseLabels(state: PoolViewState): PoolBrowseLabels {
+  return { ...DEFAULT_BROWSE_LABELS, ...(state.browse?.labels ?? {}) };
+}
 
 type RoamBridgePoint = {
   x: number;
@@ -1870,6 +1944,7 @@ function renderRoamBridgeLane(workbench: HTMLElement, state: PoolViewState, acti
     return;
   }
 
+  const roamLabels = state.roam.labels;
   const visibleAnchors = state.roam.boundaryAnchors.filter((anchor) => anchor.visibleBridge);
   const lane = createNode(workbench, "div", "glitter-pool-stage__roam-bridge-lane");
 
@@ -1895,7 +1970,7 @@ function renderRoamBridgeLane(workbench: HTMLElement, state: PoolViewState, acti
     const marker = createNode(trace, "button", "glitter-pool-stage__roam-bridge-marker") as HTMLButtonElement;
     marker.type = "button";
     setInlineStyle(marker, "background", anchor.poolColor);
-    marker.setAttribute("aria-label", `查看「${anchor.ideaTitle}」的漫游链接`);
+    marker.setAttribute("aria-label", roamLabels?.bridgeMarkerLabel(anchor.ideaTitle) ?? `查看「${anchor.ideaTitle}」的漫游链接`);
     marker.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -1903,10 +1978,10 @@ function renderRoamBridgeLane(workbench: HTMLElement, state: PoolViewState, acti
 
     const popover = createNode(trace, "div", "glitter-pool-stage__roam-bridge-popover");
     createNode(popover, "div", "glitter-pool-stage__roam-bridge-popover-title", anchor.ideaTitle);
-    createNode(popover, "div", "glitter-pool-stage__roam-bridge-popover-meta", `来自 ${anchor.poolName}`);
+    createNode(popover, "div", "glitter-pool-stage__roam-bridge-popover-meta", roamLabels?.bridgeMeta(anchor.poolName) ?? `来自 ${anchor.poolName}`);
     const actionRow = createNode(popover, "div", "glitter-pool-stage__roam-bridge-popover-actions");
 
-    const locateButton = createButton(actionRow, "glitter-pool-stage__roam-bridge-action", "定位原卡", () => {
+    const locateButton = createButton(actionRow, "glitter-pool-stage__roam-bridge-action", roamLabels?.locateSource ?? "定位原卡", () => {
       actions.onLocatePoolRoamSource?.(anchor.ideaId);
     });
     locateButton.setAttribute("data-glitter-pool-roam-bridge-locate", anchor.anchorId);
@@ -1914,7 +1989,7 @@ function renderRoamBridgeLane(workbench: HTMLElement, state: PoolViewState, acti
     const deleteButton = createButton(
       actionRow,
       "glitter-pool-stage__roam-bridge-action glitter-pool-stage__roam-bridge-action--delete",
-      "删除链接",
+      roamLabels?.deleteLink ?? "删除链接",
       () => {
         actions.onDeletePoolRoamSourceLink?.(anchor.anchorId);
       }
@@ -1933,7 +2008,8 @@ function readBrowseControls(state: PoolViewState): RenderedBrowseControls {
     contentFilter: state.browse?.contentFilter ?? state.controls?.contentFilter ?? "all",
     selectedCount: state.controls?.selectedCount ?? 0,
     hasSelection: state.controls?.hasSelection ?? false,
-    batchMode: state.controls?.batchMode ?? false
+    batchMode: state.controls?.batchMode ?? false,
+    labels: resolveBrowseLabels(state)
   };
 }
 
@@ -1982,14 +2058,15 @@ function renderResultsToolbarMenuOverlay(
   controls: RenderedBrowseControls,
   actions: PoolViewActions
 ): void {
+  const labels = controls.labels ?? DEFAULT_BROWSE_LABELS;
   const menu = createNode(menuHost, "div", "glitter-pool-stage__toolbar-menu");
 
   if (activeOverlay === "status") {
     [
-      { value: "all", label: "全部灵感" },
-      { value: "referenced", label: "已引用" },
-      { value: "file-created", label: "已建文件" },
-      { value: "with-markers", label: "带状态" }
+      { value: "all", label: labels.statusFilterOptions.all },
+      { value: "referenced", label: labels.statusFilterOptions.referenced },
+      { value: "file-created", label: labels.statusFilterOptions["file-created"] },
+      { value: "with-markers", label: labels.statusFilterOptions["with-markers"] }
     ].forEach((option) => {
       const itemClassName = controls.status === option.value
         ? "glitter-pool-stage__toolbar-menu-item glitter-pool-stage__toolbar-menu-item--active"
@@ -2002,11 +2079,11 @@ function renderResultsToolbarMenuOverlay(
 
   if (activeOverlay === "filter") {
     [
-      { value: "all", label: "全部" },
-      { value: "text", label: "文本" },
-      { value: "link", label: "链接" },
-      { value: "image", label: "图片" },
-      { value: "video", label: "视频" }
+      { value: "all", label: labels.contentFilterOptions.all },
+      { value: "text", label: labels.contentFilterOptions.text },
+      { value: "link", label: labels.contentFilterOptions.link },
+      { value: "image", label: labels.contentFilterOptions.image },
+      { value: "video", label: labels.contentFilterOptions.video }
     ].forEach((option) => {
       const itemClassName = controls.contentFilter === option.value
         ? "glitter-pool-stage__toolbar-menu-item glitter-pool-stage__toolbar-menu-item--active"
@@ -2019,9 +2096,9 @@ function renderResultsToolbarMenuOverlay(
 
   if (activeOverlay === "sort") {
     [
-      { value: "updated-desc", label: "最近更新" },
-      { value: "created-desc", label: "最近创建" },
-      { value: "title-asc", label: "标题排序" }
+      { value: "updated-desc", label: labels.sortOptions["updated-desc"] },
+      { value: "created-desc", label: labels.sortOptions["created-desc"] },
+      { value: "title-asc", label: labels.sortOptions["title-asc"] }
     ].forEach((option) => {
       const itemClassName = controls.sort === option.value
         ? "glitter-pool-stage__toolbar-menu-item glitter-pool-stage__toolbar-menu-item--active"
@@ -2040,14 +2117,16 @@ function renderBatchMoveMenu(
   controls: RenderedBrowseControls,
   actions: PoolViewActions
 ): void {
+  const labels = controls.labels ?? DEFAULT_BROWSE_LABELS;
   const menu = createNode(
     moveActionAnchor,
     "div",
     "glitter-pool-stage__toolbar-menu glitter-pool-stage__toolbar-menu--batch"
   );
-  createNode(menu, "strong", "glitter-pool-stage__toolbar-menu-title", "移动到");
+  createNode(menu, "strong", "glitter-pool-stage__toolbar-menu-title", labels.moveToLabel);
   renderMoveTargetButtons(menu, state.poolOptions, {
     disabled: !controls.hasSelection,
+    labels,
     onSelect(poolId) {
       actions.onMoveSelectionToPool?.(poolId);
     }
@@ -2056,7 +2135,7 @@ function renderBatchMoveMenu(
     actions.onMoveSelectionToPool?.(CREATE_NEW_POOL_ID);
   });
   createPoolButton.disabled = !controls.hasSelection;
-  createPoolButton.setAttribute("aria-label", "新建池");
+  createPoolButton.setAttribute("aria-label", labels.newPoolLabel);
   createNode(createPoolButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--plus");
 }
 
@@ -2064,21 +2143,22 @@ function isPoolRoamAvailable(state: PoolViewState): boolean {
   return state.mode === "browse" || state.mode === "empty";
 }
 
-function renderPoolRoamToggle(parent: HTMLElement, actions: PoolViewActions, open: boolean): void {
+function renderPoolRoamToggle(parent: HTMLElement, actions: PoolViewActions, open: boolean, labels?: NonNullable<PoolViewState["roam"]>["labels"]): void {
   const roamEntry = createNode(parent, "div", "glitter-pool-stage__results-entry");
   const roamTrigger = createButton(roamEntry, "glitter-pool-stage__results-entry-button", "", () => {
     actions.onTogglePoolRoam?.();
   });
   roamTrigger.dataset.glitterPoolRoamToggle = "true";
   roamTrigger.setAttribute("data-glitter-pool-roam-toggle", "true");
-  roamTrigger.setAttribute("aria-label", open ? "关闭漫游模式" : "打开漫游模式");
+  roamTrigger.setAttribute("aria-label", open ? labels?.toggleClose ?? "关闭漫游模式" : labels?.toggleOpen ?? "打开漫游模式");
   roamTrigger.setAttribute("aria-pressed", open ? "true" : "false");
   createResultsToolIcon(roamTrigger, "roam");
-  createNode(roamTrigger, "span", "glitter-pool-stage__results-entry-label", "漫游模式");
+  createNode(roamTrigger, "span", "glitter-pool-stage__results-entry-label", labels?.modeLabel ?? "漫游模式");
 }
 
 function renderRoamPanel(parent: HTMLElement, stage: HTMLElement, state: PoolViewState, actions: PoolViewActions): void {
   const roamState = state.roam;
+  const roamLabels = roamState?.labels;
   const roamPanel = createNode(parent, "aside", "glitter-pool-stage__roam-panel");
   const roamCanvasStage = createNode(roamPanel, "div", "glitter-pool-stage__roam-canvas-stage");
   roamCanvasStage.setAttribute("data-glitter-pool-roam-dropzone", "true");
@@ -2201,9 +2281,9 @@ function renderRoamPanel(parent: HTMLElement, stage: HTMLElement, state: PoolVie
     history: actions.onOpenPoolRoamHistory ? () => actions.onOpenPoolRoamHistory?.() : undefined
   };
   const floatingActionLabels: Record<NonNullable<PoolViewState["roam"]>["floatingActions"][number], string> = {
-    download: "下载当前漫游白板",
-    share: "分享当前漫游白板",
-    history: "打开漫游白板历史"
+    download: roamLabels?.downloadCurrentBoard ?? "下载当前漫游白板",
+    share: roamLabels?.shareCurrentBoard ?? "分享当前漫游白板",
+    history: roamLabels?.openHistory ?? "打开漫游白板历史"
   };
 
   (roamState?.floatingActions ?? []).forEach((action) => {
@@ -2234,23 +2314,23 @@ function renderRoamPanel(parent: HTMLElement, stage: HTMLElement, state: PoolVie
 
   if (roamState?.mode === "error") {
     const errorState = createNode(roamCanvasHost, "div", "glitter-pool-stage__roam-error");
-    createNode(errorState, "strong", "glitter-pool-stage__roam-error-title", "漫游白板暂时不可用");
+    createNode(errorState, "strong", "glitter-pool-stage__roam-error-title", roamLabels?.errorTitle ?? "漫游白板暂时不可用");
     createNode(
       errorState,
       "p",
       "glitter-pool-stage__roam-error-description",
-      roamState.errorMessage ?? "请稍后再试。"
+      roamState.errorMessage ?? roamLabels?.errorDescription ?? "请稍后再试。"
     );
     return;
   }
 
   const emptyState = createNode(roamCanvasHost, "div", "glitter-pool-stage__roam-empty");
-  createNode(emptyState, "strong", "glitter-pool-stage__roam-empty-title", "新的空白漫游区");
+  createNode(emptyState, "strong", "glitter-pool-stage__roam-empty-title", roamLabels?.emptyTitle ?? "新的空白漫游区");
   createNode(
     emptyState,
     "p",
     "glitter-pool-stage__roam-empty-description",
-    "把左侧卡片内容区右上角的圆点拖入这里后，才会创建第一块漫游白板。"
+    roamLabels?.emptyDescription ?? "把左侧卡片内容区右上角的圆点拖入这里后，才会创建第一块漫游白板。"
   );
 }
 
@@ -2282,7 +2362,7 @@ function renderPoolRoamSourceHandle(
   card: BrowseCard,
   stage: HTMLElement,
   actions: PoolViewActions,
-  options: { roamOpen: boolean; roamSourceActive?: boolean }
+  options: { roamOpen: boolean; roamSourceActive?: boolean; labels?: NonNullable<PoolViewState["roam"]>["labels"] }
 ): void {
   content.querySelector(".glitter-pool-stage__roam-source-handle")?.remove();
   setClassToken(content, "glitter-pool-stage__card-content--roam-source", options.roamOpen);
@@ -2297,8 +2377,8 @@ function renderPoolRoamSourceHandle(
   const sourceHandle = createNode(content, "div", handleClassName) as HTMLDivElement;
   sourceHandle.dataset.glitterPoolRoamSourceHandle = card.id;
   sourceHandle.setAttribute("data-glitter-pool-roam-source-handle", card.id);
-  sourceHandle.setAttribute("aria-label", `将「${card.title}」连接到漫游白板`);
-  sourceHandle.setAttribute("title", "拖出连接线到右侧漫游白板");
+  sourceHandle.setAttribute("aria-label", options.labels?.sourceHandleLabel(card.title) ?? `将「${card.title}」连接到漫游白板`);
+  sourceHandle.setAttribute("title", options.labels?.sourceHandleTitle ?? "拖出连接线到右侧漫游白板");
   sourceHandle.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -2409,9 +2489,11 @@ function renderPoolCardMenuShell(
     movePickerOpen?: boolean;
     roamOpen?: boolean;
     roamSourceActive?: boolean;
+    labels?: PoolBrowseLabelState;
   }
 ): void {
   clearContainer(menuShell);
+  const labels = { ...DEFAULT_BROWSE_LABELS, ...(options.labels ?? {}) };
 
   if (options.batchMode) {
     const selectToggleClassName = options.selected
@@ -2421,7 +2503,7 @@ function renderPoolCardMenuShell(
       actions.onItemSelect(card.id);
     });
     selectToggle.dataset.ideaId = card.id;
-    selectToggle.setAttribute("aria-label", options.selected ? "取消选择" : "选择卡片");
+    selectToggle.setAttribute("aria-label", options.selected ? labels.deselectCardLabel : labels.selectCardLabel);
     selectToggle.setAttribute("aria-pressed", options.selected ? "true" : "false");
     createNode(selectToggle, "span", "glitter-pool-stage__card-select-toggle-dot");
     return;
@@ -2431,7 +2513,7 @@ function renderPoolCardMenuShell(
     actions.onCardMenuToggle?.(card.id);
   });
   moreTrigger.dataset.ideaId = card.id;
-  moreTrigger.setAttribute("aria-label", "更多操作");
+  moreTrigger.setAttribute("aria-label", labels.moreActionsLabel);
   moreTrigger.setAttribute("aria-haspopup", "menu");
   moreTrigger.setAttribute("aria-expanded", options.menuOpen ? "true" : "false");
   createPoolCardMenuIcon(moreTrigger, "more");
@@ -2455,7 +2537,7 @@ function renderPoolCardMenuShell(
   );
   editMenuItem.dataset.ideaId = card.id;
   createPoolCardMenuIcon(editMenuItem, "edit");
-  createNode(editMenuItem, "span", undefined, "编辑");
+  createNode(editMenuItem, "span", undefined, labels.editAction);
 
   const moveMenuItem = createButton(
     moreMenu,
@@ -2467,7 +2549,7 @@ function renderPoolCardMenuShell(
   );
   moveMenuItem.dataset.ideaId = card.id;
   createPoolCardMenuIcon(moveMenuItem, "move");
-  createNode(moveMenuItem, "span", undefined, "移动到池");
+  createNode(moveMenuItem, "span", undefined, labels.moveToPoolAction);
 
   const shareMenuItem = createButton(
     moreMenu,
@@ -2479,7 +2561,7 @@ function renderPoolCardMenuShell(
   );
   shareMenuItem.dataset.ideaId = card.id;
   createPoolCardMenuIcon(shareMenuItem, "share");
-  createNode(shareMenuItem, "span", undefined, "分享");
+  createNode(shareMenuItem, "span", undefined, labels.shareAction);
 
   (card.menuActions ?? []).forEach((action) => {
     const actionMenuItem = createButton(
@@ -2505,7 +2587,7 @@ function renderPoolCardMenuShell(
   );
   deleteMenuItem.dataset.ideaId = card.id;
   createPoolCardMenuIcon(deleteMenuItem, "delete");
-  createNode(deleteMenuItem, "span", undefined, "删除");
+  createNode(deleteMenuItem, "span", undefined, labels.deleteAction);
 
 }
 
@@ -2588,9 +2670,10 @@ function renderBrowseTopbar(
   }
 ): void {
   clearContainer(topbar);
+  const labels = resolveBrowseLabels(state);
 
   const backButton = createButton(topbar, "glitter-pool-stage__back", "", () => actions.onBack());
-  backButton.setAttribute("aria-label", "返回首页");
+  backButton.setAttribute("aria-label", labels.backHomeLabel);
   createNode(backButton, "span", "glitter-pool-stage__back-icon");
 
   const titleCluster = createNode(topbar, "div", "glitter-pool-stage__title-cluster");
@@ -2644,7 +2727,7 @@ function renderBrowseTopbar(
     const titleSwitcher = createButton(titleCluster, "glitter-pool-stage__title-switcher", "", () => {
       actions.onBrowseOverlayToggle?.("pool-switcher");
     });
-    titleSwitcher.setAttribute("aria-label", "切换池");
+    titleSwitcher.setAttribute("aria-label", labels.switchPoolLabel);
     titleSwitcher.setAttribute("aria-expanded", options.activeOverlay === "pool-switcher" ? "true" : "false");
     createNode(titleSwitcher, "span", "glitter-pool-stage__pool-trigger-arrows");
 
@@ -2659,29 +2742,30 @@ function renderBrowseTopbar(
   });
   topbarCreate.dataset.role = "create-idea";
   createNode(topbarCreate, "span", "glitter-pool-stage__topbar-create-icon");
-  createNode(topbarCreate, "span", "glitter-pool-stage__topbar-create-label", "灵感速记");
+  createNode(topbarCreate, "span", "glitter-pool-stage__topbar-create-label", labels.quickCaptureLabel);
 }
 
 // 描述条既是池简介展示位，也是可内联编辑的 metadata 入口，和标题改名共用同一提交节奏。
-function renderPoolRoamBackConfirm(stage: HTMLElement, actions: PoolViewActions): void {
+function renderPoolRoamBackConfirm(stage: HTMLElement, state: PoolViewState, actions: PoolViewActions): void {
+  const labels = resolveBrowseLabels(state);
   const closeConfirm = createNode(
     stage,
     "div",
     "glitter-write-stage__close-confirm glitter-pool-stage__roam-back-confirm"
   );
   const dialog = createNode(closeConfirm, "div", "glitter-pool-stage__roam-back-confirm-dialog");
-  createNode(dialog, "h3", "glitter-write-stage__close-confirm-title", "提示");
+  createNode(dialog, "h3", "glitter-write-stage__close-confirm-title", labels.roamBackTitle);
   createNode(
     dialog,
     "p",
     "glitter-write-stage__close-confirm-description",
-    "漫游模式下返回首页将直接结束本次灵感漫游，可在漫游历史中重新进入。"
+    labels.roamBackDescription
   );
   const closeConfirmActions = createNode(dialog, "div", "glitter-write-stage__close-confirm-actions");
-  createButton(closeConfirmActions, "glitter-write-stage__close-confirm-secondary", "继续漫游", () => {
+  createButton(closeConfirmActions, "glitter-write-stage__close-confirm-secondary", labels.roamBackContinue, () => {
     actions.onDismissRoamBackConfirm?.();
   });
-  createButton(closeConfirmActions, "glitter-write-stage__close-confirm-primary", "返回首页", () => {
+  createButton(closeConfirmActions, "glitter-write-stage__close-confirm-primary", labels.roamBackHome, () => {
     actions.onConfirmRoamBackHome?.();
   });
 }
@@ -2762,7 +2846,7 @@ function renderBrowseResultsHeader(
 
   const resultsLead = createNode(resultsHeader, "div", "glitter-pool-stage__results-lead");
   if (options.roamAvailable) {
-    renderPoolRoamToggle(resultsLead, actions, options.roamOpen);
+    renderPoolRoamToggle(resultsLead, actions, options.roamOpen, state.roam?.labels);
   }
 
   const resultsControls = createNode(resultsHeader, "div", "glitter-pool-stage__results-controls");
@@ -2771,7 +2855,7 @@ function renderBrowseResultsHeader(
   const queryInput = createNode(resultsTools, "input", "glitter-pool-stage__query") as HTMLInputElement;
   queryInput.type = "text";
   queryInput.value = options.controls.query;
-  queryInput.placeholder = state.browse?.queryPlaceholder ?? "搜索当前池中的灵感";
+  queryInput.placeholder = state.browse?.queryPlaceholder ?? options.controls.labels?.browseSearchPlaceholder ?? DEFAULT_BROWSE_LABELS.browseSearchPlaceholder;
   queryInput.addEventListener("input", (event) => {
     const compositionEvent = event as InputEvent & { isComposing?: boolean };
     actions.onQueryChange?.(queryInput.value, {
@@ -2795,7 +2879,7 @@ function renderBrowseResultsHeader(
   const statusTrigger = createButton(statusAnchor, "glitter-pool-stage__status-trigger", "", () => {
     actions.onBrowseOverlayToggle?.("status");
   });
-  statusTrigger.setAttribute("aria-label", "状态筛选");
+  statusTrigger.setAttribute("aria-label", options.controls.labels?.statusFilterLabel ?? DEFAULT_BROWSE_LABELS.statusFilterLabel);
   statusTrigger.setAttribute("aria-expanded", options.activeOverlay === "status" ? "true" : "false");
   createResultsToolIcon(statusTrigger, "status");
 
@@ -2807,7 +2891,7 @@ function renderBrowseResultsHeader(
   const filterTrigger = createButton(filterAnchor, "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--filter", "", () => {
     actions.onBrowseOverlayToggle?.("filter");
   });
-  filterTrigger.setAttribute("aria-label", "筛选");
+  filterTrigger.setAttribute("aria-label", options.controls.labels?.filterLabel ?? DEFAULT_BROWSE_LABELS.filterLabel);
   filterTrigger.setAttribute("aria-expanded", options.activeOverlay === "filter" ? "true" : "false");
   createResultsToolIcon(filterTrigger, "filter");
 
@@ -2819,7 +2903,7 @@ function renderBrowseResultsHeader(
   const sortTrigger = createButton(sortAnchor, "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--sort", "", () => {
     actions.onBrowseOverlayToggle?.("sort");
   });
-  sortTrigger.setAttribute("aria-label", "排序");
+  sortTrigger.setAttribute("aria-label", options.controls.labels?.sortLabel ?? DEFAULT_BROWSE_LABELS.sortLabel);
   sortTrigger.setAttribute("aria-expanded", options.activeOverlay === "sort" ? "true" : "false");
   createResultsToolIcon(sortTrigger, "sort");
 
@@ -2840,10 +2924,12 @@ function renderBrowseResultsHeader(
         actions.onTogglePoolMarkdownPreview?.();
       }
     );
-    previewTrigger.setAttribute("aria-label", "查看当前池 Markdown 文件");
+    previewTrigger.setAttribute("aria-label", options.controls.labels?.previewCurrentPoolMarkdown ?? DEFAULT_BROWSE_LABELS.previewCurrentPoolMarkdown);
     previewTrigger.setAttribute(
       "title",
-      options.roamOpen ? "漫游模式下暂不支持查看当前池 Markdown 文件" : "查看当前池 Markdown 文件"
+      options.roamOpen
+        ? options.controls.labels?.previewUnavailableInRoam ?? DEFAULT_BROWSE_LABELS.previewUnavailableInRoam
+        : options.controls.labels?.previewCurrentPoolMarkdown ?? DEFAULT_BROWSE_LABELS.previewCurrentPoolMarkdown
     );
     previewTrigger.setAttribute("aria-pressed", options.previewOpen ? "true" : "false");
     previewTrigger.setAttribute("aria-disabled", options.roamOpen ? "true" : "false");
@@ -2860,7 +2946,7 @@ function renderBrowseResultsHeader(
     actions.onBatchModeToggle?.();
   });
   batchTrigger.dataset.batchMode = options.controls.batchMode ? "on" : "off";
-  batchTrigger.setAttribute("aria-label", "批量整理");
+  batchTrigger.setAttribute("aria-label", options.controls.labels?.batchOrganizeLabel ?? DEFAULT_BROWSE_LABELS.batchOrganizeLabel);
   batchTrigger.setAttribute("aria-pressed", options.controls.batchMode ? "true" : "false");
   createResultsToolIcon(batchTrigger, "batch");
 
@@ -2890,7 +2976,7 @@ function renderBrowseBatchPanel(
   const deleteAction = createButton(batchPanel, "glitter-pool-stage__batch-action glitter-pool-stage__batch-action--delete", "", () => {
     actions.onDeleteSelection?.();
   });
-  deleteAction.setAttribute("aria-label", "删除选中灵感");
+  deleteAction.setAttribute("aria-label", options.controls.labels?.deleteSelectedIdeasLabel ?? DEFAULT_BROWSE_LABELS.deleteSelectedIdeasLabel);
   createPoolCardMenuIcon(deleteAction, "delete");
 
   const moveActionAnchor = createNode(
@@ -2901,7 +2987,7 @@ function renderBrowseBatchPanel(
   const moveAction = createButton(moveActionAnchor, "glitter-pool-stage__batch-action glitter-pool-stage__batch-action--move", "", () => {
     actions.onBrowseOverlayToggle?.("batch");
   });
-  moveAction.setAttribute("aria-label", "移动到池");
+  moveAction.setAttribute("aria-label", options.controls.labels?.moveSelectedToPoolLabel ?? DEFAULT_BROWSE_LABELS.moveSelectedToPoolLabel);
   moveAction.setAttribute("aria-expanded", options.activeOverlay === "batch" ? "true" : "false");
   createPoolCardMenuIcon(moveAction, "move");
 
@@ -3000,7 +3086,8 @@ function renderBrowseResultsContent(
 function syncRenderedPoolCardBodyToggle(
   cardShell: HTMLElement,
   card: BrowseCard,
-  onToggle: () => void
+  onToggle: () => void,
+  labels?: PoolBrowseLabelState
 ): void {
   const bodyEl = cardShell.querySelector(".glitter-pool-stage__card-body") as HTMLElement | null;
   if (bodyEl) {
@@ -3010,7 +3097,8 @@ function syncRenderedPoolCardBodyToggle(
       attachCardBodyToggle(parent, bodyEl, card.bodyText ?? "", {
         maxLines: POOL_CARD_BODY_MAX_LINES,
         estimatedCharsPerLine: POOL_CARD_BODY_ESTIMATED_CHARS_PER_LINE,
-        onToggle
+        onToggle,
+        labels
       });
     }
   }
@@ -3023,7 +3111,8 @@ function syncRenderedPoolCardBodyToggle(
       attachCardBodyToggle(parent, mediaBodyEl, card.bodyText ?? "", {
         maxLines: POOL_CARD_MEDIA_BODY_MAX_LINES,
         estimatedCharsPerLine: POOL_CARD_MEDIA_BODY_ESTIMATED_CHARS_PER_LINE,
-        onToggle
+        onToggle,
+        labels
       });
     }
   }
@@ -3036,7 +3125,7 @@ function syncReusablePoolCardShell(
   controls: RenderedBrowseControls,
   actions: PoolViewActions,
   onToggle: () => void,
-  options: { activePoolId?: string; roamState?: PoolViewState["roam"] } = {}
+  options: { activePoolId?: string; roamState?: PoolViewState["roam"]; labels?: PoolBrowseLabelState } = {}
 ): void {
   const surface = cardShell.querySelector(".glitter-pool-stage__card-surface") as HTMLElement | null;
   if (!surface) {
@@ -3062,9 +3151,10 @@ function syncReusablePoolCardShell(
     roamOpen: Boolean(options.roamState?.open),
     roamSourceActive: options.activePoolId
       ? hasVisibleRoamBridgeForCard(card, options.activePoolId, options.roamState)
-      : false
+      : false,
+    labels: options.labels
   });
-  syncRenderedPoolCardBodyToggle(cardShell, card, onToggle);
+  syncRenderedPoolCardBodyToggle(cardShell, card, onToggle, options.labels);
   syncPoolCardMoreMenuMaxHeight(cardShell);
 }
 
@@ -3191,7 +3281,8 @@ function patchRenderedBrowseWorkbench(containerEl: HTMLElement, state: PoolViewS
     existingCardStack.appendChild(cardShell);
     syncReusablePoolCardShell(cardShell, card, controls, actions, refreshReusableCardMasonry, {
       activePoolId: state.pool.id,
-      roamState
+      roamState,
+      labels: controls.labels
     });
     reusableCardShells.push(cardShell);
   });
@@ -3241,6 +3332,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
   const canEditMetadata = (state.metadataEditable ?? true) && !isDefaultPool;
   const showPoolSwitcher = state.showPoolSwitcher ?? true;
 
+  const labels = controls.labels ?? DEFAULT_BROWSE_LABELS;
   const workbench = createNode(
     stage,
     "div",
@@ -3290,7 +3382,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
 
     const roamDivider = createNode(workbench, "div", "glitter-pool-stage__roam-divider");
     roamDivider.setAttribute("role", "separator");
-    roamDivider.setAttribute("aria-label", "调整漫游区宽度");
+    roamDivider.setAttribute("aria-label", resolveBrowseLabels(state).resizeRoamAreaLabel);
     roamDivider.setAttribute("aria-orientation", "vertical");
     createNode(roamDivider, "span", "glitter-pool-stage__roam-divider-line");
     applyPoolRoamWorkbenchLayout(workbench, roamState?.panelWidthRatio);
@@ -3306,8 +3398,8 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
   if (state.mode === "empty") {
     resetPoolCardIsolationState(containerEl);
     renderPoolEmptyState(resultsContentHost, {
-      title: state.emptyState?.title ?? "这个池里还没有灵感",
-      description: state.emptyState?.description ?? "先记录一条灵感，之后就能在这里查看、筛选和整理。"
+      title: state.emptyState?.title ?? resolveBrowseLabels(state).emptyPoolTitle,
+      description: state.emptyState?.description ?? resolveBrowseLabels(state).emptyPoolDescription
     });
     return;
   }
@@ -3316,9 +3408,9 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
   if (browseCards.length === 0) {
     resetPoolCardIsolationState(containerEl);
     renderPoolEmptyState(resultsContentHost, {
-      eyebrow: "筛选结果",
-      title: "没有找到匹配的灵感",
-      description: "换个筛选条件或搜索词，再试一次。"
+      eyebrow: resolveBrowseLabels(state).filterResultEyebrow,
+      title: resolveBrowseLabels(state).noFilterResultsTitle,
+      description: resolveBrowseLabels(state).noFilterResultsDescription
     });
     return;
   }
@@ -3351,7 +3443,8 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
       menuOpen: isMenuOpen,
       movePickerOpen: isMovePickerOpen,
       roamOpen,
-      roamSourceActive: hasVisibleRoamBridgeForCard(card, state.pool.id, roamState)
+      roamSourceActive: hasVisibleRoamBridgeForCard(card, state.pool.id, roamState),
+      labels: controls.labels
     });
     surface.dataset.itemId = card.id;
     surface.setAttribute("data-item-id", card.id);
@@ -3366,7 +3459,8 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
     );
     renderPoolRoamSourceHandle(content, card, stage, actions, {
       roamOpen,
-      roamSourceActive: hasVisibleRoamBridgeForCard(card, state.pool.id, roamState)
+      roamSourceActive: hasVisibleRoamBridgeForCard(card, state.pool.id, roamState),
+      labels: roamState?.labels
     });
     const footer = createNode(surface, "div", `glitter-pool-stage__card-footer glitter-pool-stage__card-footer--${card.contentKind}`);
     let supporting: HTMLElement | null = null;
@@ -3413,7 +3507,8 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
       attachCardBodyToggle(content, body, bodyText, {
         maxLines: POOL_CARD_BODY_MAX_LINES,
         estimatedCharsPerLine: POOL_CARD_BODY_ESTIMATED_CHARS_PER_LINE,
-        onToggle: refreshCardMasonry
+        onToggle: refreshCardMasonry,
+        labels: controls.labels
       });
     } else if (card.contentKind === "link") {
       createCardTitle(content);
@@ -3448,13 +3543,14 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
       const hasMultipleImageThumbnails = imageThumbnailUrls.length > 1;
       let currentImageIndex = 0;
       const resolveCurrentImageUrl = (): string | undefined => imageThumbnailUrls[currentImageIndex] ?? card.mediaThumbnailUrl;
-      const resolveCurrentImagePositionLabel = (): string => `第 ${currentImageIndex + 1} 张，共 ${imageThumbnailUrls.length} 张`;
-      const resolveCurrentImageLiveAnnouncement = (): string => `当前图片，${resolveCurrentImagePositionLabel()}`;
+      const resolveCurrentImagePositionLabel = (): string => controls.labels?.cardImagePositionLabel(currentImageIndex + 1, imageThumbnailUrls.length)
+        ?? DEFAULT_BROWSE_LABELS.cardImagePositionLabel(currentImageIndex + 1, imageThumbnailUrls.length);
+      const resolveCurrentImageLiveAnnouncement = (): string => (controls.labels ?? DEFAULT_BROWSE_LABELS).cardCurrentImageAnnouncement(resolveCurrentImagePositionLabel());
       const resolveCurrentImagePreviewLabel = (): string => hasMultipleImageThumbnails
-        ? `${card.title}，查看大图（${resolveCurrentImagePositionLabel()}）`
-        : `${card.title}，查看大图`;
+        ? (controls.labels ?? DEFAULT_BROWSE_LABELS).cardViewLargeImageWithPositionLabel(card.title, resolveCurrentImagePositionLabel())
+        : (controls.labels ?? DEFAULT_BROWSE_LABELS).cardViewLargeImageLabel(card.title);
       const resolveCurrentImageThumbnailAlt = (): string => hasMultipleImageThumbnails
-        ? `${card.title}（${resolveCurrentImagePositionLabel()}）`
+        ? (controls.labels ?? DEFAULT_BROWSE_LABELS).cardImageThumbnailAltWithPosition(card.title, resolveCurrentImagePositionLabel())
         : card.title;
       const previewSrc = card.contentKind === "image" ? resolveCurrentImageUrl() : card.mediaThumbnailUrl;
       let openPreview: (() => void) | undefined;
@@ -3475,7 +3571,8 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
               title: card.title,
               kind: "image",
               imageSources: imageThumbnailUrls,
-              initialIndex: currentImageIndex
+              initialIndex: currentImageIndex,
+              labels: controls.labels ?? DEFAULT_BROWSE_LABELS
             });
             return;
           }
@@ -3483,7 +3580,8 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
           openPoolMediaPreviewOverlay(stage, {
             src: currentPreviewSrc,
             title: card.title,
-            kind: "video"
+            kind: "video",
+            labels: controls.labels ?? DEFAULT_BROWSE_LABELS
           });
         };
       }
@@ -3526,7 +3624,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
           const previousButton = createButton(switcher, "glitter-pool-stage__card-media-switch glitter-pool-stage__card-media-switch--previous", "", () => {
             updateImageIndex((currentImageIndex - 1 + imageThumbnailUrls.length) % imageThumbnailUrls.length);
           });
-          previousButton.setAttribute("aria-label", "查看上一张图片");
+          previousButton.setAttribute("aria-label", (controls.labels ?? DEFAULT_BROWSE_LABELS).cardPreviousImageLabel);
           createNode(previousButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--chevron-left");
 
           pagination = createNode(switcher, "span", "glitter-pool-stage__card-media-pagination", `1 / ${imageThumbnailUrls.length}`);
@@ -3543,14 +3641,14 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
           const nextButton = createButton(switcher, "glitter-pool-stage__card-media-switch glitter-pool-stage__card-media-switch--next", "", () => {
             updateImageIndex((currentImageIndex + 1) % imageThumbnailUrls.length);
           });
-          nextButton.setAttribute("aria-label", "查看下一张图片");
+          nextButton.setAttribute("aria-label", (controls.labels ?? DEFAULT_BROWSE_LABELS).cardNextImageLabel);
           createNode(nextButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--chevron-right");
         }
       } else if (card.mediaThumbnailUrl && card.contentKind === "video") {
         const mediaStage = createNode(content, "div", "glitter-pool-stage__card-media-stage glitter-pool-stage__card-media-stage--video");
         const mediaClip = createNode(mediaStage, "div", "glitter-pool-stage__card-media-clip");
         const mediaPreviewButton = openPreview
-          ? createMediaPreviewButton(mediaClip, `${card.title}，查看大图视频`, openPreview)
+          ? createMediaPreviewButton(mediaClip, (controls.labels ?? DEFAULT_BROWSE_LABELS).cardViewLargeVideoLabel(card.title), openPreview)
           : undefined;
         const thumbnailHost = mediaPreviewButton ?? mediaClip;
         const thumbnail = createNode(thumbnailHost, "video", "glitter-pool-stage__card-media-thumbnail") as HTMLVideoElement;
@@ -3565,7 +3663,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
         thumbnail.loop = true;
         thumbnail.preload = "metadata";
         if (!mediaPreviewButton) {
-          thumbnail.setAttribute("aria-label", `${card.title} 预览视频`);
+          thumbnail.setAttribute("aria-label", (controls.labels ?? DEFAULT_BROWSE_LABELS).cardVideoPreviewLabel(card.title));
         }
       }
       createCardTitle(content);
@@ -3579,7 +3677,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
       }
     } else {
       createCardTitle(content);
-      createNode(content, "span", "glitter-pool-stage__card-empty", "内容暂缺");
+      createNode(content, "span", "glitter-pool-stage__card-empty", (controls.labels ?? DEFAULT_BROWSE_LABELS).cardEmptyFallback);
     }
 
     const meta = createNode(footer, "div", "glitter-pool-stage__card-time");
@@ -3613,7 +3711,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
     const deleteAction = createButton(batchPanel, "glitter-pool-stage__batch-action glitter-pool-stage__batch-action--delete", "", () => {
       actions.onDeleteSelection?.();
     });
-    deleteAction.setAttribute("aria-label", "删除选中灵感");
+    deleteAction.setAttribute("aria-label", controls.labels?.deleteSelectedIdeasLabel ?? DEFAULT_BROWSE_LABELS.deleteSelectedIdeasLabel);
     createPoolCardMenuIcon(deleteAction, "delete");
 
     const moveActionAnchor = createNode(
@@ -3624,7 +3722,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
     const moveAction = createButton(moveActionAnchor, "glitter-pool-stage__batch-action glitter-pool-stage__batch-action--move", "", () => {
       actions.onBrowseOverlayToggle?.("batch");
     });
-    moveAction.setAttribute("aria-label", "移动到池");
+    moveAction.setAttribute("aria-label", controls.labels?.moveSelectedToPoolLabel ?? DEFAULT_BROWSE_LABELS.moveSelectedToPoolLabel);
     moveAction.setAttribute("aria-expanded", activeOverlay === "batch" ? "true" : "false");
     createPoolCardMenuIcon(moveAction, "move");
 
@@ -3634,9 +3732,10 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
         "div",
         "glitter-pool-stage__toolbar-menu glitter-pool-stage__toolbar-menu--batch"
       );
-      createNode(menu, "strong", "glitter-pool-stage__toolbar-menu-title", "移动到");
+      createNode(menu, "strong", "glitter-pool-stage__toolbar-menu-title", labels.moveToLabel);
       renderMoveTargetButtons(menu, state.poolOptions, {
         disabled: !controls.hasSelection,
+        labels,
         onSelect(poolId) {
           actions.onMoveSelectionToPool?.(poolId);
         }
@@ -3645,13 +3744,13 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
         actions.onMoveSelectionToPool?.(CREATE_NEW_POOL_ID);
       });
       createPoolButton.disabled = !controls.hasSelection;
-      createPoolButton.setAttribute("aria-label", "新建池");
+      createPoolButton.setAttribute("aria-label", labels.newPoolLabel);
       createNode(createPoolButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--plus");
     }
   }
 
   if (state.roamBackConfirmVisible) {
-    renderPoolRoamBackConfirm(stage, actions);
+    renderPoolRoamBackConfirm(stage, state, actions);
   }
 
   const activeMoveCard = browseCards.find((card) => actions.isCardMovePickerOpen?.(card.id) ?? false);
@@ -3711,16 +3810,16 @@ export function renderPoolView(
           actions.onBack();
         }
       );
-      closeButton.setAttribute("aria-label", "关闭新建池窗口");
+      closeButton.setAttribute("aria-label", createForm?.closeLabel ?? "Close new pool window");
       createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
       const form = createNode(surface, "div", "glitter-pool-stage__create-form");
 
       const nameField = createNode(form, "div", "glitter-pool-stage__field");
-      createNode(nameField, "label", "glitter-pool-stage__field-label", createForm?.nameLabel ?? "池名称");
+      createNode(nameField, "label", "glitter-pool-stage__field-label", createForm?.nameLabel ?? "Pool name");
       const nameInput = createNode(nameField, "input", "glitter-pool-stage__field-input glitter-write-stage__input") as HTMLInputElement;
       nameInput.type = "text";
-      nameInput.placeholder = createForm?.namePlaceholder ?? "例如：产品池 / 写作池 / 研究池";
+      nameInput.placeholder = createForm?.namePlaceholder ?? "For example: Product pool / Writing pool / Research pool";
       nameInput.value = createdPoolLabel;
 
       const descriptionField = createNode(form, "div", "glitter-pool-stage__field");
@@ -3728,7 +3827,7 @@ export function renderPoolView(
         descriptionField,
         "label",
         "glitter-pool-stage__field-label",
-        createForm?.descriptionLabel ?? "池描述"
+        createForm?.descriptionLabel ?? "Pool description"
       );
       const descriptionPanel = createNode(
         descriptionField,
@@ -3741,10 +3840,10 @@ export function renderPoolView(
         "glitter-write-stage__body-editor glitter-pool-stage__field-input--textarea glitter-write-stage__textarea glitter-write-stage__textarea--panel-blend"
       ) as HTMLTextAreaElement;
       descriptionInput.placeholder =
-        createForm?.descriptionPlaceholder ?? "填写该池聚焦的方向与使用场景，便于后续筛选和整理。";
+        createForm?.descriptionPlaceholder ?? "Describe this pool's focus and use case to make later filtering and organization easier.";
 
       const colorField = createNode(form, "div", "glitter-pool-stage__field");
-      createNode(colorField, "label", "glitter-pool-stage__field-label", createForm?.colorLabel ?? "池颜色");
+      createNode(colorField, "label", "glitter-pool-stage__field-label", createForm?.colorLabel ?? "Pool color");
       const swatches = createNode(colorField, "div", "glitter-pool-stage__swatches");
       const colorOptions = createForm?.colorOptions ?? [];
       const syncSelectedSwatch = (selectedColor: string): void => {
@@ -3780,7 +3879,7 @@ export function renderPoolView(
         tip,
         "p",
         "glitter-pool-stage__first-use-tip-body",
-        createForm?.tipText ?? "创建后会自动把当前灵感归入该池，并在首页显示首次入池反馈。"
+        createForm?.tipText ?? "After creation, Glitter will move the current idea into this pool and show first-assignment feedback on the home page."
       );
 
       const footer = createNode(surface, "footer", "glitter-pool-stage__first-use-footer glitter-write-stage__quick-actions");
@@ -3792,7 +3891,7 @@ export function renderPoolView(
       );
       confirmButton.dataset.itemId = createdPoolId;
       createNode(confirmButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--save");
-      createNode(confirmButton, "span", "glitter-write-stage__action-primary-text", createForm?.confirmLabel ?? "创建池");
+      createNode(confirmButton, "span", "glitter-write-stage__action-primary-text", createForm?.confirmLabel ?? "Create pool");
 
       return;
     }
@@ -3812,7 +3911,7 @@ export function renderPoolView(
         actions.onBack();
       }
     );
-    closeButton.setAttribute("aria-label", "关闭归池窗口");
+    closeButton.setAttribute("aria-label", state.choice?.closeLabel ?? "Close pool assignment window");
     createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
     createNode(surface, "p", "glitter-pool-stage__first-use-lead", state.header.hint);
@@ -3829,7 +3928,7 @@ export function renderPoolView(
     const backAction = createButton(
       footer,
       "glitter-write-stage__action-secondary glitter-pool-stage__first-use-back-action",
-      "返回上一步",
+      state.choice?.backLabel ?? "Back",
       () => actions.onBack()
     );
     backAction.dataset.role = "first-use-back";
@@ -3846,7 +3945,7 @@ export function renderPoolView(
       }
     );
     createNode(continueButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--enter-pool");
-    createNode(continueButton, "span", "glitter-pool-stage__first-use-continue-text", "继续");
+    createNode(continueButton, "span", "glitter-pool-stage__first-use-continue-text", state.choice?.continueLabel ?? "Continue");
 
     const resolveFirstUseOptionClassName = (optionId: string, selected: boolean): string => {
       const variantClass =

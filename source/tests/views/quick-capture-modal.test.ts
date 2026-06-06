@@ -3325,6 +3325,52 @@ describe("QuickCaptureModal", () => {
     createObjectUrlSpy.mockRestore();
   });
 
+  it("shows English media limit guidance when interface language is English", async () => {
+    const plugin = {
+      app: {},
+      settings: {
+        enableDesignReviewMode: false,
+        reviewScenario: "quick-capture-global-default",
+        mediaStorageDirectory: "Glitter",
+        interfaceLanguage: "en"
+      },
+      quickCaptureWorkflow: {
+        saveGlobalDraft: vi.fn(async () => undefined),
+        listGlobalPoolOptions: vi.fn(async () => [{ id: "pool-default", label: "默认池" }])
+      },
+      firstUseWorkflow: {
+        stageFirstIdeaDraft: vi.fn(async () => undefined)
+      }
+    };
+
+    buildWriteViewStateMock.mockImplementation((state) => state);
+
+    const modal = new QuickCaptureModal(plugin as any, "capture", {}, { flowContext: "global", initialHasMedia: true });
+    const showSpy = vi.spyOn((modal as any).toastService, "show");
+    (modal as any).selectedMedia = Array.from({ length: 7 }, (_, index) => ({
+      file: { name: `image-${index + 1}.png`, type: "image/png" },
+      previewUrl: `blob:image-${index + 1}.png`,
+      previewKind: "image"
+    }));
+    (modal as any).selectedMediaIndex = 6;
+    modal.onOpen();
+
+    const actions = await waitForLatestActions<{
+      onBodyPaste: (payload: { text: string; items: Array<{ kind: string; type: string; getAsFile: () => File | null }>; preventDefault: () => void }) => void;
+    }>();
+
+    actions.onBodyPaste({
+      text: "",
+      items: [{ kind: "file", type: "image/png", getAsFile: () => ({ name: "image-8.png", type: "image/png" } as File) }],
+      preventDefault: vi.fn()
+    });
+
+    expect(showSpy).toHaveBeenCalledWith({
+      status: "info",
+      message: "This idea can only attach up to 7 images."
+    });
+  });
+
   it("keeps the image gallery at the same cap when pasted images exceed the attachment limit", async () => {
     const plugin = {
       app: {},

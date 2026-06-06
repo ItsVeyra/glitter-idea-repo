@@ -1,5 +1,7 @@
 import { Modal, type App } from "obsidian";
 import type { PoolRoamBoardRecord } from "../application/pool-workbench/pool-roam-workflow";
+import { getInterfaceText } from "../i18n/interface-language";
+import type { PluginInterfaceLanguage } from "../settings/settings";
 import { createPoolRoamCanvasHost, type PoolRoamCanvasHost } from "./pool-roam-canvas-host";
 
 export interface PoolRoamBoardModalHandlers {
@@ -24,27 +26,38 @@ function clampBoardIndex(index: number, boardCount: number): number {
   return Math.max(0, Math.min(index, boardCount - 1));
 }
 
-function formatUpdatedAt(updatedAt: number): string {
+function resolveLocale(language: PluginInterfaceLanguage | undefined): "en-US" | "zh-CN" {
+  return language === "en" ? "en-US" : "zh-CN";
+}
+
+function formatUpdatedAt(updatedAt: number, language: PluginInterfaceLanguage | undefined): string {
+  const text = getInterfaceText(language).roamModal;
   if (!Number.isFinite(updatedAt) || updatedAt <= 0) {
-    return "最近更新未知";
+    return text.updatedUnknown;
   }
 
-  return `最近更新：${new Date(updatedAt).toLocaleString("zh-CN", {
+  return text.updatedAt(new Date(updatedAt).toLocaleString(resolveLocale(language), {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  })}`;
+  }));
 }
 
-function resolveBoardKindLabel(board: PoolRoamBoardRecord): string {
+function resolveBoardKindLabel(board: PoolRoamBoardRecord, language: PluginInterfaceLanguage | undefined): string {
+  const text = getInterfaceText(language).roamModal;
   const sourceCount = board.thumbnailBoxes.filter((box) => box.kind === "source").length;
   if (sourceCount === 0) {
-    return "仅包含历史白板结构";
+    return text.structureOnly;
   }
 
-  return `包含 ${sourceCount} 个灵感来源节点`;
+  return text.sourceCount(sourceCount);
+}
+
+export interface PoolRoamBoardModalOptions {
+  canvasHost?: PoolRoamCanvasHost;
+  interfaceLanguage?: PluginInterfaceLanguage;
 }
 
 export class PoolRoamBoardModal extends Modal {
@@ -77,10 +90,10 @@ export class PoolRoamBoardModal extends Modal {
     private readonly boards: PoolRoamBoardRecord[],
     activeBoardIndex: number,
     private readonly handlers: PoolRoamBoardModalHandlers = {},
-    deps: { canvasHost?: PoolRoamCanvasHost } = {}
+    private readonly options: PoolRoamBoardModalOptions = {}
   ) {
     super(app as never);
-    this.canvasHost = deps.canvasHost ?? (canCreatePoolRoamCanvasHost(app) ? createPoolRoamCanvasHost(app) : undefined);
+    this.canvasHost = options.canvasHost ?? (canCreatePoolRoamCanvasHost(app) ? createPoolRoamCanvasHost(app) : undefined);
     this.activeBoardIndex = clampBoardIndex(activeBoardIndex, boards.length);
   }
 
@@ -90,6 +103,7 @@ export class PoolRoamBoardModal extends Modal {
     this.contentEl?.addClass?.("glitter-pool-roam-board-modal__content");
     this.contentEl.empty();
 
+    const text = getInterfaceText(this.options.interfaceLanguage).roamModal;
     const surface = this.contentEl.createDiv({
       cls: "glitter-pool-roam-board-modal__surface GlitterIdea-edit-modal__surface"
     });
@@ -117,7 +131,7 @@ export class PoolRoamBoardModal extends Modal {
     }) as HTMLButtonElement;
     this.prevButtonEl.type = "button";
     this.prevButtonEl.dataset.direction = "prev";
-    this.prevButtonEl.setAttribute?.("aria-label", "查看上一块历史白板");
+    this.prevButtonEl.setAttribute?.("aria-label", text.previousBoard);
     this.prevButtonEl.textContent = "←";
     this.prevButtonEl.addEventListener("click", () => {
       this.navigate(-1);
@@ -132,7 +146,7 @@ export class PoolRoamBoardModal extends Modal {
     }) as HTMLButtonElement;
     this.nextButtonEl.type = "button";
     this.nextButtonEl.dataset.direction = "next";
-    this.nextButtonEl.setAttribute?.("aria-label", "查看下一块历史白板");
+    this.nextButtonEl.setAttribute?.("aria-label", text.nextBoard);
     this.nextButtonEl.textContent = "→";
     this.nextButtonEl.addEventListener("click", () => {
       this.navigate(1);
@@ -142,7 +156,7 @@ export class PoolRoamBoardModal extends Modal {
       cls: "glitter-pool-roam-board-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     }) as HTMLButtonElement;
     closeButton.type = "button";
-    closeButton.setAttribute?.("aria-label", "关闭漫游白板预览");
+    closeButton.setAttribute?.("aria-label", text.closeBoardPreview);
     closeButton.createEl("span", {
       cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
     });
@@ -164,7 +178,7 @@ export class PoolRoamBoardModal extends Modal {
       cls: "glitter-pool-roam-board-modal__floating-action glitter-pool-roam-board-modal__floating-action--download"
     }) as HTMLButtonElement;
     this.downloadButtonEl.type = "button";
-    this.downloadButtonEl.setAttribute?.("aria-label", "下载当前历史漫游白板");
+    this.downloadButtonEl.setAttribute?.("aria-label", text.downloadCurrentBoard);
     this.downloadButtonEl.createEl("span", {
       cls: "glitter-pool-stage__roam-floating-action-icon glitter-pool-stage__roam-floating-action-icon--download"
     });
@@ -180,7 +194,7 @@ export class PoolRoamBoardModal extends Modal {
       cls: "glitter-pool-roam-board-modal__floating-action glitter-pool-roam-board-modal__floating-action--share"
     }) as HTMLButtonElement;
     this.shareButtonEl.type = "button";
-    this.shareButtonEl.setAttribute?.("aria-label", "分享当前历史漫游白板");
+    this.shareButtonEl.setAttribute?.("aria-label", text.shareCurrentBoard);
     this.shareButtonEl.createEl("span", {
       cls: "glitter-pool-stage__roam-floating-action-icon glitter-pool-stage__roam-floating-action-icon--share"
     });
@@ -253,11 +267,11 @@ export class PoolRoamBoardModal extends Modal {
 
     this.metaEl.createEl("span", {
       cls: "glitter-pool-roam-board-modal__chip glitter-snippet-locations-modal__card-count",
-      text: formatUpdatedAt(board.updatedAt)
+      text: formatUpdatedAt(board.updatedAt, this.options.interfaceLanguage)
     });
     this.metaEl.createEl("span", {
       cls: "glitter-pool-roam-board-modal__chip glitter-snippet-locations-modal__card-count",
-      text: resolveBoardKindLabel(board)
+      text: resolveBoardKindLabel(board, this.options.interfaceLanguage)
     });
     this.metaEl.createEl("span", {
       cls: "glitter-pool-roam-board-modal__chip glitter-pool-roam-board-modal__chip--muted",

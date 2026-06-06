@@ -107,7 +107,51 @@ describe("buildPoolViewState", () => {
           label: "方案 B：归入默认池",
           description: "立即完成首次流程，并归入当前默认池「写作池」。系统随后展示后续使用指引。"
         }
-      ]
+      ],
+      closeLabel: "关闭归池窗口",
+      backLabel: "返回上一步",
+      continueLabel: "继续"
+    });
+  });
+
+  it("localizes first-use runtime choose state while preserving user pool names", () => {
+    const state = buildFirstUseChoosePoolState({
+      interfaceLanguage: "en",
+      pools: [{ id: "pool-writing", name: "写作池", ideaCount: 0 }]
+    });
+
+    expect(state.pool.title).toBe("Choose pool assignment (first time)");
+    expect(state.header.eyebrow).toBe("First pool assignment");
+    expect(state.header.hint).toBe("Your first idea has been saved. Add it to the default pool, or create a new pool now to categorize it.");
+    expect(state.choice).toEqual({
+      title: "Choose how to assign this idea",
+      options: [
+        {
+          id: "create-new-pool",
+          label: "Option A: Create a new pool first (recommended)",
+          description: "Create the pool name, description, and color first, then move this idea into the new pool."
+        },
+        {
+          id: "pool-writing",
+          label: "Option B: Use the default pool",
+          description: "Finish the first-time flow now and move this idea into the current default pool \"写作池\". Glitter will then show the next-use guide."
+        }
+      ],
+      closeLabel: "Close pool assignment window",
+      backLabel: "Back",
+      continueLabel: "Continue"
+    });
+  });
+
+  it("localizes the system default pool fallback for first-use choose state", () => {
+    const state = buildFirstUseChoosePoolState({
+      interfaceLanguage: "en",
+      pools: []
+    });
+
+    expect(state.choice?.options[1]).toMatchObject({
+      id: "pool-default",
+      description: "Finish the first-time flow now and move this idea into the current default pool \"Default pool\". Glitter will then show the next-use guide."
     });
   });
 
@@ -131,7 +175,10 @@ describe("buildPoolViewState", () => {
           label: "方案 B：归入默认池",
           description: "立即完成首次流程，并归入当前默认池「未整理」。系统随后展示后续使用指引。"
         }
-      ]
+      ],
+      closeLabel: "关闭归池窗口",
+      backLabel: "返回上一步",
+      continueLabel: "继续"
     });
   });
 
@@ -153,10 +200,29 @@ describe("buildPoolViewState", () => {
       tipTitle: "首次说明",
       tipText: "创建后会自动把当前灵感归入该池，并在首页显示首次入池反馈。",
       confirmLabel: "创建池",
+      closeLabel: "关闭新建池窗口",
       createdPoolId: "new-pool-created",
       createdPoolLabel: "新建池"
     });
     expect(state.choice).toBeUndefined();
+  });
+
+  it("localizes global create state and default new pool label", () => {
+    const state = buildFirstUseCreatePoolState({
+      flowContext: "global",
+      interfaceLanguage: "en"
+    });
+
+    expect(state.pool.title).toBe("New pool");
+    expect(state.header.eyebrow).toBe("Pool management");
+    expect(state.createForm).toMatchObject({
+      title: "New pool",
+      nameLabel: "Pool name",
+      namePlaceholder: "For example: Product pool / Writing pool / Research pool",
+      confirmLabel: "Create pool",
+      closeLabel: "Close new pool window",
+      createdPoolLabel: "New pool"
+    });
   });
 
   it("builds global create state with flow-aware copy and ordered setting colors", () => {
@@ -296,6 +362,126 @@ describe("buildPoolViewState", () => {
     expect(state.items).toEqual([]);
     expect(state.detail).toEqual({ title: "", meta: "", body: "" });
     expect(state.roam).toBeUndefined();
+  });
+
+  it("adds English fixed browse labels from interface language", () => {
+    const state = buildPoolViewStateFromRuntime({
+      pool: {
+        id: "pool-product",
+        title: "Product pool",
+        description: "Product notes",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        tone: "bluegray"
+      },
+      header: {
+        eyebrow: "Idea Pool",
+        hint: "runtime"
+      },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all",
+        contentFilter: "all",
+        sort: "updated-desc",
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [],
+      batchMode: false,
+      interfaceLanguage: "en",
+      viewOptions: {
+        queryPlaceholder: "Search filtered ideas"
+      },
+      preview: {
+        available: true,
+        open: true,
+        saving: false,
+        panelTitle: "Product pool Markdown file",
+        saveLabel: "Save Markdown file"
+      }
+    });
+
+    expect(state.browse?.queryPlaceholder).toBe("Search filtered ideas");
+    expect(state.browse?.resultSummary).toBe("1 idea");
+    expect(state.browse?.labels?.statusFilterOptions["file-created"]).toBe("File created");
+    expect(state.preview?.panelTitle).toBe("Product pool Markdown file");
+    expect(state.preview?.saveLabel).toBe("Save Markdown file");
+  });
+
+  it("builds English create-pool modal copy from interface language", () => {
+    const state = buildFirstUseCreatePoolState({
+      flowContext: "global",
+      interfaceLanguage: "en"
+    });
+
+    expect(state.pool.title).toBe("New pool");
+    expect(state.header.eyebrow).toBe("Pool management");
+    expect(state.header.hint).toBe("Create a new pool for easier filtering and organization later.");
+    expect(state.createForm?.nameLabel).toBe("Pool name");
+    expect(state.createForm?.namePlaceholder).toBe("For example: Product pool / Writing pool / Research pool");
+    expect(state.createForm?.confirmLabel).toBe("Create pool");
+  });
+
+  it("adds English roam panel labels from interface language", () => {
+    const state = buildPoolViewStateFromRuntime({
+      pool: {
+        id: "pool-product",
+        title: "Product pool",
+        description: "Product notes",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        tone: "bluegray"
+      },
+      header: {
+        eyebrow: "Idea Pool",
+        hint: "runtime"
+      },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all",
+        contentFilter: "all",
+        sort: "updated-desc",
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [],
+      batchMode: false,
+      interfaceLanguage: "en",
+      roam: {
+        open: true,
+        mode: "empty",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history"],
+        boundaryAnchors: []
+      }
+    });
+
+    if (!state.roam?.labels) {
+      throw new Error("Expected roam labels");
+    }
+    expect(state.roam.labels).toEqual({
+      toggleOpen: "Open roam mode",
+      toggleClose: "Close roam mode",
+      modeLabel: "Roam mode",
+      downloadCurrentBoard: "Download current roam board",
+      shareCurrentBoard: "Share current roam board",
+      openHistory: "Open roam board history",
+      errorTitle: "Roam board is temporarily unavailable",
+      errorDescription: "Please try again later.",
+      emptyTitle: "New blank roam area",
+      emptyDescription: "Drag a dot from the top-right of a left card into this area to create the first roam board block.",
+      sourceHandleTitle: "Drag a connection line to the roam board on the right",
+      sourceHandleLabel: expect.any(Function),
+      bridgeMarkerLabel: expect.any(Function),
+      bridgeMeta: expect.any(Function),
+      locateSource: "Locate source card",
+      deleteLink: "Delete link"
+    });
+    expect(state.roam.labels.sourceHandleLabel("Design weekly notes")).toBe("Connect \"Design weekly notes\" to the roam board");
+    expect(state.roam.labels.bridgeMarkerLabel("Design weekly notes")).toBe("View roam link for \"Design weekly notes\"");
+    expect(state.roam.labels.bridgeMeta("Product pool")).toBe("From Product pool");
   });
 
   it("formats browse card timestamps in the local timezone instead of raw UTC slices", () => {
@@ -1428,7 +1614,7 @@ describe("buildPoolViewState", () => {
     } as any);
 
     expect(state.mode).toBe("empty");
-    expect(state.roam).toEqual({
+    expect(state.roam).toMatchObject({
       open: true,
       mode: "empty",
       historyEnabled: true,
@@ -1443,6 +1629,10 @@ describe("buildPoolViewState", () => {
           visibleBridge: false
         }
       ]
+    });
+    expect(state.roam?.labels).toMatchObject({
+      toggleOpen: "打开漫游模式",
+      emptyTitle: "新的空白漫游区"
     });
     expect(state.preview).toBeUndefined();
   });
@@ -1516,7 +1706,11 @@ describe("buildPoolViewState", () => {
       roam
     } as any);
 
-    expect(state.roam).toEqual(roam);
+    expect(state.roam).toMatchObject(roam);
+    expect(state.roam?.labels).toMatchObject({
+      toggleOpen: "打开漫游模式",
+      modeLabel: "漫游模式"
+    });
     expect(state.roam).not.toBe(roam);
     expect(state.roam?.floatingActions).not.toBe(roam.floatingActions);
     expect(state.roam?.boundaryAnchors).not.toBe(roam.boundaryAnchors);
@@ -1582,7 +1776,7 @@ describe("buildPoolViewState", () => {
       }
     } as any);
 
-    expect(state.roam).toEqual({
+    expect(state.roam).toMatchObject({
       open: true,
       mode: "error",
       historyEnabled: true,

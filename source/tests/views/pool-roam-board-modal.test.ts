@@ -299,6 +299,7 @@ describe("PoolRoamBoardModal", () => {
       0,
       { onDownloadBoard, onShareBoard },
       {
+        interfaceLanguage: "en",
         canvasHost: {
           mountInlineBoard: vi.fn(async () => undefined),
           mountModalBoard: vi.fn(async () => undefined),
@@ -314,13 +315,16 @@ describe("PoolRoamBoardModal", () => {
     const floatingActions = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__floating-actions");
     const downloadButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__floating-action--download");
     const shareButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__floating-action--share");
+    const closeButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__close");
     expect(floatingActions).not.toBeNull();
     expect(downloadButton).not.toBeNull();
     expect(shareButton).not.toBeNull();
+    expect(closeButton).not.toBeNull();
     expect(downloadButton?.disabled).toBe(false);
     expect(shareButton?.disabled).toBe(false);
-    expect(downloadButton?.getAttribute("aria-label")).toBe("下载当前历史漫游白板");
-    expect(shareButton?.getAttribute("aria-label")).toBe("分享当前历史漫游白板");
+    expect(downloadButton?.getAttribute("aria-label")).toBe("Download current historical roam board");
+    expect(shareButton?.getAttribute("aria-label")).toBe("Share current historical roam board");
+    expect(closeButton?.getAttribute("aria-label")).toBe("Close roam board preview");
 
     downloadButton?.click();
     await flushMicrotasks();

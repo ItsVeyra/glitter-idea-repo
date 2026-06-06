@@ -3,15 +3,36 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { buildSearchViewState } from "../../../src/ui/search/search-state";
+import { buildSearchViewState, buildSearchViewStateFromRuntime } from "../../../src/ui/search/search-state";
 
 // 覆盖状态装配函数在主要输入场景下的输出契约。
 describe("buildSearchViewState", () => {
+  it("builds English fixed search interface text when requested", () => {
+    const state = buildSearchViewStateFromRuntime({
+      query: "",
+      results: [],
+      selectedCount: 0,
+      interfaceLanguage: "en"
+    });
+
+    expect(state.title).toBe("Search Glitter");
+    expect(state.subtitle).toBe("Find ideas, snippets, and pools quickly.");
+    expect(state.query.placeholder).toBe("Search ideas, pools, tags");
+    expect(state.query.buttonLabel).toBe("Search");
+  });
+
+  it("builds English review search query controls when requested", () => {
+    const state = buildSearchViewState("search-results", { interfaceLanguage: "en" });
+
+    expect(state.query.placeholder).toBe("Search ideas, pools, tags");
+    expect(state.query.buttonLabel).toBe("Search");
+  });
+
   it("builds results state with query, controls, and result rows", () => {
     const state = buildSearchViewState("search-results");
 
     expect(state.mode).toBe("results");
-    expect(state.query.placeholder).toBe("Search ideas, pools, tags");
+    expect(state.query.placeholder).toBe("搜索灵感、池、标签");
     expect(state.results).toHaveLength(3);
   });
 

@@ -9,6 +9,7 @@ export type UiThemeMode = "follow-obsidian" | "obsidian-dark" | "obsidian-light"
 export type AppliedUiThemeMode = Exclude<UiThemeMode, "follow-obsidian">;
 // 首页池场当前支持两套底层视图：圆满沿用水面基线，涟漪对应独立的 spring-rain 渲染语义。
 export type HomeFieldView = "water" | "spring-rain";
+export type PluginInterfaceLanguage = "zh-CN" | "en";
 
 export interface PoolColorSettings {
   unsorted: string;
@@ -42,6 +43,7 @@ export interface GlitterPluginSettings {
   enableAmbientMotion: boolean;
   uiThemeMode: UiThemeMode;
   homeFieldView: HomeFieldView;
+  interfaceLanguage: PluginInterfaceLanguage;
   ai: AiSettings;
   poolColors: PoolColorSettings;
   createMdFileByDefault: boolean;

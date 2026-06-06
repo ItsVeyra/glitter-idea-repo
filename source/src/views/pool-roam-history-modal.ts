@@ -4,11 +4,18 @@ import type {
   PoolRoamThumbnailBox,
   PoolRoamThumbnailEdge
 } from "../application/pool-workbench/pool-roam-workflow";
+import { getInterfaceText, type InterfaceText } from "../i18n/interface-language";
+import type { PluginInterfaceLanguage } from "../settings/settings";
+import { setElementStyles } from "../ui/shared/theme-state";
 
 export interface PoolRoamHistoryModalHandlers {
   onSelectBoard?: (board: PoolRoamBoardRecord, index: number) => void;
   onDeleteBoards?: (boardPaths: string[]) => Promise<PoolRoamBoardRecord[]>;
   onClose?: () => void;
+}
+
+export interface PoolRoamHistoryModalOptions {
+  interfaceLanguage?: PluginInterfaceLanguage;
 }
 
 type PoolRoamThumbnailPreviewBox = PoolRoamThumbnailBox & {
@@ -27,47 +34,55 @@ type PoolRoamThumbnailPreviewEdge = PoolRoamThumbnailEdge & {
 
 type PoolRoamHistoryViewMode = "grid" | "list";
 
-function formatUpdatedAt(updatedAt: number): string {
+function formatUpdatedAt(updatedAt: number, text: InterfaceText, interfaceLanguage?: PluginInterfaceLanguage): string {
   if (!Number.isFinite(updatedAt) || updatedAt <= 0) {
-    return "最近更新未知";
+    return text.roamModal.updatedUnknown;
   }
 
-  return `最近更新：${new Date(updatedAt).toLocaleString("zh-CN", {
+  const locale = interfaceLanguage === "en" ? "en-US" : "zh-CN";
+  return text.roamModal.updatedAt(new Date(updatedAt).toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  })}`;
+  }));
 }
 
-function resolveBoardSourceStatus(board: PoolRoamBoardRecord): string {
+function resolveBoardSourceStatus(board: PoolRoamBoardRecord, text: InterfaceText): string {
   const sourceCount = board.thumbnailBoxes.filter((box) => box.kind === "source").length;
   if (sourceCount <= 0) {
-    return "未关联来源灵感";
+    return text.roamModal.noSourceIdeas;
   }
 
-  return sourceCount === 1 ? "1 个来源灵感" : `${sourceCount} 个来源灵感`;
+  return text.roamModal.sourceCount(sourceCount);
 }
 
-function buildBoardMetaLine(board: PoolRoamBoardRecord): string {
-  return `${formatUpdatedAt(board.updatedAt)} · ${resolveBoardSourceStatus(board)}`;
+function buildBoardMetaLine(board: PoolRoamBoardRecord, text: InterfaceText, interfaceLanguage?: PluginInterfaceLanguage): string {
+  return `${formatUpdatedAt(board.updatedAt, text, interfaceLanguage)} · ${resolveBoardSourceStatus(board, text)}`;
 }
 
-function normalizeBoardQuery(query: string): string {
-  return query.trim().toLocaleLowerCase("zh-CN");
+function normalizeBoardQuery(query: string, interfaceLanguage?: PluginInterfaceLanguage): string {
+  const locale = interfaceLanguage === "en" ? "en-US" : "zh-CN";
+  return query.trim().toLocaleLowerCase(locale);
 }
 
-function matchesBoardQuery(board: PoolRoamBoardRecord, normalizedQuery: string): boolean {
+function matchesBoardQuery(
+  board: PoolRoamBoardRecord,
+  normalizedQuery: string,
+  text: InterfaceText,
+  interfaceLanguage?: PluginInterfaceLanguage
+): boolean {
   if (!normalizedQuery) {
     return true;
   }
 
+  const locale = interfaceLanguage === "en" ? "en-US" : "zh-CN";
   const haystack = [
     board.name,
-    buildBoardMetaLine(board),
+    buildBoardMetaLine(board, text, interfaceLanguage),
     ...board.relatedPools.map((pool) => pool.name)
-  ].join("\n").toLocaleLowerCase("zh-CN");
+  ].join("\n").toLocaleLowerCase(locale);
 
   return haystack.includes(normalizedQuery);
 }
@@ -178,27 +193,12 @@ function applyThumbnailEdgeStyle(edgeEl: HTMLElement, edge: PoolRoamThumbnailPre
   );
 }
 
-type DisplayStyleElement = HTMLElement & {
-  setCssStyles?: (styles: Partial<CSSStyleDeclaration>) => void;
-};
-
 function setElementDisplay(element: HTMLElement | null, display: string): void {
   if (!element) {
     return;
   }
 
-  const displayStyleElement = element as DisplayStyleElement;
-  if (typeof displayStyleElement.setCssStyles === "function") {
-    displayStyleElement.setCssStyles({ display });
-    return;
-  }
-
-  if (typeof displayStyleElement.style?.setProperty === "function") {
-    displayStyleElement.style.setProperty("display", display);
-    return;
-  }
-
-  Object.assign(displayStyleElement.style, { display });
+  setElementStyles(element, { display });
 }
 
 function setButtonLabel(button: HTMLButtonElement | null, label: string): void {
@@ -241,16 +241,22 @@ export class PoolRoamHistoryModal extends Modal {
 
   private recordsScrollTop = 0;
 
+  private get text(): InterfaceText {
+    return getInterfaceText(this.options.interfaceLanguage);
+  }
+
   constructor(
     app: unknown,
     boards: PoolRoamBoardRecord[],
-    private readonly handlers: PoolRoamHistoryModalHandlers = {}
+    private readonly handlers: PoolRoamHistoryModalHandlers = {},
+    private readonly options: PoolRoamHistoryModalOptions = {}
   ) {
     super(app as never);
     this.boardsState = [...boards];
   }
 
   override onOpen(): void {
+    const text = this.text;
     this.containerEl?.addClass?.("glitter-pool-roam-history-modal-host");
     this.modalEl?.addClass?.("glitter-pool-roam-history-modal");
     this.contentEl?.addClass?.("glitter-pool-roam-history-modal__content");
@@ -267,14 +273,14 @@ export class PoolRoamHistoryModal extends Modal {
     });
     heading.createEl("h2", {
       cls: "glitter-pool-roam-history-modal__title glitter-snippet-locations-modal__title GlitterIdea-edit-modal__heading",
-      text: "漫游白板历史"
+      text: text.roamModal.title
     });
 
     const closeButton = header.createEl("button", {
       cls: "glitter-pool-roam-history-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     }) as HTMLButtonElement;
     closeButton.type = "button";
-    closeButton.setAttribute?.("aria-label", "关闭漫游白板历史");
+    closeButton.setAttribute?.("aria-label", text.roamModal.closeHistory);
     closeButton.createEl("span", {
       cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
     });
@@ -293,7 +299,7 @@ export class PoolRoamHistoryModal extends Modal {
       cls: "glitter-pool-roam-history-modal__view-toggle glitter-pool-roam-history-modal__view-toggle--grid"
     }) as HTMLButtonElement;
     this.gridToggleEl.type = "button";
-    setButtonLabel(this.gridToggleEl, "切换到缩略图模式");
+    setButtonLabel(this.gridToggleEl, text.roamModal.switchToGrid);
     this.gridToggleEl.createEl("span", {
       cls: "glitter-write-stage__icon glitter-pool-roam-history-modal__icon--grid"
     });
@@ -306,7 +312,7 @@ export class PoolRoamHistoryModal extends Modal {
       cls: "glitter-pool-roam-history-modal__view-toggle glitter-pool-roam-history-modal__view-toggle--list"
     }) as HTMLButtonElement;
     this.listToggleEl.type = "button";
-    setButtonLabel(this.listToggleEl, "切换到列表模式");
+    setButtonLabel(this.listToggleEl, text.roamModal.switchToList);
     this.listToggleEl.createEl("span", {
       cls: "glitter-write-stage__icon glitter-pool-roam-history-modal__icon--list"
     });
@@ -323,7 +329,7 @@ export class PoolRoamHistoryModal extends Modal {
     }) as HTMLInputElement;
     this.searchInputEl.type = "text";
     this.searchInputEl.value = this.query;
-    this.searchInputEl.placeholder = "搜索漫游板记录";
+    this.searchInputEl.placeholder = text.roamModal.searchPlaceholder;
     this.searchInputEl.addEventListener("input", () => {
       this.query = this.searchInputEl?.value ?? "";
       this.renderBoardRecords();
@@ -336,7 +342,7 @@ export class PoolRoamHistoryModal extends Modal {
       cls: "glitter-pool-roam-history-modal__toolbar-button glitter-pool-roam-history-modal__batch-toggle"
     }) as HTMLButtonElement;
     this.batchToggleEl.type = "button";
-    setButtonLabel(this.batchToggleEl, "批量整理");
+    setButtonLabel(this.batchToggleEl, text.roamModal.batchOrganize);
     this.batchToggleEl.createEl("span", {
       cls: "glitter-write-stage__icon glitter-pool-roam-history-modal__icon--batch"
     });
@@ -368,7 +374,7 @@ export class PoolRoamHistoryModal extends Modal {
       cls: "glitter-pool-roam-history-modal__batch-footer-button glitter-pool-roam-history-modal__batch-cancel"
     }) as HTMLButtonElement;
     this.batchCancelEl.type = "button";
-    setButtonLabel(this.batchCancelEl, "取消批量整理");
+    setButtonLabel(this.batchCancelEl, text.roamModal.cancelBatchOrganize);
     this.batchCancelEl.createEl("span", {
       cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
     });
@@ -382,7 +388,7 @@ export class PoolRoamHistoryModal extends Modal {
       cls: "glitter-pool-roam-history-modal__batch-footer-button glitter-pool-roam-history-modal__batch-delete"
     }) as HTMLButtonElement;
     this.batchDeleteEl.type = "button";
-    setButtonLabel(this.batchDeleteEl, "删除选中的漫游白板");
+    setButtonLabel(this.batchDeleteEl, text.roamModal.deleteSelectedBoards);
     this.batchDeleteEl.createEl("span", {
       cls: "glitter-write-stage__icon glitter-write-stage__icon--trash"
     });
@@ -409,22 +415,24 @@ export class PoolRoamHistoryModal extends Modal {
   }
 
   private getFilteredBoards(): Array<{ board: PoolRoamBoardRecord; index: number }> {
-    const normalizedQuery = normalizeBoardQuery(this.query);
+    const text = this.text;
+    const normalizedQuery = normalizeBoardQuery(this.query, this.options.interfaceLanguage);
     return this.boardsState
       .map((board, index) => ({ board, index }))
-      .filter(({ board }) => matchesBoardQuery(board, normalizedQuery));
+      .filter(({ board }) => matchesBoardQuery(board, normalizedQuery, text, this.options.interfaceLanguage));
   }
 
   private syncToolbarState(): void {
+    const text = this.text;
     if (this.summaryEl) {
-      this.summaryEl.textContent = `共 ${this.boardsState.length} 块漫游白板，可按名称、来源池或视图方式继续整理。`;
+      this.summaryEl.textContent = text.roamModal.summary(this.boardsState.length);
     }
 
     this.gridToggleEl?.setAttribute?.("aria-pressed", String(this.viewMode === "grid"));
     this.listToggleEl?.setAttribute?.("aria-pressed", String(this.viewMode === "list"));
 
     if (this.batchToggleEl) {
-      const batchToggleLabel = this.batchMode ? "结束批量整理" : "批量整理";
+      const batchToggleLabel = this.batchMode ? text.roamModal.finishBatchOrganize : text.roamModal.batchOrganize;
       setButtonLabel(this.batchToggleEl, batchToggleLabel);
       this.batchToggleEl.setAttribute?.("aria-pressed", String(this.batchMode));
       this.batchToggleEl.disabled = this.deletingSelection;
@@ -433,23 +441,24 @@ export class PoolRoamHistoryModal extends Modal {
     setElementDisplay(this.batchFooterEl, this.batchMode ? "flex" : "none");
 
     if (this.batchCancelEl) {
-      setButtonLabel(this.batchCancelEl, "取消批量整理");
+      setButtonLabel(this.batchCancelEl, text.roamModal.cancelBatchOrganize);
       this.batchCancelEl.disabled = this.deletingSelection;
     }
 
     if (this.batchDeleteEl) {
       const selectedCount = this.selectedBoardPaths.size;
       const batchDeleteLabel = this.deletingSelection
-        ? "正在删除选中的漫游白板"
+        ? text.roamModal.deletingSelectedBoards
         : selectedCount > 0
-          ? `删除选中的漫游白板（${selectedCount}）`
-          : "删除选中的漫游白板";
+          ? text.roamModal.deleteSelectedBoardsWithCount(selectedCount)
+          : text.roamModal.deleteSelectedBoards;
       setButtonLabel(this.batchDeleteEl, batchDeleteLabel);
       this.batchDeleteEl.disabled = this.deletingSelection || selectedCount === 0;
     }
   }
 
   private renderBoardRecords(): void {
+    const text = this.text;
     this.syncToolbarState();
 
     if (!this.recordsContentEl) {
@@ -467,8 +476,8 @@ export class PoolRoamHistoryModal extends Modal {
       this.recordsContentEl.createEl("div", {
         cls: "glitter-pool-roam-history-modal__empty glitter-snippet-locations-modal__summary",
         text: this.boardsState.length === 0
-          ? "还没有漫游白板。先把灵感拖入当前漫游区，历史会在这里累计。"
-          : "没有匹配的漫游白板，换个关键词试试。"
+          ? text.roamModal.emptyNoBoards
+          : text.roamModal.emptyNoMatches
       });
       return;
     }
@@ -486,7 +495,11 @@ export class PoolRoamHistoryModal extends Modal {
       card.setAttribute?.("tabindex", "0");
       card.setAttribute?.(
         "aria-label",
-        this.batchMode ? `${isSelected ? "取消选择" : "选择"}漫游白板 ${board.name}` : `打开漫游白板 ${board.name}`
+        this.batchMode
+          ? isSelected
+            ? text.roamModal.deselectBoard(board.name)
+            : text.roamModal.selectBoard(board.name)
+          : text.roamModal.openBoard(board.name)
       );
       if (this.batchMode) {
         card.setAttribute?.("aria-pressed", String(isSelected));
@@ -512,7 +525,10 @@ export class PoolRoamHistoryModal extends Modal {
           cls: "glitter-pool-roam-history-modal__card-select"
         });
         cardSelect.type = "button";
-        cardSelect.setAttribute?.("aria-label", `${isSelected ? "取消选择" : "选择"}漫游白板 ${board.name}`);
+        cardSelect.setAttribute?.(
+          "aria-label",
+          isSelected ? text.roamModal.deselectBoard(board.name) : text.roamModal.selectBoard(board.name)
+        );
         cardSelect.setAttribute?.("aria-pressed", String(isSelected));
         if (isSelected) {
           cardSelect.addClass("glitter-pool-roam-history-modal__card-select--selected");
@@ -537,7 +553,7 @@ export class PoolRoamHistoryModal extends Modal {
       if (previewBoxes.length === 0) {
         preview.createEl("span", {
           cls: "glitter-pool-roam-history-modal__preview-empty",
-          text: "暂无缩略图"
+          text: text.roamModal.noThumbnail
         });
       } else {
         const previewStage = preview.createDiv({
@@ -595,7 +611,7 @@ export class PoolRoamHistoryModal extends Modal {
       });
       const updatedEl = main.createEl("span", {
         cls: "glitter-pool-roam-history-modal__card-updated glitter-snippet-locations-modal__card-count",
-        text: buildBoardMetaLine(board)
+        text: buildBoardMetaLine(board, text, this.options.interfaceLanguage)
       });
       updatedEl.dataset.role = "updated-time";
 
@@ -605,7 +621,7 @@ export class PoolRoamHistoryModal extends Modal {
       if (board.relatedPools.length === 0) {
         meta.createEl("span", {
           cls: "glitter-pool-roam-history-modal__chip glitter-pool-roam-history-modal__chip--muted",
-          text: "未关联池"
+          text: text.roamModal.noLinkedPool
         });
       } else {
         board.relatedPools.forEach((pool) => {

@@ -3,7 +3,9 @@
  * 负责从弹窗输入状态推导内容类型、自动标题和渲染层所需的最小模型。
  */
 
-import { DEFAULT_POOL_ID, DEFAULT_POOL_LABEL } from "../../plugin/constants";
+import { getInterfaceText } from "../../i18n/interface-language";
+import { DEFAULT_POOL_ID } from "../../plugin/constants";
+import type { PluginInterfaceLanguage } from "../../settings/settings";
 
 // 快速记录运行时状态契约。
 export type QuickCaptureFlowContext = "first-use" | "global";
@@ -52,12 +54,12 @@ export interface QuickCaptureStateModel {
 // 输入内容识别与标题兜底规则。
 const URL_CANDIDATE_PATTERN = /(?:https?:\/\/|www\.)\S+/i;
 
-function formatTitleFallback(now: Date): string {
+function formatTitleFallback(now: Date, language?: PluginInterfaceLanguage): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   const hour = String(now.getHours()).padStart(2, "0");
   const minute = String(now.getMinutes()).padStart(2, "0");
-  return `灵感 ${month}-${day} ${hour}:${minute}`;
+  return getInterfaceText(language).write.timedIdeaTitle(`${month}-${day} ${hour}:${minute}`);
 }
 
 // 记录内容类型判定。
@@ -76,9 +78,10 @@ export function detectQuickCaptureContentKind(input: QuickCaptureRuntimeInput): 
 // 渲染层消费的快速记录状态派生。
 export function deriveQuickCaptureStateModel(
   runtimeState: QuickCaptureRuntimeState,
-  options: { now?: Date; attachedMediaLabels?: string[] } = {}
+  options: { now?: Date; attachedMediaLabels?: string[]; interfaceLanguage?: PluginInterfaceLanguage } = {}
 ): QuickCaptureStateModel {
   const now = options.now ?? new Date();
+  const text = getInterfaceText(options.interfaceLanguage);
   const contentKind = detectQuickCaptureContentKind(runtimeState.input);
   const firstAttachedMediaLabel = options.attachedMediaLabels?.[0]?.trim();
   const hasManualTitle = runtimeState.input.hasManualTitle ?? false;
@@ -88,10 +91,10 @@ export function deriveQuickCaptureStateModel(
       : undefined;
   const generatedTitle =
     runtimeState.flowContext === "first-use"
-      ? "我的第一条灵感"
+      ? text.write.firstIdeaTitle
       : contentKind === "media"
-        ? firstAttachedMediaLabel || "媒体灵感"
-        : explicitAutoTitle || formatTitleFallback(now);
+        ? firstAttachedMediaLabel || text.write.mediaIdeaTitle
+        : explicitAutoTitle || formatTitleFallback(now, options.interfaceLanguage);
   const titleText = runtimeState.input.title !== undefined ? runtimeState.input.title : generatedTitle;
 
   return {
@@ -107,7 +110,7 @@ export function deriveQuickCaptureStateModel(
     sourceUrl: runtimeState.input.sourceUrl,
     createFileChecked: runtimeState.input.createFileChecked ?? false,
     selectedPoolId: runtimeState.input.selectedPoolId ?? DEFAULT_POOL_ID,
-    selectedPoolLabel: runtimeState.input.selectedPoolLabel ?? DEFAULT_POOL_LABEL,
+    selectedPoolLabel: runtimeState.input.selectedPoolLabel ?? text.pool.defaultPoolName,
     poolDropdownVisible: runtimeState.input.poolDropdownVisible ?? false
   };
 }

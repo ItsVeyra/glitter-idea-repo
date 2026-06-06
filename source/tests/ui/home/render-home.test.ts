@@ -959,7 +959,7 @@ describe("renderHomeView", () => {
       controls?: Array<{ id: string; label: string; kind: "text" | "icon" }>;
     };
 
-    expect(populatedTopbar.search?.placeholder).toBe("可搜索标题/标签/池名，按状态筛选。");
+    expect(populatedTopbar.search?.placeholder).toBe("搜索灵感、片段或池");
     expect(populatedTopbar.controls).toEqual([
       { id: "view-switch", label: "切换视图", kind: "text" },
       { id: "settings", label: "设置", kind: "text" },
@@ -1271,7 +1271,7 @@ describe("renderHomeView", () => {
     expect(secondaryButton?.querySelector(".glitter-home-stage__action-icon--secondary")).not.toBeNull();
     expect(primaryButton?.querySelector(".glitter-home-stage__action-icon--primary")).not.toBeNull();
     expect(secondaryButton?.querySelector(".glitter-home-stage__action-label")?.textContent).toBe("创建池");
-    expect(primaryButton?.querySelector(".glitter-home-stage__action-label")?.textContent).toBe("灵感速记");
+    expect(primaryButton?.querySelector(".glitter-home-stage__action-label")?.textContent).toBe("快速记录");
   });
 
   it("prefers CSS write bridge helpers for populated-home stage and orb layout writes", () => {
@@ -1330,8 +1330,8 @@ describe("renderHomeView", () => {
     expect(searchShell?.querySelector(".glitter-home-stage__topbar-search-placeholder")).toBeNull();
     expect(searchInput).not.toBeNull();
     expect(searchInput?.type).toBe("text");
-    expect(searchInput?.placeholder).toBe("可搜索标题/标签/池名，按状态筛选。");
-    expect(searchInput?.getAttribute("aria-label")).toBe("可搜索标题/标签/池名，按状态筛选。");
+    expect(searchInput?.placeholder).toBe("搜索灵感、片段或池");
+    expect(searchInput?.getAttribute("aria-label")).toBe("搜索灵感、片段或池");
     expect(container.querySelector(".glitter-home-stage__brand")?.textContent).toContain("Glitter · 灵感池");
     expect(container.querySelector(".glitter-home-stage__brand")?.textContent).not.toContain(
       "先校准主舞台、池球层级和关键操作位。"

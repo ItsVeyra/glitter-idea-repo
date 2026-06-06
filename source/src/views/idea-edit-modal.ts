@@ -7,6 +7,7 @@ import { Modal } from "obsidian";
 import { replaceIdeaSnippetMarkdown, serializeIdeaSnippet } from "../editor/snippet-serializer";
 import type { IdeaContentType, IdeaSnippetRef } from "../domain/idea/idea-model";
 import { createToastService } from "../feedback/toast-service";
+import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import {
   applyMediaSurfaceActionIconToneFallback,
@@ -235,6 +236,7 @@ export class IdeaEditModal extends Modal {
       return;
     }
 
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage).ideaEdit;
     const contentType = idea.contentType ?? "text";
     const isLinkIdea = contentType === "link";
     const isMediaIdea = contentType === "image" || contentType === "video";
@@ -258,14 +260,14 @@ export class IdeaEditModal extends Modal {
     const header = surface.createDiv({ cls: "GlitterIdea-edit-modal__header" });
     header.createEl("h2", {
       cls: "GlitterIdea-edit-modal__heading",
-      text: "编辑灵感"
+      text: text.title
     });
 
     const closeButton = header.createEl("button", {
       cls: "GlitterIdea-edit-modal__close glitter-write-stage__close-button"
     });
     closeButton.type = "button";
-    closeButton.setAttr("aria-label", "关闭编辑窗口");
+    closeButton.setAttr("aria-label", text.close);
     closeButton.createEl("span", {
       cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
     });
@@ -550,7 +552,7 @@ export class IdeaEditModal extends Modal {
         cls: "glitter-write-stage__media-preview-close"
       }) as HTMLButtonElement;
       mediaPreviewClose.type = "button";
-      mediaPreviewClose.setAttr("aria-label", "关闭大图预览");
+      mediaPreviewClose.setAttr("aria-label", text.mediaPreviewClose);
       mediaPreviewClose.createEl("span", {
         cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
       });
@@ -562,7 +564,7 @@ export class IdeaEditModal extends Modal {
         cls: "glitter-write-stage__media-preview-image"
       }) as HTMLImageElement;
       mediaPreviewImage.setAttr("src", mediaDisplay.previewUrl);
-      mediaPreviewImage.setAttr("alt", "媒体大图预览");
+      mediaPreviewImage.setAttr("alt", text.mediaPreviewImage);
     }
 
     function openMediaReplacePicker(): void {
@@ -640,7 +642,7 @@ export class IdeaEditModal extends Modal {
       }
 
       if (mediaDisplay.previewUrl && mediaDisplay.previewKind === "image") {
-        const mediaThumbnailTrigger = createMediaThumbnailPreviewButton(mediaThumbnailHost, "查看大图", () => {
+        const mediaThumbnailTrigger = createMediaThumbnailPreviewButton(mediaThumbnailHost, text.mediaPreviewOpen, () => {
           mediaPreviewVisible = true;
           renderMediaPreviewOverlay();
         });
@@ -648,7 +650,7 @@ export class IdeaEditModal extends Modal {
           cls: "glitter-write-stage__media-thumbnail-image"
         }) as HTMLImageElement;
         mediaThumbnailImage.setAttr("src", mediaDisplay.previewUrl);
-        mediaThumbnailImage.setAttr("alt", "已选择媒体缩略图");
+        mediaThumbnailImage.setAttr("alt", text.selectedImage);
         bindMediaSurfaceActionIconTone(mediaThumbnailHost, mediaThumbnailImage, "image");
       } else if (mediaDisplay.previewUrl && mediaDisplay.previewKind === "video") {
         const mediaThumbnailVideo = mediaThumbnailHost.createEl("video", {
@@ -659,7 +661,7 @@ export class IdeaEditModal extends Modal {
         mediaThumbnailVideo.setAttr("playsinline", "");
         mediaThumbnailVideo.setAttr("autoplay", "");
         mediaThumbnailVideo.setAttr("loop", "");
-        mediaThumbnailVideo.setAttr("aria-label", "已选择媒体缩略视频");
+        mediaThumbnailVideo.setAttr("aria-label", text.selectedVideo);
         bindMediaSurfaceActionIconTone(mediaThumbnailHost, mediaThumbnailVideo, "video");
       } else {
         applyMediaSurfaceActionIconToneFallback(mediaThumbnailHost);
@@ -682,7 +684,7 @@ export class IdeaEditModal extends Modal {
         const previousButton = createMediaSurfaceActionButton(
           navRow,
           "glitter-write-stage__media-surface-nav-button glitter-write-stage__media-surface-nav-button--previous",
-          "上一张",
+          text.previousImage,
           "glitter-write-stage__icon--chevron-left",
           () => navigateDisplayedMedia(-1)
         );
@@ -691,7 +693,7 @@ export class IdeaEditModal extends Modal {
         const nextButton = createMediaSurfaceActionButton(
           navRow,
           "glitter-write-stage__media-surface-nav-button glitter-write-stage__media-surface-nav-button--next",
-          "下一张",
+          text.nextImage,
           "glitter-write-stage__icon--chevron-right",
           () => navigateDisplayedMedia(1)
         );
@@ -704,7 +706,7 @@ export class IdeaEditModal extends Modal {
         const addButton = createMediaSurfaceActionButton(
           actionRow,
           "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--add",
-          "增加图片",
+          text.addImage,
           "glitter-write-stage__icon--plus",
           openMediaAddPicker
         );
@@ -714,14 +716,14 @@ export class IdeaEditModal extends Modal {
           createMediaSurfaceActionButton(
             actionRow,
             "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--replace",
-            "替换当前图片",
+            text.replaceImage,
             "glitter-write-stage__icon--replace",
             openMediaReplacePicker
           );
           createMediaSurfaceActionButton(
             actionRow,
             "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--remove",
-            "删除当前图片",
+            text.removeImage,
             "glitter-write-stage__icon--trash",
             removeDisplayedMedia
           );
@@ -735,14 +737,14 @@ export class IdeaEditModal extends Modal {
         createMediaSurfaceActionButton(
           actionRow,
           "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--replace",
-          "替换视频",
+          text.replaceVideo,
           "glitter-write-stage__icon--replace",
           openMediaReplacePicker
         );
         createMediaSurfaceActionButton(
           actionRow,
           "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--remove",
-          "删除视频",
+          text.removeVideo,
           "glitter-write-stage__icon--trash",
           removeDisplayedMedia
         );
@@ -750,7 +752,7 @@ export class IdeaEditModal extends Modal {
         createMediaSurfaceActionButton(
           actionRow,
           "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--add",
-          "添加视频",
+          text.addVideo,
           "glitter-write-stage__icon--plus",
           openMediaReplacePicker
         );
@@ -835,7 +837,7 @@ export class IdeaEditModal extends Modal {
         cls: "glitter-write-stage__attachment-remove"
       }) as HTMLButtonElement;
       linkAttachmentRemove.type = "button";
-      linkAttachmentRemove.setAttr("aria-label", "移除已加载链接");
+      linkAttachmentRemove.setAttr("aria-label", text.linkAttachmentRemove);
       linkAttachmentRemove.createEl("span", {
         cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
       });
@@ -871,7 +873,7 @@ export class IdeaEditModal extends Modal {
 
     const cancelButton = footer.createEl("button", {
       cls: "GlitterIdea-edit-modal__button GlitterIdea-edit-modal__button--ghost",
-      text: "取消"
+      text: text.cancel
     });
     cancelButton.type = "button";
     cancelButton.addEventListener("click", () => {
@@ -880,7 +882,7 @@ export class IdeaEditModal extends Modal {
 
     const saveButton = footer.createEl("button", {
       cls: "GlitterIdea-edit-modal__button GlitterIdea-edit-modal__button--save",
-      text: "保存"
+      text: text.save
     });
     saveButton.type = "button";
 

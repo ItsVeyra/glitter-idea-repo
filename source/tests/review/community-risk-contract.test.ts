@@ -103,6 +103,13 @@ describe("community risk contract", () => {
     });
   });
 
+  it("keeps roam display fallbacks free of direct display style writes", () => {
+    ["src/views/pool-roam-history-modal.ts", "src/views/pool-roam-canvas-host.ts"].forEach((sourcePath) => {
+      const source = readFileSync(resolve(process.cwd(), sourcePath), "utf8");
+      expect(source, sourcePath).not.toContain('.style.setProperty("display"');
+    });
+  });
+
   it("keeps Task 5 render-home style-write helpers locally owned", () => {
     expect(renderHomeSource).not.toMatch(
       /import\s*\{[^}]*setElementCssProps[^}]*\}\s*from\s*"\.\.\/shared\/theme-state";?/u

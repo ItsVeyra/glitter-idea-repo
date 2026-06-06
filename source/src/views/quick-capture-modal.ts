@@ -45,11 +45,10 @@ import {
 } from "../ai/polish/polish-types";
 import type { IdeaContentType } from "../domain/idea/idea-model";
 import { createToastService } from "../feedback/toast-service";
+import { getInterfaceText } from "../i18n/interface-language";
 import {
   CREATE_NEW_POOL_ID,
-  CREATE_NEW_POOL_LABEL,
-  DEFAULT_POOL_ID,
-  DEFAULT_POOL_LABEL
+  DEFAULT_POOL_ID
 } from "../plugin/constants";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import {
@@ -109,10 +108,13 @@ interface QuickCaptureAiPolishSession {
 // 文件名清理与内容类型转换辅助。
 const FIRST_USE_QUICK_CAPTURE_POOL_OPTIONS: QuickCapturePoolOption[] = [];
 
-const GLOBAL_QUICK_CAPTURE_POOL_OPTIONS: QuickCapturePoolOption[] = [
-  { id: DEFAULT_POOL_ID, label: DEFAULT_POOL_LABEL },
-  { id: CREATE_NEW_POOL_ID, label: CREATE_NEW_POOL_LABEL }
-];
+function createGlobalQuickCapturePoolOptions(language: unknown): QuickCapturePoolOption[] {
+  const text = getInterfaceText(language).pool;
+  return [
+    { id: DEFAULT_POOL_ID, label: text.defaultPoolName },
+    { id: CREATE_NEW_POOL_ID, label: text.newPoolLabel }
+  ];
+}
 
 function toIdeaContentType(kind: "text" | "link" | "media", hasVideo: boolean): IdeaContentType {
   if (kind === "link") {
@@ -408,20 +410,8 @@ export class QuickCaptureModal extends Modal {
   }
 
   private resolveAiPolishErrorMessage(code: QuickCapturePolishErrorCode): string {
-    switch (code) {
-      case "unauthorized":
-        return "AI 鉴权失败，请检查 API Key 后重试。";
-      case "network":
-        return "AI 请求失败，请检查网络后重试。";
-      case "unavailable":
-        return "AI 服务暂时不可用，请稍后重试。";
-      case "invalid-response":
-        return "AI 返回结果异常，请重做后再试。";
-      case "insufficient-rewrite":
-        return "AI 润色结果与原文过于接近，请重做再试。";
-      default:
-        return "AI 润色失败，请重做后再试。";
-    }
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage).write.aiPolishErrors;
+    return text[code] ?? text.default;
   }
 
   private async requestAiPolish(sourceValue: string): Promise<void> {
@@ -555,7 +545,7 @@ export class QuickCaptureModal extends Modal {
       return;
     }
 
-    const optimisticPoolLabel = poolName?.trim() || CREATE_NEW_POOL_LABEL;
+    const optimisticPoolLabel = poolName?.trim() || getInterfaceText(this.plugin.settings?.interfaceLanguage).pool.newPoolLabel;
 
     this.setRuntimeState({
       ...this.runtimeState,
@@ -623,7 +613,7 @@ export class QuickCaptureModal extends Modal {
       input: {
         ...latestState.input,
         selectedPoolId: poolId,
-        selectedPoolLabel: selectedPoolLabel ?? latestState.input.selectedPoolLabel ?? CREATE_NEW_POOL_LABEL,
+        selectedPoolLabel: selectedPoolLabel ?? latestState.input.selectedPoolLabel ?? getInterfaceText(this.plugin.settings?.interfaceLanguage).pool.newPoolLabel,
         poolDropdownVisible: false
       }
     });
@@ -1015,7 +1005,8 @@ export class QuickCaptureModal extends Modal {
 
     const activeEditableFieldState = captureQuickCaptureEditableFieldState(this.contentEl);
     const model = deriveQuickCaptureStateModel(this.runtimeState, {
-      attachedMediaLabels: this.selectedMedia.map(({ file }) => file.name)
+      attachedMediaLabels: this.selectedMedia.map(({ file }) => file.name),
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage
     });
     const selectedMediaIndex = this.clampSelectedMediaIndex();
     const currentSelectedMedia = this.getCurrentSelectedMedia();
@@ -1042,7 +1033,8 @@ export class QuickCaptureModal extends Modal {
       closeConfirmVisible: this.showingCloseConfirm && this.step === "capture",
       emptySubmitFeedbackVisible: this.showingEmptySubmitFeedback && this.step === "capture",
       hasCaptureFieldEdits: this.hasCaptureFieldEdits,
-      poolOptions: this.runtimePoolOptions
+      poolOptions: this.runtimePoolOptions,
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage
     });
 
     renderWriteView(
@@ -1152,7 +1144,8 @@ export class QuickCaptureModal extends Modal {
 
     const submissionState = this.runtimeState;
     const submissionModel = deriveQuickCaptureStateModel(submissionState, {
-      attachedMediaLabels: this.selectedMedia.map(({ file }) => file.name)
+      attachedMediaLabels: this.selectedMedia.map(({ file }) => file.name),
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage
     });
     if (this.isEmptySubmission(submissionModel)) {
       this.showEmptySubmitFeedback();
@@ -1224,10 +1217,11 @@ export class QuickCaptureModal extends Modal {
         return;
       }
 
+      const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
       const message =
         error instanceof Error && error.message.trim().length > 0
           ? error.message
-          : "保存附件失败，请检查文件夹设置后重试。";
+          : text.write.attachmentSaveFailed;
       this.toastService.show({
         status: "error",
         message
@@ -1333,6 +1327,7 @@ export class QuickCaptureModal extends Modal {
     }
 
     const currentKind = detectQuickCaptureContentKind(this.runtimeState.input);
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
     const pastedImages = extractQuickCapturePastedImages(payload.items);
 
     if (pastedImages.length > 0) {
@@ -1340,7 +1335,7 @@ export class QuickCaptureModal extends Modal {
       if (currentKind === "link") {
         this.toastService.show({
           status: "info",
-          message: "当前灵感已是链接类型，如需记录图片请新建一条灵感"
+          message: text.write.mediaAlreadyLink
         });
         return;
       }
@@ -1349,12 +1344,12 @@ export class QuickCaptureModal extends Modal {
       if (appendResult === "blocked-by-video") {
         this.toastService.show({
           status: "info",
-          message: "当前灵感已含视频附件，如需追加图片请先移除视频"
+          message: text.write.mediaAlreadyVideo
         });
       } else if (appendResult === "limit-reached") {
         this.toastService.show({
           status: "info",
-          message: `当前灵感最多只能附加 ${MAX_IMAGE_ATTACHMENTS} 张图片`
+          message: text.write.mediaImageLimitReached(MAX_IMAGE_ATTACHMENTS)
         });
       }
       return;
@@ -1377,7 +1372,7 @@ export class QuickCaptureModal extends Modal {
 
     if (this.runtimeState.input.sourceUrl) {
       payload.preventDefault();
-      const shouldAppend = globalThis.confirm?.("第二条链接将不会自动识别内容，是否添加到本条灵感？") ?? false;
+      const shouldAppend = globalThis.confirm?.(text.write.appendSecondLinkConfirm) ?? false;
       if (!shouldAppend) {
         return;
       }
@@ -1612,7 +1607,7 @@ export class QuickCaptureModal extends Modal {
 
   private resolveInitialRuntimePoolOptions(flowContext: QuickCaptureFlowContext): QuickCapturePoolOption[] {
     return flowContext === "global"
-      ? GLOBAL_QUICK_CAPTURE_POOL_OPTIONS
+      ? createGlobalQuickCapturePoolOptions(this.plugin.settings?.interfaceLanguage)
       : FIRST_USE_QUICK_CAPTURE_POOL_OPTIONS;
   }
 
@@ -1624,10 +1619,10 @@ export class QuickCaptureModal extends Modal {
     try {
       const options = await this.plugin.quickCaptureWorkflow.listGlobalPoolOptions();
       const filteredOptions = options.filter((option) => option.id !== CREATE_NEW_POOL_ID);
-      filteredOptions.push({ id: CREATE_NEW_POOL_ID, label: CREATE_NEW_POOL_LABEL });
+      filteredOptions.push({ id: CREATE_NEW_POOL_ID, label: getInterfaceText(this.plugin.settings?.interfaceLanguage).pool.newPoolLabel });
       return filteredOptions;
     } catch {
-      return GLOBAL_QUICK_CAPTURE_POOL_OPTIONS;
+      return createGlobalQuickCapturePoolOptions(this.plugin.settings?.interfaceLanguage);
     }
   }
 

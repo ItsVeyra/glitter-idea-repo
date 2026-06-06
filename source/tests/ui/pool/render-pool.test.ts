@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CREATE_NEW_POOL_ID, DEFAULT_POOL_DESCRIPTION, DEFAULT_POOL_ID, DEFAULT_POOL_LABEL } from "../../../src/plugin/constants";
 import { renderPoolView, syncRenderedPoolCardMenus, type PoolViewActions } from "../../../src/ui/pool/render-pool";
 import type { PoolViewState } from "../../../src/ui/pool/pool-state";
-import { buildPoolViewState } from "../../../src/ui/pool/pool-state";
+import { buildPoolViewState, buildPoolViewStateFromRuntime } from "../../../src/ui/pool/pool-state";
 
 type Assert<T extends true> = T;
 type HasLegacyOnOpenFile = "onOpenFile" extends keyof PoolViewActions ? true : false;
@@ -624,6 +624,158 @@ describe("renderPoolView", () => {
     expect(staleNode.parent).toBeNull();
     expect(container.querySelector(".stale-node")).toBeNull();
     expect(container.querySelector(".glitter-pool-stage__topbar")).not.toBeNull();
+  });
+
+  it("renders English toolbar, menu, and empty labels from view state", () => {
+    const container = createContainer();
+    const state = buildPoolViewStateFromRuntime({
+      pool: {
+        id: "pool-product",
+        title: "Product pool",
+        description: "Product notes",
+        totalItemCount: 1,
+        visibleItemCount: 0,
+        tone: "bluegray"
+      },
+      header: {
+        eyebrow: "Idea Pool",
+        hint: "runtime"
+      },
+      cards: [],
+      controls: {
+        query: "missing",
+        status: "all",
+        contentFilter: "all",
+        sort: "updated-desc",
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [
+        {
+          id: "pool-product",
+          label: "Product pool",
+          count: 1,
+          selected: true
+        }
+      ],
+      batchMode: false,
+      activeOverlay: "status",
+      interfaceLanguage: "en",
+      roamBackConfirmVisible: true
+    });
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {}
+    });
+
+    expect((container.querySelector(".glitter-pool-stage__query") as unknown as { placeholder?: string })?.placeholder).toBe("Search ideas in this pool");
+    expect(container.querySelector(".glitter-pool-stage__status-trigger")?.getAttribute("aria-label")).toBe("Status filter");
+    expect(container.querySelector(".glitter-pool-stage__toolbar-menu")?.textContent).toContain("All ideas");
+    expect(container.querySelector(".glitter-pool-stage__toolbar-menu")?.textContent).toContain("File created");
+    expect(container.querySelector(".glitter-pool-stage__empty-eyebrow")?.textContent).toBe("Filter results");
+    expect(container.querySelector(".glitter-pool-stage__empty-title")?.textContent).toBe("No matching ideas found");
+    expect(container.textContent).not.toContain("筛选结果");
+  });
+
+  it("renders English roam-back labels from view state", () => {
+    const container = createContainer();
+    const state = createBrowseState({
+      browse: {
+        labels: buildPoolViewStateFromRuntime({
+          pool: {
+            id: "pool-product",
+            title: "Product pool",
+            description: "Product notes",
+            totalItemCount: 1,
+            visibleItemCount: 1,
+            tone: "bluegray"
+          },
+          header: { eyebrow: "Idea Pool", hint: "runtime" },
+          cards: [],
+          controls: {
+            query: "",
+            status: "all",
+            contentFilter: "all",
+            sort: "updated-desc",
+            selectedCount: 0,
+            hasSelection: false
+          },
+          poolOptions: [],
+          batchMode: false,
+          interfaceLanguage: "en"
+        }).browse?.labels
+      },
+      roamBackConfirmVisible: true
+    });
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {}
+    });
+
+    expect(container.querySelector(".glitter-write-stage__close-confirm-title")?.textContent).toBe("Notice");
+    expect(container.querySelector(".glitter-write-stage__close-confirm-description")?.textContent).toBe(
+      "Returning home in roam mode will end this idea roam session. You can reopen it from roam history."
+    );
+    expect(container.querySelector(".glitter-write-stage__close-confirm-secondary")?.textContent).toBe("Continue roaming");
+    expect(container.querySelector(".glitter-write-stage__close-confirm-primary")?.textContent).toBe("Back home");
+    expect(container.textContent).not.toContain("提示");
+  });
+
+  it("renders English roam panel labels from view state", () => {
+    const container = createContainer();
+    const state = createBrowseState({
+      roam: {
+        open: true,
+        mode: "empty",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history"],
+        boundaryAnchors: [],
+        labels: {
+          toggleOpen: "Open roam mode",
+          toggleClose: "Close roam mode",
+          modeLabel: "Roam mode",
+          downloadCurrentBoard: "Download current roam board",
+          shareCurrentBoard: "Share current roam board",
+          openHistory: "Open roam board history",
+          errorTitle: "Roam board is temporarily unavailable",
+          errorDescription: "Please try again later.",
+          emptyTitle: "New blank roam area",
+          emptyDescription: "Drag a dot from the top-right of a left card into this area to create the first roam board block.",
+          sourceHandleTitle: "Drag a connection line to the roam board on the right",
+          sourceHandleLabel: (ideaTitle) => `Connect \"${ideaTitle}\" to the roam board`,
+          bridgeMarkerLabel: (ideaTitle) => `View roam link for \"${ideaTitle}\"`,
+          bridgeMeta: (poolName) => `From ${poolName}`,
+          locateSource: "Locate source card",
+          deleteLink: "Delete link"
+        }
+      }
+    });
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {}
+    });
+
+    expect(container.querySelector("[data-glitter-pool-roam-toggle]")?.getAttribute("aria-label")).toBe("Close roam mode");
+    expect(container.querySelector(".glitter-pool-stage__results-entry-label")?.textContent).toBe("Roam mode");
+    expect(container.querySelector("[data-glitter-pool-roam-action=\"download\"]")?.getAttribute("aria-label")).toBe("Download current roam board");
+    expect(container.querySelector("[data-glitter-pool-roam-action=\"share\"]")?.getAttribute("aria-label")).toBe("Share current roam board");
+    expect(container.querySelector("[data-glitter-pool-roam-action=\"history\"]")?.getAttribute("aria-label")).toBe("Open roam board history");
+    expect(container.querySelector(".glitter-pool-stage__roam-empty-title")?.textContent).toBe("New blank roam area");
+    expect(container.querySelector(".glitter-pool-stage__roam-empty-description")?.textContent).toBe(
+      "Drag a dot from the top-right of a left card into this area to create the first roam board block."
+    );
+    expect(container.querySelector("[data-glitter-pool-roam-source-handle=\"idea-product-1\"]")?.getAttribute("aria-label")).toBe(
+      "Connect \"Design weekly notes\" to the roam board"
+    );
+    expect(container.querySelector("[data-glitter-pool-roam-source-handle=\"idea-product-1\"]")?.getAttribute("title")).toBe(
+      "Drag a connection line to the roam board on the right"
+    );
   });
 
   it("renders roam source handles with a divider-centered seam trace and hover actions without duplicated boundary anchors", () => {
@@ -3361,6 +3513,128 @@ describe("renderPoolView", () => {
     expect(container.querySelector(".glitter-pool-stage__media-preview-nav--previous")).toBeNull();
     expect(container.querySelector(".glitter-pool-stage__media-preview-nav--next")).toBeNull();
     expect(container.querySelector(".glitter-pool-stage__media-preview-pagination")).toBeNull();
+  });
+
+  it("renders English media and empty card fallback labels from browse state labels", () => {
+    const container = createContainer();
+    const state = buildPoolViewStateFromRuntime({
+      interfaceLanguage: "en",
+      pool: {
+        id: "pool-media",
+        title: "Media pool",
+        description: "Media ideas",
+        totalItemCount: 3,
+        visibleItemCount: 3,
+        tone: "bluegray"
+      },
+      header: {
+        eyebrow: "Idea Pool",
+        hint: "Media hint"
+      },
+      cards: [
+        {
+          id: "idea-image-gallery-en",
+          title: "Gallery idea",
+          excerpt: "gallery body",
+          hasBodyContent: true,
+          selected: false,
+          contentType: "image",
+          sourceUrl: undefined,
+          attachmentPaths: ["assets/image-a.png", "assets/image-b.png"],
+          mediaThumbnailUrls: ["app://local/assets/image-a.png", "app://local/assets/image-b.png"],
+          fileCreated: false,
+          filePath: undefined,
+          referenced: false,
+          createdAt: "2026-04-18T10:00:00.000Z",
+          editedAt: undefined,
+          updatedAt: "2026-04-18T10:00:00.000Z"
+        },
+        {
+          id: "idea-video-en",
+          title: "Video idea",
+          excerpt: "video body",
+          hasBodyContent: true,
+          selected: false,
+          contentType: "video",
+          sourceUrl: undefined,
+          attachmentPaths: ["assets/video-a.mp4"],
+          mediaThumbnailUrl: "app://local/assets/video-a.mp4",
+          fileCreated: false,
+          filePath: undefined,
+          referenced: false,
+          createdAt: "2026-04-18T10:00:00.000Z",
+          editedAt: undefined,
+          updatedAt: "2026-04-18T10:00:00.000Z"
+        },
+        {
+          id: "idea-empty-en",
+          title: "Empty idea",
+          excerpt: "",
+          hasBodyContent: false,
+          selected: false,
+          contentType: "text",
+          sourceUrl: undefined,
+          attachmentPaths: [],
+          fileCreated: false,
+          filePath: undefined,
+          referenced: false,
+          createdAt: "2026-04-18T10:00:00.000Z",
+          editedAt: undefined,
+          updatedAt: "2026-04-18T10:00:00.000Z"
+        }
+      ],
+      controls: {
+        query: "",
+        status: "all",
+        contentFilter: "all",
+        sort: "updated-desc",
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [],
+      batchMode: false
+    });
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onQueryChange() {},
+      onBrowseOverlayToggle() {},
+      onBrowseOverlayClose() {},
+      onContentFilterChange() {},
+      onStatusChange() {},
+      onSortChange() {},
+      onBatchModeToggle() {},
+      onMoveSelectionToPool() {},
+      onCreateFile() {},
+      onOpenPrimaryFile() {},
+      onEditIdea() {},
+      onShareIdea() {},
+      onPoolSwitch() {}
+    });
+
+    const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
+    const thumbnail = container.querySelector("img.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
+    const nextButton = container.querySelector(".glitter-pool-stage__card-media-switch--next") as unknown as FakeElement | null;
+    const videoPreviewButton = container.querySelectorAll("button.glitter-pool-stage__card-media-hitbox")[1] as unknown as FakeElement | undefined;
+    const emptyFallback = container.querySelector(".glitter-pool-stage__card-empty") as unknown as FakeElement | null;
+
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Gallery idea, view large image (image 1 of 2)");
+    expect(thumbnail?.alt).toBe("Gallery idea (image 1 of 2)");
+    expect(nextButton?.getAttribute?.("aria-label")).toBe("View next image");
+    nextButton?.click();
+    expect(previewButton?.getAttribute?.("aria-label")).toBe("Gallery idea, view large image (image 2 of 2)");
+    expect(container.querySelector(".glitter-pool-stage__card-media-live-announcement")?.textContent).toBe("Current image, image 2 of 2");
+
+    previewButton?.click();
+    expect(container.querySelector(".glitter-pool-stage__media-preview-close")?.getAttribute("aria-label")).toBe("Close large preview");
+    expect(container.querySelector(".glitter-pool-stage__media-preview-image")?.getAttribute("alt")).toBe("Gallery idea large preview (image 2 of 2)");
+    expect(container.querySelector(".glitter-pool-stage__media-preview-nav--previous")?.getAttribute("aria-label")).toBe("View previous large image");
+    expect(container.querySelector(".glitter-pool-stage__media-preview-nav--next")?.getAttribute("aria-label")).toBe("View next large image");
+
+    expect(videoPreviewButton?.getAttribute?.("aria-label")).toBe("Video idea, view large video");
+    expect(emptyFallback?.textContent).toBe("No content yet");
   });
 
   it("renders link cards with body above a single clickable link row", () => {

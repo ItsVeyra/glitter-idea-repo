@@ -234,6 +234,78 @@ describe("PoolRoamHistoryModal", () => {
     return { addClass, removeClass, contentAddClass, contentRemoveClass, empty, contentEl };
   }
 
+  it("renders English fixed labels and meta when interfaceLanguage is en without translating user content", () => {
+    const boards: RoamBoardRecord[] = [
+      {
+        path: "Glitter/灵感漫游/board-a.canvas",
+        name: "用户白板 Alpha",
+        updatedAt: Date.UTC(2024, 4, 27, 9, 30),
+        relatedPools: [{ id: "pool-product", name: "产品池", color: "#6ab5ff" }],
+        thumbnailBoxes: [{ nodeId: "source-block-1", x: 24, y: 48, width: 280, height: 180, kind: "source" }]
+      },
+      {
+        path: "Glitter/灵感漫游/board-b.canvas",
+        name: "board-b",
+        updatedAt: 0,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const modal = new PoolRoamHistoryModal({} as any, boards, {}, { interfaceLanguage: "en" });
+    const { contentEl } = attachModalHost(modal);
+
+    modal.onOpen();
+
+    const searchInput = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__search");
+    const gridToggle = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__view-toggle--grid");
+    const listToggle = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__view-toggle--list");
+    const batchToggle = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__batch-toggle");
+    const batchCancel = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__batch-cancel");
+    const batchDelete = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__batch-delete");
+    const closeButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__close");
+    const cards = contentEl.querySelectorAll<FakeElement>(".glitter-pool-roam-history-modal__card");
+    const updatedTimes = contentEl.querySelectorAll<FakeElement>(".glitter-pool-roam-history-modal__card-updated");
+    const chips = contentEl.querySelectorAll<FakeElement>(".glitter-pool-roam-history-modal__chip");
+    const emptyPreview = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__preview-empty");
+
+    expect(contentEl.textContent).toContain("Roam board history");
+    expect(contentEl.textContent).toContain("2 roam boards");
+    expect(contentEl.textContent).toContain("1 source idea");
+    expect(contentEl.textContent).toContain("No thumbnail yet");
+    expect(contentEl.textContent).toContain("No linked pool");
+    expect(contentEl.textContent).toContain("用户白板 Alpha");
+    expect(contentEl.textContent).toContain("产品池");
+    expect(searchInput?.placeholder).toBe("Search roam board records");
+    expect(gridToggle?.getAttribute("aria-label")).toBe("Switch to thumbnail mode");
+    expect(listToggle?.getAttribute("aria-label")).toBe("Switch to list mode");
+    expect(batchToggle?.getAttribute("aria-label")).toBe("Batch organize");
+    expect(batchCancel?.getAttribute("aria-label")).toBe("Cancel batch organize");
+    expect(batchDelete?.getAttribute("aria-label")).toBe("Delete selected roam boards");
+    expect(closeButton?.getAttribute("aria-label")).toBe("Close roam board history");
+    expect(cards[0]?.getAttribute("aria-label")).toBe("Open roam board 用户白板 Alpha");
+    expect(updatedTimes[0]?.textContent).toContain("Last updated:");
+    expect(updatedTimes[0]?.textContent).toContain("1 source idea");
+    expect(updatedTimes[1]?.textContent).toContain("Last update unknown");
+    expect(updatedTimes[1]?.textContent).toContain("No linked source ideas");
+    expect(chips[0]?.textContent).toBe("产品池");
+    expect(chips[1]?.textContent).toBe("No linked pool");
+    expect(emptyPreview?.textContent).toBe("No thumbnail yet");
+
+    batchToggle?.click();
+    const batchModeCards = contentEl.querySelectorAll<FakeElement>(".glitter-pool-roam-history-modal__card");
+    batchModeCards[0]?.click();
+    const selectedCards = contentEl.querySelectorAll<FakeElement>(".glitter-pool-roam-history-modal__card");
+    const cardSelect = contentEl.querySelector<FakeElement>(".glitter-pool-roam-history-modal__card-select");
+    expect(selectedCards[0]?.getAttribute("aria-label")).toBe("Deselect roam board 用户白板 Alpha");
+    expect(cardSelect?.getAttribute("aria-label")).toBe("Deselect roam board 用户白板 Alpha");
+    expect(batchToggle?.getAttribute("aria-label")).toBe("Finish batch organize");
+    expect(batchDelete?.getAttribute("aria-label")).toBe("Delete selected roam boards (1)");
+
+    searchInput!.value = "missing";
+    searchInput?.trigger("input");
+    expect(contentEl.textContent).toContain("No matching roam boards. Try another keyword.");
+  });
+
   it("renders the fixed history toolbar, supports view switching, and filters records by search", () => {
     const boards: RoamBoardRecord[] = [
       {

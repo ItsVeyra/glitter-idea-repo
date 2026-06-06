@@ -23,7 +23,8 @@ import type { Idea } from "../../domain/idea/idea-model";
 import type { createIdeaService } from "../../domain/idea/idea-service";
 import type { createPoolService } from "../../domain/pool/pool-service";
 import type { createVaultFileStore } from "../../storage/vault-file-store";
-import { resolvePoolDescription } from "../../plugin/constants";
+import { getInterfaceText } from "../../i18n/interface-language";
+import type { PluginInterfaceLanguage } from "../../settings/settings";
 
 export type PoolWorkbenchStatus = "all" | "referenced" | "file-created" | "with-markers";
 export type PoolWorkbenchScope = "pool" | "global-status";
@@ -38,6 +39,7 @@ export interface LoadPoolStateInput {
   contentFilter: PoolWorkbenchContentFilter;
   sort: PoolWorkbenchSort;
   selectedIdeaIds: string[];
+  interfaceLanguage?: PluginInterfaceLanguage;
 }
 
 export interface PoolWorkbenchSnippetLocation {
@@ -139,52 +141,23 @@ function hasSnippetRefs(idea: Pick<Idea, "snippetRefs">): boolean {
 
 const GLOBAL_STATUS_POOL_ID = "pool-global-status";
 
-function resolveGlobalStatusTitle(status: PoolWorkbenchStatus): string {
-  if (status === "referenced") {
-    return "已引用";
-  }
-
-  if (status === "file-created") {
-    return "已建文件";
-  }
-
-  if (status === "all") {
-    return "全部灵感";
-  }
-
-  return "已引用 / 已建文件";
+function resolvePoolDescription(description: string | null | undefined, language?: PluginInterfaceLanguage): string {
+  const normalizedDescription = description?.trim();
+  return normalizedDescription && normalizedDescription.length > 0
+    ? normalizedDescription
+    : getInterfaceText(language).pool.defaultPoolDescription;
 }
 
-function resolveGlobalStatusDescription(status: PoolWorkbenchStatus): string {
-  if (status === "referenced") {
-    return "汇总所有池中已引用到正文的灵感，便于继续定位、筛选与整理。";
-  }
-
-  if (status === "file-created") {
-    return "汇总所有池中已创建文件的灵感，便于继续筛选、检索与整理。";
-  }
-
-  if (status === "all") {
-    return "汇总所有池中的灵感，便于继续搜索、筛选与整理。";
-  }
-
-  return "汇总所有池中已引用或已建文件的灵感，便于继续搜索、筛选与整理。";
+function resolveGlobalStatusTitle(status: PoolWorkbenchStatus, language?: PluginInterfaceLanguage): string {
+  return getInterfaceText(language).pool.globalStatusTitles[status];
 }
 
-function resolveGlobalStatusHint(status: PoolWorkbenchStatus): string {
-  if (status === "referenced") {
-    return "筛选所有池中已引用到正文的灵感";
-  }
+function resolveGlobalStatusDescription(status: PoolWorkbenchStatus, language?: PluginInterfaceLanguage): string {
+  return getInterfaceText(language).pool.globalStatusDescriptions[status];
+}
 
-  if (status === "file-created") {
-    return "筛选所有池中已建文件的灵感";
-  }
-
-  if (status === "all") {
-    return "浏览所有池中的灵感";
-  }
-
-  return "筛选所有池中的已引用与已建文件灵感";
+function resolveGlobalStatusHint(status: PoolWorkbenchStatus, language?: PluginInterfaceLanguage): string {
+  return getInterfaceText(language).pool.globalStatusHints[status];
 }
 
 function hasBodyContent(idea: Pick<Idea, "body">): boolean {
@@ -403,6 +376,7 @@ export function createPoolWorkbenchWorkflow({
     async loadPoolState(input) {
       const poolsWithCounts = await poolService.listPoolsWithCounts();
       const scope = input.scope ?? "pool";
+      const text = getInterfaceText(input.interfaceLanguage).pool;
 
       const requestedPoolId = scope === "pool" ? (input.poolId ?? activePoolId) : undefined;
       const activePool = requestedPoolId
@@ -473,19 +447,23 @@ export function createPoolWorkbenchWorkflow({
       return {
         pool: {
           id: scope === "global-status" ? GLOBAL_STATUS_POOL_ID : (activePool?.id ?? "pool-empty"),
-          title: scope === "global-status" ? resolveGlobalStatusTitle(input.status) : (activePool?.name ?? "Idea Pool"),
+          title: scope === "global-status"
+            ? resolveGlobalStatusTitle(input.status, input.interfaceLanguage)
+            : activePool?.isDefault
+              ? text.defaultPoolName
+              : (activePool?.name ?? text.defaultPoolName),
           description:
             scope === "global-status"
-              ? resolveGlobalStatusDescription(input.status)
-              : resolvePoolDescription(activePool?.description),
+              ? resolveGlobalStatusDescription(input.status, input.interfaceLanguage)
+              : resolvePoolDescription(activePool?.description, input.interfaceLanguage),
           totalItemCount: scope === "global-status" ? statusMatchedIdeas.length : (activePool?.ideaCount ?? 0),
           visibleItemCount: cards.length,
           color: scope === "pool" ? activePool?.color : undefined,
           tone: "bluegray"
         },
         header: {
-          eyebrow: scope === "global-status" ? "全局状态" : "灵感池",
-          hint: scope === "global-status" ? resolveGlobalStatusHint(input.status) : "进入当前池继续整理与筛选"
+          eyebrow: scope === "global-status" ? text.globalStatusEyebrow : text.headerEyebrow,
+          hint: scope === "global-status" ? resolveGlobalStatusHint(input.status, input.interfaceLanguage) : text.headerHint
         },
         cards,
         controls: {

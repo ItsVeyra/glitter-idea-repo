@@ -748,6 +748,78 @@ describe("renderWriteView", () => {
     expect(stylesCss).toContain(".glitter-write-stage__action-primary--capture-submit:hover .glitter-write-stage__submit-tooltip,");
   });
 
+  it("renders English labels for quick-capture renderer-only controls", () => {
+    const container = createContainer();
+
+    renderWriteView(
+      container,
+      buildWriteViewState({
+        flowContext: "global",
+        phase: "capture",
+        contentKind: "media",
+        importState: "idle",
+        interfaceLanguage: "en",
+        inputText: "Caption",
+        attachedMediaCount: 2,
+        attachedMediaPreviewUrl: "app://image.png",
+        attachedMediaPreviewKind: "image",
+        mediaOverlayMode: "image-gallery",
+        selectedMediaIndex: 0,
+        canSelectPreviousMedia: false,
+        canSelectNextMedia: true,
+        canAddMoreImages: true,
+        mediaPreviewVisible: true,
+        hasCaptureFieldEdits: true
+      }),
+      {
+        onClose() {},
+        onSubmit() {},
+        onPoolPickerToggle() {},
+        onRetryLinkImport() {}
+      }
+    );
+
+    const closeButton = container.querySelector(".glitter-write-stage__close-button") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const previewTrigger = container.querySelector(".glitter-write-stage__media-thumbnail-preview-trigger") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const previousButton = container.querySelector(".glitter-write-stage__media-surface-nav-button--previous") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const nextButton = container.querySelector(".glitter-write-stage__media-surface-nav-button--next") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const addButton = container.querySelector(".glitter-write-stage__media-surface-action--add") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const replaceButton = container.querySelector(".glitter-write-stage__media-surface-action--replace") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const removeButton = container.querySelector(".glitter-write-stage__media-surface-action--remove") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const previewCloseButton = container.querySelector(".glitter-write-stage__media-preview-close") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const previewImage = container.querySelector(".glitter-write-stage__media-preview-image") as
+      | (HTMLElement & { getAttribute: (name: string) => string | null })
+      | null;
+    const submitTooltip = container.querySelector(".glitter-write-stage__submit-tooltip");
+
+    expect(closeButton?.getAttribute("aria-label")).toBe("Close quick capture");
+    expect(previewTrigger?.getAttribute("aria-label")).toBe("View large preview");
+    expect(previousButton?.getAttribute("aria-label")).toBe("Previous image");
+    expect(nextButton?.getAttribute("aria-label")).toBe("Next image");
+    expect(addButton?.getAttribute("aria-label")).toBe("Add image");
+    expect(replaceButton?.getAttribute("aria-label")).toBe("Replace current image");
+    expect(removeButton?.getAttribute("aria-label")).toBe("Remove current image");
+    expect(previewCloseButton?.getAttribute("aria-label")).toBe("Close large preview");
+    expect(previewImage?.getAttribute("alt")).toBe("Media large preview");
+    expect(submitTooltip?.textContent).toBe("Saved as an idea by default (no .md file created)");
+  });
+
   it("keeps quick-capture submit button ghosted until the user changes title or body content", () => {
     const defaultContainer = createContainer();
     renderWriteView(defaultContainer, buildWriteViewState("quick-capture-default"), {
@@ -2443,10 +2515,10 @@ describe("renderWriteView", () => {
     expect(container.querySelectorAll(".glitter-write-stage__pool-group")).toHaveLength(2);
     expect(container.querySelector(".glitter-write-stage__pool-group--options")).not.toBeNull();
     expect(container.querySelector(".glitter-write-stage__pool-group--create")).not.toBeNull();
-    expect(container.querySelector(".glitter-write-stage__pool-group-label")?.textContent).toBe("新建池");
+    expect(container.querySelector(".glitter-write-stage__pool-group-label")?.textContent).toBe("新建池 / Create");
     expect((optionButtons[2] as HTMLElement).className).toContain("glitter-write-stage__pool-option--create");
     expect((optionButtons[2] as HTMLElement).querySelector?.(".glitter-write-stage__icon--waves")).not.toBeNull();
-    expect((optionButtons[2] as HTMLElement).querySelector?.(".glitter-write-stage__pool-option-text")?.textContent).toBe("创建池");
+    expect((optionButtons[2] as HTMLElement).querySelector?.(".glitter-write-stage__pool-option-text")?.textContent).toBe("新建池");
     expect((optionButtons[2] as HTMLElement).querySelector?.(".glitter-write-stage__pool-option-bubble")).toBeNull();
     expect(chevronUp).not.toBeNull();
     expect(chevronDown).toBeNull();

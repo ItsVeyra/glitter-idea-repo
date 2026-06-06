@@ -7769,7 +7769,7 @@ describe("GlitterPoolView", () => {
     expect(loadPoolState.mock.calls.length).toBeGreaterThan(loadCountBeforeSave);
   });
 
-  it("opens share menu at anchor right-bottom and share hint click shows info toast", async () => {
+  it("opens share menu at anchor right-bottom and uses localized English share hint text", async () => {
     const loadPoolState = vi.fn(async () => ({
       pool: {
         id: "pool-default",
@@ -7809,6 +7809,9 @@ describe("GlitterPoolView", () => {
 
     const plugin = {
       app: {},
+      settings: {
+        interfaceLanguage: "en" as const
+      },
       focusedIdeaId: null,
       pendingFocusedPoolId: null,
       activateMainView: vi.fn(async () => undefined),
@@ -7836,13 +7839,13 @@ describe("GlitterPoolView", () => {
     actions.onShareIdea("idea-1", anchorEl);
 
     expect(menuShowAtPositionMock).toHaveBeenCalledWith({ x: 320, y: 188 });
-    expect(menuItems[0]?.title).toBe("更多分享方式即将开放");
+    expect(menuItems[0]?.title).toBe("More sharing options coming soon");
 
     menuItems[0]?.onClick?.();
     expect(toastShowMock).toHaveBeenCalledWith(
       expect.objectContaining({
         status: "info",
-        message: "更多分享方式即将开放。"
+        message: "More sharing options are coming soon."
       })
     );
   });
@@ -10363,6 +10366,9 @@ describe("GlitterPoolView", () => {
         ensureFolder,
         createUniquePath
       },
+      settings: {
+        interfaceLanguage: "zh-CN" as const
+      },
       focusedIdeaId: null,
       pendingFocusedPoolId: null,
       activateMainView: vi.fn(async () => undefined),
@@ -10411,11 +10417,14 @@ describe("GlitterPoolView", () => {
     const exportedSvg = firstCreateCall[1];
     expect(exportedSvg).toContain("Idea 1");
     expect(exportedSvg).toContain("默认池");
+    expect(exportedSvg).toContain("✨");
+    expect(exportedSvg).toContain("clipPath");
+    expect(exportedSvg).toContain("glitter-roam-export-node-clip");
     expect(exportedSvg).toContain("Glitter灵感漫游 2026-05-27 10:00");
     expect(exportedSvg).toContain("Glitter/灵感漫游/Glitter灵感漫游 2026-05-27 10：00.canvas");
     expect(toastShowMock).toHaveBeenCalledWith({
       status: "success",
-      message: "Roam board image exported to Glitter/池导出/export.svg."
+      message: "漫游白板图片已导出到 Glitter/池导出/export.svg。"
     });
     expect(view.getState()).toMatchObject({
       poolRoamOpen: true,
@@ -10427,12 +10436,205 @@ describe("GlitterPoolView", () => {
 
     expect(toastShowMock).toHaveBeenLastCalledWith({
       status: "error",
-      message: "Download roam board failed. Please try again."
+      message: "下载漫游白板失败，请重试。"
     });
     expect(view.getState()).toMatchObject({
       poolRoamOpen: true,
       poolRoamBoardPath: "Glitter/灵感漫游/Glitter灵感漫游 2026-05-27 10：00.canvas"
     });
+  });
+
+  it("clips long roam board idea text in exported SVG cards", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const sentinel = "This part should never be fully visible in the exported SVG because it exceeds the card boundary sentinel";
+    const longText = `${"A long exported roam idea should wrap inside the card boundary. ".repeat(8)} ${sentinel}`;
+    const boardFile = Object.assign(new TFile(), {
+      path: "Glitter/灵感漫游/long.canvas",
+      basename: "long"
+    });
+    const read = vi.fn(async () => JSON.stringify({
+      nodes: [
+        {
+          id: "node-long",
+          type: "text",
+          text: longText,
+          x: 24,
+          y: 48,
+          width: 220,
+          height: 120
+        }
+      ],
+      edges: []
+    }));
+    const create = vi.fn(async () => undefined);
+    const plugin = {
+      app: {
+        vault: {
+          getAbstractFileByPath: vi.fn(() => boardFile),
+          read,
+          create
+        }
+      },
+      vaultFileStore: {
+        ensureFolder: vi.fn(async () => undefined),
+        createUniquePath: vi.fn(async () => "Glitter/池导出/long.svg")
+      },
+      settings: { interfaceLanguage: "zh-CN" as const },
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true,
+            poolRoamBoardPath: "Glitter/灵感漫游/long.canvas"
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onDownloadPoolRoamImage?: () => void;
+    };
+    actions.onDownloadPoolRoamImage?.();
+    await flush();
+
+    const createCall = create.mock.calls[0] as unknown as [string, string] | undefined;
+    if (!createCall || typeof createCall[1] !== "string") {
+      throw new Error("Expected SVG export content");
+    }
+    const exportedSvg = createCall[1];
+    expect(exportedSvg).toContain("…");
+    expect(exportedSvg).not.toContain(sentinel);
+  });
+
+  it("exports English empty roam board SVG preview text", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "Default Pool",
+        description: "desc",
+        totalItemCount: 0,
+        visibleItemCount: 0,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "empty" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "Default Pool", count: 0, selected: true }]
+    }));
+    const boardFile = Object.assign(new TFile(), {
+      path: "Glitter/灵感漫游/empty.canvas",
+      basename: "empty"
+    });
+    const read = vi.fn(async () => JSON.stringify({ nodes: [], edges: [] }));
+    const create = vi.fn(async () => undefined);
+    const plugin = {
+      app: {
+        vault: {
+          getAbstractFileByPath: vi.fn(() => boardFile),
+          read,
+          create
+        }
+      },
+      vaultFileStore: {
+        ensureFolder: vi.fn(async () => undefined),
+        createUniquePath: vi.fn(async () => "Glitter/池导出/empty.svg")
+      },
+      settings: { interfaceLanguage: "en" as const },
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true,
+            poolRoamBoardPath: "Glitter/灵感漫游/empty.canvas"
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onDownloadPoolRoamImage?: () => void;
+    };
+    actions.onDownloadPoolRoamImage?.();
+    await flush();
+
+    const createCall = create.mock.calls[0] as unknown as [string, string] | undefined;
+    if (!createCall || typeof createCall[1] !== "string") {
+      throw new Error("Expected SVG export content");
+    }
+    const exportedSvg = createCall[1];
+    expect(exportedSvg).toContain("No board nodes to export");
+    expect(exportedSvg).toContain("This is an SVG preview exported from a Glitter roam board");
   });
 
   it("exports a composite source block as one logical SVG box", async () => {
@@ -10548,6 +10750,7 @@ describe("GlitterPoolView", () => {
         ensureFolder,
         createUniquePath
       },
+      settings: { interfaceLanguage: "zh-CN" as const },
       focusedIdeaId: null,
       pendingFocusedPoolId: null,
       activateMainView: vi.fn(async () => undefined),
@@ -10707,7 +10910,7 @@ describe("GlitterPoolView", () => {
       expect(writeText).toHaveBeenCalledWith("Glitter/灵感漫游/current.canvas");
       expect(toastShowMock).toHaveBeenLastCalledWith({
         status: "error",
-        message: "Copy roam board path failed. Please try again."
+        message: "复制白板路径失败，请重试。"
       });
       expect(view.getState()).toMatchObject({
         poolRoamOpen: true,
@@ -10721,7 +10924,7 @@ describe("GlitterPoolView", () => {
       expect(writeText).toHaveBeenCalledTimes(2);
       expect(toastShowMock).toHaveBeenLastCalledWith({
         status: "success",
-        message: "Roam board path copied."
+        message: "已复制白板路径。"
       });
     } finally {
       Object.defineProperty(globalThis, "navigator", {

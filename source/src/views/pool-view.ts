@@ -4,8 +4,10 @@ import {
   type PoolRoamBoardRecord
 } from "../application/pool-workbench/pool-roam-workflow";
 import { createToastService } from "../feedback/toast-service";
+import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import { CREATE_NEW_POOL_ID, GLITTER_ICON_ID, POOL_VIEW_TYPE } from "../plugin/constants";
+import type { PluginInterfaceLanguage } from "../settings/settings";
 import { renderPoolView, syncRenderedPoolCardMenus } from "../ui/pool/render-pool";
 import {
   DEFAULT_POOL_ROAM_PANEL_WIDTH_RATIO,
@@ -252,22 +254,99 @@ function normalizePoolRoamExportText(text: string | undefined): string {
     .trim();
 }
 
-function splitPoolRoamExportText(text: string, maxCharsPerLine = 28, maxLines = 4): string[] {
+function splitPoolRoamExportText(text: string, maxCharsPerLine: number, maxLines: number): string[] {
   const normalized = normalizePoolRoamExportText(text);
-  if (!normalized) {
+  if (!normalized || maxCharsPerLine <= 0 || maxLines <= 0) {
     return [];
   }
 
-  const clipped = normalized.length > maxCharsPerLine * maxLines
-    ? `${normalized.slice(0, maxCharsPerLine * maxLines - 1)}…`
-    : normalized;
+  const words = normalized.split(/\s+/u).filter(Boolean);
   const lines: string[] = [];
+  let currentLine = "";
+  let clipped = false;
 
-  for (let index = 0; index < clipped.length && lines.length < maxLines; index += maxCharsPerLine) {
-    lines.push(clipped.slice(index, index + maxCharsPerLine));
+  const pushLine = (line: string) => {
+    if (lines.length < maxLines) {
+      lines.push(line);
+      return;
+    }
+    clipped = true;
+  };
+
+  for (const word of words) {
+    if (lines.length >= maxLines) {
+      clipped = true;
+      break;
+    }
+
+    if (word.length > maxCharsPerLine) {
+      if (currentLine) {
+        pushLine(currentLine);
+        currentLine = "";
+      }
+      for (let index = 0; index < word.length; index += maxCharsPerLine) {
+        if (lines.length >= maxLines) {
+          clipped = true;
+          break;
+        }
+        const segment = word.slice(index, index + maxCharsPerLine);
+        if (segment.length < maxCharsPerLine && index + maxCharsPerLine >= word.length) {
+          currentLine = segment;
+        } else {
+          pushLine(segment);
+        }
+      }
+      continue;
+    }
+
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+    if (nextLine.length <= maxCharsPerLine) {
+      currentLine = nextLine;
+      continue;
+    }
+
+    pushLine(currentLine);
+    currentLine = word;
+  }
+
+  if (currentLine) {
+    pushLine(currentLine);
+  }
+
+  if (clipped && lines.length > 0) {
+    const lastIndex = lines.length - 1;
+    const baseLine = lines[lastIndex].replace(/\s+$/u, "");
+    lines[lastIndex] = baseLine.length >= maxCharsPerLine
+      ? `${baseLine.slice(0, Math.max(0, maxCharsPerLine - 1))}…`
+      : `${baseLine}…`;
   }
 
   return lines;
+}
+
+function resolvePoolRoamExportTextLayout(node: PoolRoamExportNode): {
+  textX: number;
+  textY: number;
+  maxCharsPerLine: number;
+  maxLines: number;
+} {
+  const horizontalPadding = node.kind === "source" ? 28 : 20;
+  const hasPoolPill = node.kind === "source" && Boolean(node.poolName);
+  const textX = horizontalPadding;
+  const textY = hasPoolPill ? 72 : 38;
+  const availableWidth = Math.max(48, node.width - horizontalPadding * 2);
+  const availableHeight = Math.max(20, node.height - textY - 20);
+
+  return {
+    textX,
+    textY,
+    maxCharsPerLine: Math.max(8, Math.floor(availableWidth / 8.4)),
+    maxLines: Math.max(1, Math.floor(availableHeight / 20))
+  };
+}
+
+function renderPoolRoamExportSourceIcon(x: number, y: number): string {
+  return `<text x="${x}" y="${y}" fill="#16324F" font-size="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">✨</text>`;
 }
 
 // 导出时把 managed source block 重新折叠成一个逻辑节点，避免多图块在导出结果里被拆成多条来源记录。
@@ -353,7 +432,9 @@ function renderPoolRoamBoardSvgExport(input: {
   boardPath: string;
   boardName: string;
   boardContent: string;
+  interfaceLanguage: PluginInterfaceLanguage;
 }): string {
+  const text = getInterfaceText(input.interfaceLanguage);
   const nodes = parsePoolRoamExportNodes(input.boardContent);
   const boardPadding = 72;
   const headerHeight = 124;
@@ -370,39 +451,46 @@ function renderPoolRoamBoardSvgExport(input: {
   const offsetX = boardPadding - minX;
   const offsetY = headerHeight - minY;
 
-  const renderedNodes = nodes.map((node) => {
+  const renderedNodes = nodes.map((node, index) => {
     const x = node.x + offsetX;
     const y = node.y + offsetY;
+    const clipId = `glitter-roam-export-node-clip-${index}`;
     const strokeColor = node.kind === "source"
       ? sanitizeSvgColor(node.poolColor, "#6AB5FF")
       : "#C8D4E3";
     const fillColor = node.kind === "source" ? "rgba(106, 181, 255, 0.12)" : "rgba(255, 255, 255, 0.94)";
-    const labelLines = splitPoolRoamExportText(node.text);
+    const layout = resolvePoolRoamExportTextLayout(node);
+    const labelLines = splitPoolRoamExportText(node.text, layout.maxCharsPerLine, layout.maxLines);
     const labelSvg = labelLines.length === 0
       ? ""
-      : `<text x="${x + 20}" y="${y + (node.poolName ? 54 : 38)}" fill="#16324F" font-size="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${labelLines.map((line, index) => `<tspan x="${x + 20}" dy="${index === 0 ? 0 : 20}">${escapeSvgText(line)}</tspan>`).join("")}</text>`;
-    const poolLabel = node.poolName
-      ? `<text x="${x + 20}" y="${y + 24}" fill="#48617D" font-size="11" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letter-spacing="0.04em">${escapeSvgText(node.poolName)}</text>`
+      : `<text x="${layout.textX}" y="${layout.textY}" fill="#16324F" font-size="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${labelLines.map((line, lineIndex) => `<tspan x="${layout.textX}" dy="${lineIndex === 0 ? 0 : 20}">${escapeSvgText(line)}</tspan>`).join("")}</text>`;
+    const poolPill = node.kind === "source" && node.poolName
+      ? `<g><rect x="52" y="16" width="${Math.min(Math.max(node.poolName.length * 8 + 20, 56), Math.max(56, node.width - 92))}" height="24" rx="12" fill="rgba(255, 255, 255, 0.68)" stroke="${strokeColor}" stroke-width="1" /><text x="64" y="32" fill="#48617D" font-size="11" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letter-spacing="0.04em">${escapeSvgText(node.poolName)}</text></g>`
       : "";
+    const sourceIcon = node.kind === "source" ? renderPoolRoamExportSourceIcon(24, 34) : "";
     const statusBadge = node.sourceStatus === "missing"
-      ? `<text x="${x + node.width - 62}" y="${y + 24}" fill="#A63B3B" font-size="11" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">Missing</text>`
+      ? `<text x="${Math.max(24, node.width - 64)}" y="32" fill="#A63B3B" font-size="11" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(text.roamExport.missingStatus)}</text>`
       : "";
 
     return [
       `<g data-node-id="${escapeSvgText(node.id)}">`,
+      `<defs><clipPath id="${clipId}"><rect x="${x}" y="${y}" width="${node.width}" height="${node.height}" rx="24" /></clipPath></defs>`,
       `<rect x="${x}" y="${y}" width="${node.width}" height="${node.height}" rx="24" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"${node.sourceStatus === "missing" ? ' stroke-dasharray="8 6"' : ""} />`,
       node.kind === "source"
         ? `<rect x="${x}" y="${y}" width="8" height="${node.height}" rx="24" fill="${strokeColor}" />`
         : "",
-      poolLabel,
+      `<g clip-path="url(#${clipId})"><g transform="translate(${x}, ${y})">`,
+      sourceIcon,
+      poolPill,
       statusBadge,
       labelSvg,
+      `</g></g>`,
       `</g>`
     ].join("");
   }).join("");
 
   const emptyState = nodes.length === 0
-    ? `<g><rect x="${boardPadding}" y="${headerHeight + 24}" width="${svgWidth - boardPadding * 2}" height="${svgHeight - headerHeight - 48}" rx="28" fill="rgba(255, 255, 255, 0.72)" stroke="#D8E1EF" stroke-width="2" /><text x="${svgWidth / 2}" y="${svgHeight / 2 - 8}" text-anchor="middle" fill="#48617D" font-size="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">暂无可导出的白板节点</text><text x="${svgWidth / 2}" y="${svgHeight / 2 + 24}" text-anchor="middle" fill="#6F8398" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">当前导出为 Glitter 漫游白板的 SVG 预览图</text></g>`
+    ? `<g><rect x="${boardPadding}" y="${headerHeight + 24}" width="${svgWidth - boardPadding * 2}" height="${svgHeight - headerHeight - 48}" rx="28" fill="rgba(255, 255, 255, 0.72)" stroke="#D8E1EF" stroke-width="2" /><text x="${svgWidth / 2}" y="${svgHeight / 2 - 8}" text-anchor="middle" fill="#48617D" font-size="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(text.roamExport.emptyTitle)}</text><text x="${svgWidth / 2}" y="${svgHeight / 2 + 24}" text-anchor="middle" fill="#6F8398" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(text.roamExport.emptySubtitle)}</text></g>`
     : "";
 
   return [
@@ -698,6 +786,15 @@ export class GlitterPoolView extends ItemView {
     void this.renderPoolShellSafely({ showLoadErrorToast: false });
   }
 
+  refreshInterfaceText(): void {
+    if (this.isClosed) {
+      return;
+    }
+
+    this.preserveResultScrollOnNextRender = true;
+    void this.renderPoolShellSafely({ showLoadErrorToast: false });
+  }
+
   // 渲染入口：统一把当前本地状态送进安全异步渲染链路。
   private renderPoolShell(): void {
     void this.renderPoolShellSafely();
@@ -786,7 +883,8 @@ export class GlitterPoolView extends ItemView {
         return;
       }
 
-      this.poolRoamErrorMessage = "加载漫游白板失败，请稍后再试。";
+      const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
+      this.poolRoamErrorMessage = text.pool.roamLoadFailed;
       this.toastService.show({
         status: "error",
         message: "Load roam board failed. Please try again."
@@ -897,14 +995,15 @@ export class GlitterPoolView extends ItemView {
       this.disablePoolMarkdownPreview();
     }
 
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
     const activePreview = previewAvailable ? this.resolvePoolMarkdownPreview(runtime, preview) : undefined;
     const previewState = previewAvailable
       ? {
           available: true,
           open: this.poolMarkdownPreviewOpen,
           saving: this.poolMarkdownPreviewSaving,
-          panelTitle: `${activePreview?.poolTitle ?? runtime.pool.title} Markdown 文件`,
-          saveLabel: this.poolMarkdownPreviewSaving ? "保存中..." : "保存 Markdown 文件"
+          panelTitle: text.pool.markdownPreviewPanelTitle(activePreview?.poolTitle ?? runtime.pool.title),
+          saveLabel: this.poolMarkdownPreviewSaving ? text.pool.markdownPreviewSavingLabel : text.pool.markdownPreviewSaveLabel
         }
       : undefined;
     const roamState = this.browseScope === "pool"
@@ -933,12 +1032,13 @@ export class GlitterPoolView extends ItemView {
           ? {
               showPoolSwitcher: false,
               metadataEditable: false,
-              queryPlaceholder: "搜索当前筛选灵感"
+              queryPlaceholder: text.pool.filteredSearchPlaceholder
             }
           : undefined,
       preview: previewState,
       roam: roamState,
-      roamBackConfirmVisible: this.poolRoamOpen && this.poolRoamBackConfirmVisible
+      roamBackConfirmVisible: this.poolRoamOpen && this.poolRoamBackConfirmVisible,
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage
     });
 
     this.attachPoolSwitcherCloseHandlers();
@@ -1400,6 +1500,8 @@ export class GlitterPoolView extends ItemView {
             this.activePoolRoamHistoryModal = undefined;
           }
         }
+      }, {
+        interfaceLanguage: this.plugin.settings?.interfaceLanguage
       });
       this.activePoolRoamHistoryModal = modal;
       modal.open();
@@ -1434,6 +1536,8 @@ export class GlitterPoolView extends ItemView {
           this.activePoolRoamBoardModal = undefined;
         }
       }
+    }, {
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage
     });
     this.activePoolRoamBoardModal = modal;
     modal.open();
@@ -1448,11 +1552,12 @@ export class GlitterPoolView extends ItemView {
   }
 
   private async downloadPoolRoamBoardByPath(boardPath: string): Promise<void> {
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
     const file = this.plugin.app.vault?.getAbstractFileByPath?.(boardPath);
     if (!(file instanceof TFile)) {
       this.toastService.show({
         status: "error",
-        message: "Download roam board failed. Please try again."
+        message: text.pool.downloadFailed
       });
       return;
     }
@@ -1463,7 +1568,8 @@ export class GlitterPoolView extends ItemView {
       const svgContent = renderPoolRoamBoardSvgExport({
         boardPath: file.path,
         boardName,
-        boardContent
+        boardContent,
+        interfaceLanguage: this.plugin.settings.interfaceLanguage
       });
       await this.plugin.vaultFileStore.ensureFolder(GLITTER_POOL_ROAM_EXPORT_FOLDER);
       const exportPath = await this.plugin.vaultFileStore.createUniquePath(
@@ -1474,12 +1580,12 @@ export class GlitterPoolView extends ItemView {
       await this.plugin.app.vault.create(exportPath, svgContent);
       this.toastService.show({
         status: "success",
-        message: `Roam board image exported to ${exportPath}.`
+        message: text.pool.downloadSucceeded(exportPath)
       });
     } catch (_error) {
       this.toastService.show({
         status: "error",
-        message: "Download roam board failed. Please try again."
+        message: text.pool.downloadFailed
       });
     }
   }
@@ -1493,15 +1599,16 @@ export class GlitterPoolView extends ItemView {
   }
 
   private openPoolRoamShareMenuForBoard(boardPath: string, anchorEl: HTMLElement): void {
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
     const rect = anchorEl.getBoundingClientRect();
     const menu = new Menu();
     menu.addItem((item) => {
-      item.setTitle("打开白板文件").onClick(() => {
+      item.setTitle(text.pool.shareOpenBoard).onClick(() => {
         void this.openIdeaFile(boardPath);
       });
     });
     menu.addItem((item) => {
-      item.setTitle("复制白板路径").onClick(() => {
+      item.setTitle(text.pool.shareCopyBoardPath).onClick(() => {
         void this.copyPoolRoamBoardPath(boardPath);
       });
     });
@@ -1509,11 +1616,12 @@ export class GlitterPoolView extends ItemView {
   }
 
   private async copyPoolRoamBoardPath(boardPath: string): Promise<void> {
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
     const navigatorValue = (globalThis as { navigator?: unknown }).navigator;
     if (!canWriteToClipboard(navigatorValue)) {
       this.toastService.show({
         status: "error",
-        message: "Copy roam board path failed. Please try again."
+        message: text.pool.copyBoardPathFailed
       });
       return;
     }
@@ -1522,12 +1630,12 @@ export class GlitterPoolView extends ItemView {
       await navigatorValue.clipboard.writeText(boardPath);
       this.toastService.show({
         status: "success",
-        message: "Roam board path copied."
+        message: text.pool.copyBoardPathSucceeded
       });
     } catch (_error) {
       this.toastService.show({
         status: "error",
-        message: "Copy roam board path failed. Please try again."
+        message: text.pool.copyBoardPathFailed
       });
     }
   }
@@ -2098,7 +2206,8 @@ export class GlitterPoolView extends ItemView {
       status: this.status,
       contentFilter: this.contentFilter,
       sort: this.sort,
-      selectedIdeaIds: focusedIdeaId ? [focusedIdeaId] : [...this.selectedIdeaIds]
+      selectedIdeaIds: focusedIdeaId ? [focusedIdeaId] : [...this.selectedIdeaIds],
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage
     });
 
     const runtimeWithSearchHit = this.activeSearchHitIdeaId
@@ -2379,15 +2488,16 @@ export class GlitterPoolView extends ItemView {
   }
 
   private openShareMenu(anchorEl: HTMLElement): void {
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
     const rect = anchorEl.getBoundingClientRect();
     const menu = new Menu();
     menu.addItem((item) => {
       item
-        .setTitle("更多分享方式即将开放")
+        .setTitle(text.pool.moreShareComingSoonTitle)
         .onClick(() => {
           this.toastService.show({
             status: "info",
-            message: "更多分享方式即将开放。"
+            message: text.pool.moreShareComingSoonMessage
           });
         });
     });

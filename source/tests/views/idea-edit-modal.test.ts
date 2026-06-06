@@ -247,6 +247,57 @@ describe("IdeaEditModal", () => {
     expect(contentEl.querySelectorAll(".GlitterIdea-edit-modal__button")).toHaveLength(2);
   });
 
+  it("renders English labels for edit modal chrome and actions", async () => {
+    const plugin = {
+      app: {
+        vault: {
+          getAbstractFileByPath: vi.fn((path: string) => ({ path })),
+          getResourcePath: vi.fn((file: { path: string }) => `app://${file.path}`)
+        }
+      },
+      settings: {
+        interfaceLanguage: "en"
+      },
+      ideaService: {
+        getIdea: vi.fn(async () => ({
+          title: "Old title",
+          body: "Old body",
+          contentType: "image",
+          attachmentPaths: ["existing/image-1.png", "existing/image-2.png"],
+          poolId: "pool-default"
+        })),
+        updateIdea: vi.fn()
+      },
+      appAdapter: {
+        resolveResourcePath: (path: string) => `app://${path}`
+      }
+    };
+
+    const modal = new IdeaEditModal(plugin as any, "idea-1");
+    const { contentEl } = attachModalHost(modal);
+
+    await modal.onOpen();
+
+    const heading = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__heading");
+    const closeButton = contentEl.querySelector<FakeElement>(".GlitterIdea-edit-modal__close");
+    const previousButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-nav-button--previous");
+    const nextButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-nav-button--next");
+    const addButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--add");
+    const replaceButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--replace");
+    const removeButton = contentEl.querySelector<FakeElement>(".glitter-write-stage__media-surface-action--remove");
+    const footerButtons = contentEl.querySelectorAll<FakeElement>(".GlitterIdea-edit-modal__button");
+
+    expect(heading?.textContent).toBe("Edit idea");
+    expect(closeButton?.getAttr("aria-label")).toBe("Close edit window");
+    expect(previousButton?.getAttr("aria-label")).toBe("Previous image");
+    expect(nextButton?.getAttr("aria-label")).toBe("Next image");
+    expect(addButton?.getAttr("aria-label")).toBe("Add image");
+    expect(replaceButton?.getAttr("aria-label")).toBe("Replace current image");
+    expect(removeButton?.getAttr("aria-label")).toBe("Remove current image");
+    expect(footerButtons[0]?.textContent).toBe("Cancel");
+    expect(footerButtons[1]?.textContent).toBe("Save");
+  });
+
   it("renders link-edit content area with an editable inline source attachment", async () => {
     const plugin = {
       app: {},

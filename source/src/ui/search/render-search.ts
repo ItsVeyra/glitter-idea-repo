@@ -45,8 +45,8 @@ export function renderSearchView(
 
   const stage = createNode(containerEl, "section", "glitter-plugin-root glitter-search-stage");
   const header = createNode(stage, "header", "glitter-search-stage__header");
-  createNode(header, "h2", undefined, "Search");
-  createNode(header, "p", undefined, "Search, sort, and review ideas in a design-aligned surface.");
+  createNode(header, "h2", undefined, state.title);
+  createNode(header, "p", undefined, state.subtitle);
 
   const queryArea = createNode(stage, "div", "glitter-search-stage__query");
   const queryInput = createNode(queryArea, "input") as HTMLInputElement;

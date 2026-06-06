@@ -1642,6 +1642,50 @@ describe("GlitterMainView", () => {
     }
   });
 
+  it("uses English empty search feedback when interface language is English", async () => {
+    const plugin = {
+      settings: {
+        enableDesignReviewMode: false,
+        reviewScenario: "home-populated",
+        poolColors: DEFAULT_SETTINGS.poolColors,
+        homeFieldView: DEFAULT_SETTINGS.homeFieldView,
+        interfaceLanguage: "en"
+      },
+      activatePoolView: activatePoolViewMock,
+      firstUseWorkflow: {
+        getHomeRuntimeState: getHomeRuntimeStateMock,
+        commitDraftToExistingPool: commitDraftToExistingPoolMock,
+        commitDraftToNewPool: commitDraftToNewPoolMock
+      },
+      ideaService: {
+        queryIdeas: vi.fn(async () => [])
+      }
+    };
+
+    getHomeRuntimeStateMock.mockResolvedValue({
+      mode: "populated",
+      pools: [{ id: "pool-a", name: "产品池", ideaCount: 1, isDefault: false }]
+    });
+    buildHomeViewStateFromRuntimeMock.mockImplementation((_runtime, options) => ({ mode: "populated", options }));
+    renderHomeViewMock.mockReturnValue({ ownerDocument: { body: {} } });
+
+    const view = new GlitterMainView({} as any, plugin as any);
+    (view as any).contentEl = {
+      ownerDocument: { body: {} },
+      empty: vi.fn()
+    };
+
+    await (view as any).handleHomeSearchSubmit("missing");
+
+    expect(buildHomeViewStateFromRuntimeMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ mode: "populated" }),
+      expect.objectContaining({
+        searchFeedbackMessage: "No matching content found",
+        interfaceLanguage: "en"
+      })
+    );
+  });
+
   it("does not render stale async result after close", async () => {
     const observer = installMutationObserverStub();
     const deferred = createDeferred<{ mode: "empty"; pools: [] }>();

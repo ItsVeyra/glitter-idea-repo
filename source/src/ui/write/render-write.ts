@@ -46,8 +46,6 @@ export interface WriteViewActions {
 }
 
 // 基础 DOM 与主题辅助：统一处理节点创建、主题判定和按钮骨架，避免各个速记分支重复拼装底层细节。
-const DEFAULT_SAVE_HELPER_TEXT = "默认仅保存为灵感（不创建 .md 文件）";
-
 function clearContainer(containerEl: HTMLElement): void {
   const withEmpty = containerEl as HTMLElement & { empty?: () => void };
   if (typeof withEmpty.empty === "function") {
@@ -321,11 +319,13 @@ function isAiPolishReviewLayout(aiPolish: WriteAiPolishViewState | undefined): b
 // 触发器保持纯图标+文字样式，只在正文非空时显示，并在请求中切换到 loading 文案。
 function createAiPolishTrigger(
   bodyPanel: HTMLElement,
+  state: WriteViewState,
   aiPolish: WriteAiPolishViewState,
   actions: WriteViewActions,
   initialBodyValue: string | undefined
 ): HTMLElement {
-  const triggerLabel = aiPolish.state === "loading" ? "AI 润色中…" : "AI 润色";
+  const labels = state.quickCapture?.labels;
+  const triggerLabel = aiPolish.state === "loading" ? (labels?.aiPolishLoading ?? "AI polishing...") : (labels?.aiPolishTrigger ?? "AI polish");
   const triggerRow = createNode(bodyPanel, "div", "glitter-write-stage__ai-polish-row");
   const trigger = createButton(triggerRow, "glitter-write-stage__ai-polish-trigger", "", () => {
     if (aiPolish.state === "loading") {
@@ -346,9 +346,11 @@ function createAiPolishTrigger(
 // 评审态把原文编辑区保留在左侧，右侧结果区独立滚动，并通过中间圆形按钮执行采纳/重做/取消。
 function createAiPolishReviewLayout(
   bodyPanel: HTMLElement,
+  state: WriteViewState,
   aiPolish: WriteAiPolishViewState,
   actions: WriteViewActions
 ): HTMLElement {
+  const labels = state.quickCapture?.labels;
   const reviewLayout = createNode(bodyPanel, "div", "glitter-write-stage__ai-polish-review");
   const sourcePane = createNode(
     reviewLayout,
@@ -360,7 +362,7 @@ function createAiPolishReviewLayout(
   const adoptButton = createMediaSurfaceButton(
     dividerActions,
     "glitter-write-stage__ai-polish-action glitter-write-stage__ai-polish-adopt",
-    "采纳结果",
+    labels?.aiPolishAccept ?? "Accept result",
     "glitter-write-stage__icon--check",
     () => {
       if (!aiPolish.resultMatchesCurrentSource || aiPolish.state === "error") {
@@ -375,14 +377,14 @@ function createAiPolishReviewLayout(
   createMediaSurfaceButton(
     dividerActions,
     "glitter-write-stage__ai-polish-action glitter-write-stage__ai-polish-redo",
-    "重做",
+    labels?.aiPolishRedo ?? "Redo",
     "glitter-write-stage__icon--refresh",
     () => actions.onAiPolishRedo?.()
   );
   createMediaSurfaceButton(
     dividerActions,
     "glitter-write-stage__ai-polish-action glitter-write-stage__ai-polish-back",
-    "取消",
+    labels?.aiPolishBack ?? "Cancel",
     "glitter-write-stage__icon--close",
     () => actions.onAiPolishBackToEditing?.()
   );
@@ -395,8 +397,8 @@ function createAiPolishReviewLayout(
   const resultScroll = createNode(resultPane, "div", "glitter-write-stage__ai-polish-result-scroll");
   const resultText =
     aiPolish.state === "error"
-      ? aiPolish.errorMessage?.trim() || "AI 润色失败，请重做后再试。"
-      : aiPolish.polishedValue?.trim() || "暂无润色结果";
+      ? aiPolish.errorMessage?.trim() || labels?.aiPolishDefaultError || "AI polish failed. Please redo and try again."
+      : aiPolish.polishedValue?.trim() || labels?.aiPolishEmptyResult || "No polished result yet";
   createNode(
     resultScroll,
     "p",
@@ -405,7 +407,7 @@ function createAiPolishReviewLayout(
   );
 
   if (aiPolish.state !== "error" && !aiPolish.resultMatchesCurrentSource) {
-    createNode(resultScroll, "p", "glitter-write-stage__ai-polish-stale-warning", "原文已更新，请重做后再采纳当前结果。");
+    createNode(resultScroll, "p", "glitter-write-stage__ai-polish-stale-warning", labels?.aiPolishStaleWarning ?? "The original text has changed. Redo before accepting this result.");
   }
 
   return sourcePane;
@@ -424,6 +426,7 @@ function renderMediaThumbnailSurfaceControls(
     return;
   }
 
+  const labels = state.quickCapture?.labels;
   const controls = createNode(mediaThumbnailSurface, "div", "glitter-write-stage__media-surface-controls");
 
   if (mediaOverlayMode === "image-gallery") {
@@ -442,7 +445,7 @@ function renderMediaThumbnailSurfaceControls(
     const previousButton = createMediaSurfaceButton(
       navRow,
       "glitter-write-stage__media-surface-nav-button glitter-write-stage__media-surface-nav-button--previous",
-      "上一张",
+      labels?.previousImage ?? "上一张",
       "glitter-write-stage__icon--chevron-left",
       actions.onMediaNavigatePrevious
     );
@@ -451,7 +454,7 @@ function renderMediaThumbnailSurfaceControls(
     const nextButton = createMediaSurfaceButton(
       navRow,
       "glitter-write-stage__media-surface-nav-button glitter-write-stage__media-surface-nav-button--next",
-      "下一张",
+      labels?.nextImage ?? "下一张",
       "glitter-write-stage__icon--chevron-right",
       actions.onMediaNavigateNext
     );
@@ -464,7 +467,7 @@ function renderMediaThumbnailSurfaceControls(
     const addButton = createMediaSurfaceButton(
       actionRow,
       "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--add",
-      "增加图片",
+      labels?.addImage ?? "增加图片",
       "glitter-write-stage__icon--plus",
       actions.onMediaAddAttachment
     );
@@ -473,14 +476,14 @@ function renderMediaThumbnailSurfaceControls(
     createMediaSurfaceButton(
       actionRow,
       "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--replace",
-      "替换当前图片",
+      labels?.replaceImage ?? "替换当前图片",
       "glitter-write-stage__icon--replace",
       actions.onMediaReplaceAttachment
     );
     createMediaSurfaceButton(
       actionRow,
       "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--remove",
-      "删除当前图片",
+      labels?.removeImage ?? "删除当前图片",
       "glitter-write-stage__icon--trash",
       actions.onRemoveMediaAttachment
     );
@@ -490,14 +493,14 @@ function renderMediaThumbnailSurfaceControls(
   createMediaSurfaceButton(
     actionRow,
     "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--replace",
-    "替换视频",
+    labels?.replaceVideo ?? "替换视频",
     "glitter-write-stage__icon--replace",
     actions.onMediaReplaceAttachment
   );
   createMediaSurfaceButton(
     actionRow,
     "glitter-write-stage__media-surface-action glitter-write-stage__media-surface-action--remove",
-    "删除视频",
+    labels?.removeVideo ?? "删除视频",
     "glitter-write-stage__icon--trash",
     actions.onRemoveMediaAttachment
   );
@@ -514,7 +517,7 @@ function renderQuickCaptureCapture(
   const header = createNode(card, "header", "glitter-write-stage__modal-header");
   createNode(header, "h2", "glitter-write-stage__title", state.title);
   const closeButton = createButton(header, "glitter-write-stage__close-button", "", () => actions.onClose());
-  closeButton.setAttribute("aria-label", "关闭快速记录");
+  closeButton.setAttribute("aria-label", state.quickCapture?.labels?.closeQuickCapture ?? "关闭快速记录");
   createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
   const contentKind = state.contentKind ?? "text";
@@ -558,7 +561,7 @@ function renderQuickCaptureCapture(
     state.flowContext === "global" && contentKind !== "media" && aiPolish?.visible === true && !shouldUseAiPolishReviewLayout;
 
   let bodyInputHost: HTMLElement = shouldUseAiPolishReviewLayout && aiPolish
-    ? createAiPolishReviewLayout(bodyPanel, aiPolish, actions)
+    ? createAiPolishReviewLayout(bodyPanel, state, aiPolish, actions)
     : bodyPanel;
   let aiPolishTriggerRow: HTMLElement | null = null;
 
@@ -574,7 +577,7 @@ function renderQuickCaptureCapture(
       "glitter-write-stage__media-thumbnail-surface"
     ) as HTMLElement;
     const mediaThumbnailContentHost = mediaThumbnailInteractive
-      ? createMediaThumbnailPreviewTrigger(mediaThumbnailSurface, "查看大图", actions.onMediaPreviewOpen)
+      ? createMediaThumbnailPreviewTrigger(mediaThumbnailSurface, state.quickCapture?.labels?.mediaPreviewOpen ?? "View large preview", actions.onMediaPreviewOpen)
       : mediaThumbnailSurface;
 
     if (mediaPreviewUrl && mediaPreviewKind === "image") {
@@ -584,7 +587,7 @@ function renderQuickCaptureCapture(
         "glitter-write-stage__media-thumbnail-image"
       ) as HTMLImageElement;
       mediaThumbnailImage.setAttribute("src", mediaPreviewUrl);
-      mediaThumbnailImage.setAttribute("alt", "已选择媒体缩略图");
+      mediaThumbnailImage.setAttribute("alt", state.quickCapture?.labels?.selectedImage ?? "Selected media image thumbnail");
       bindMediaSurfaceActionIconTone(mediaThumbnailSurface, mediaThumbnailImage, "image");
     } else if (mediaPreviewUrl && mediaPreviewKind === "video") {
       const mediaThumbnailVideo = createNode(
@@ -597,7 +600,7 @@ function renderQuickCaptureCapture(
       mediaThumbnailVideo.setAttribute("playsinline", "");
       mediaThumbnailVideo.setAttribute("autoplay", "");
       mediaThumbnailVideo.setAttribute("loop", "");
-      mediaThumbnailVideo.setAttribute("aria-label", "已选择媒体缩略视频");
+      mediaThumbnailVideo.setAttribute("aria-label", state.quickCapture?.labels?.selectedVideo ?? "Selected media video thumbnail");
       bindMediaSurfaceActionIconTone(mediaThumbnailSurface, mediaThumbnailVideo, "video");
     } else {
       applyMediaSurfaceActionIconToneFallback(mediaThumbnailSurface);
@@ -618,7 +621,7 @@ function renderQuickCaptureCapture(
         "",
         () => actions.onMediaPreviewClose?.()
       );
-      mediaPreviewClose.setAttribute("aria-label", "关闭大图预览");
+      mediaPreviewClose.setAttribute("aria-label", state.quickCapture?.labels?.mediaPreviewClose ?? "关闭大图预览");
       createNode(mediaPreviewClose, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
       const mediaPreviewImage = createNode(
         mediaPreviewDialog,
@@ -626,7 +629,7 @@ function renderQuickCaptureCapture(
         "glitter-write-stage__media-preview-image"
       ) as HTMLImageElement;
       mediaPreviewImage.setAttribute("src", mediaPreviewUrl);
-      mediaPreviewImage.setAttribute("alt", "媒体大图预览");
+      mediaPreviewImage.setAttribute("alt", state.quickCapture?.labels?.mediaPreviewImage ?? "媒体大图预览");
     }
   }
 
@@ -669,6 +672,7 @@ function renderQuickCaptureCapture(
   if (shouldMountAiPolishTrigger && aiPolish) {
     aiPolishTriggerRow = createAiPolishTrigger(
       bodyPanel,
+      state,
       aiPolish,
       actions,
       hasQuickCaptureBodyInput(state) ? state.fields.body.value : undefined
@@ -677,7 +681,7 @@ function renderQuickCaptureCapture(
 
   if (!shouldUseAiPolishReviewLayout && contentKind === "link" && state.linkImport?.attachmentLabel) {
     const linkAttachRow = createNode(bodyPanel, "div", "glitter-write-stage__link-attachment-row");
-    createAttachmentRemoveButton(linkAttachRow, "移除已加载链接", actions.onRemoveLinkAttachment);
+    createAttachmentRemoveButton(linkAttachRow, state.quickCapture?.labels?.linkAttachmentRemove ?? "移除已加载链接", actions.onRemoveLinkAttachment);
 
     const linkAttachmentPrimary = createNode(
       linkAttachRow,
@@ -703,7 +707,7 @@ function renderQuickCaptureCapture(
 
   } else if (!shouldUseAiPolishReviewLayout && contentKind !== "media") {
     const clipHint = createButton(bodyPanel, "glitter-write-stage__clip-hint", "", () => actions.onAttachmentPick?.());
-    clipHint.setAttribute("aria-label", "添加图片或视频附件");
+    clipHint.setAttribute("aria-label", state.quickCapture?.labels?.attachmentPick ?? "添加图片或视频附件");
     createNode(clipHint, "span", "glitter-write-stage__icon glitter-write-stage__icon--paperclip");
     createNode(
       clipHint,
@@ -752,7 +756,7 @@ function renderQuickCaptureCapture(
     if (createOption) {
       const createShell = createNode(poolDropdown, "div", "glitter-write-stage__pool-container glitter-write-stage__pool-container--create");
       const createGroup = createNode(createShell, "div", "glitter-write-stage__pool-group glitter-write-stage__pool-group--create");
-      const createLabel = createNode(createGroup, "p", "glitter-write-stage__pool-group-label", "新建池");
+      const createLabel = createNode(createGroup, "p", "glitter-write-stage__pool-group-label", state.poolPicker.createActionLabel);
       createLabel.setAttribute("aria-hidden", "true");
       const createButtonEl = createButton(createGroup, "glitter-write-stage__pool-option glitter-write-stage__pool-option--create", "", () => {
         actions.onPoolSelect?.(createOption.id);
@@ -760,7 +764,7 @@ function renderQuickCaptureCapture(
       createButtonEl.dataset.poolId = createOption.id;
       createButtonEl.setAttribute("aria-label", createOption.label);
       createNode(createButtonEl, "span", "glitter-write-stage__icon glitter-write-stage__icon--waves");
-      createNode(createButtonEl, "span", "glitter-write-stage__pool-option-text", "创建池");
+      createNode(createButtonEl, "span", "glitter-write-stage__pool-option-text", createOption.label);
     }
   }
 
@@ -795,7 +799,7 @@ function renderQuickCaptureCapture(
   );
 
   const isQuickCaptureSubmit = state.phase === "capture";
-  const isGlobalCaptureSubmit = state.flowContext === "global" && state.footer.primaryAction.label === "完成记录";
+  const isGlobalCaptureSubmit = state.flowContext === "global" && state.phase === "capture";
   const primaryButtonClassName = [
     "glitter-write-stage__action-primary",
     "glitter-write-stage__action-primary--with-icon",
@@ -819,7 +823,7 @@ function renderQuickCaptureCapture(
       primaryButton,
       "span",
       "glitter-write-stage__submit-tooltip",
-      DEFAULT_SAVE_HELPER_TEXT
+      state.quickCapture?.labels?.defaultSaveHelperText ?? "默认仅保存为灵感（不创建 .md 文件）"
     );
     submitTooltip.id = "glitter-write-stage-submit-tooltip";
   }
@@ -877,7 +881,7 @@ function renderFirstUseSaveFeedbackModal(
   );
 
   const closeButton = createButton(card, "glitter-write-stage__close-button glitter-write-stage__success-close", "", () => actions.onClose());
-  closeButton.setAttribute("aria-label", "关闭提示窗口");
+  closeButton.setAttribute("aria-label", state.quickCapture?.labels?.closeQuickCapture ?? "关闭提示窗口");
   createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
   const successBadge = createNode(card, "div", "glitter-write-stage__success-badge");
@@ -943,7 +947,7 @@ function renderGlobalSaveFeedbackModal(
   );
 
   const closeButton = createButton(card, "glitter-write-stage__close-button glitter-write-stage__success-close", "", () => actions.onClose());
-  closeButton.setAttribute("aria-label", "关闭提示窗口");
+  closeButton.setAttribute("aria-label", state.quickCapture?.labels?.closeQuickCapture ?? "关闭提示窗口");
   createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
   const statusPhase = state.phase ?? "saved-feedback";

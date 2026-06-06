@@ -97,7 +97,7 @@ describe("review scenarios", () => {
     expect(state.titleText).toBe("灵感 04-08 09:12");
   });
 
-  it("falls back to timestamp title in global flow when leading text unavailable", () => {
+  it("falls back to localized timestamp title in global flow when leading text unavailable", () => {
     const state = deriveQuickCaptureStateModel(
       {
         flowContext: "global",
@@ -107,12 +107,14 @@ describe("review scenarios", () => {
         }
       },
       {
-        now: new Date(2026, 3, 8, 9, 12)
+        now: new Date(2026, 3, 8, 9, 12),
+        interfaceLanguage: "en"
       }
     );
 
-    expect(state.generatedTitle).toBe("灵感 04-08 09:12");
-    expect(state.titleText).toBe("灵感 04-08 09:12");
+    expect(state.generatedTitle).toBe("Idea 04-08 09:12");
+    expect(state.titleText).toBe("Idea 04-08 09:12");
+    expect(state.selectedPoolLabel).toBe("Default pool");
   });
 
   it("keeps user-overridden title when provided", () => {

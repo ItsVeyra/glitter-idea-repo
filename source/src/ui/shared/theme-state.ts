@@ -32,9 +32,10 @@ export interface ThemeState {
 type StyleWritableElement = HTMLElement & {
   setCssStyles?: (styles: Record<string, string>) => void;
   setCssProps?: (props: Record<string, string>) => void;
-  style: CSSStyleDeclaration & {
+  style: CSSStyleDeclaration & Record<string, string> & {
     setCssStyles?: (styles: Record<string, string>) => void;
     setCssProps?: (props: Record<string, string>) => void;
+    setProperty?: (name: string, value: string) => void;
   };
 };
 
@@ -59,7 +60,12 @@ export function setElementStyles(targetEl: HTMLElement, styles: Record<string, s
   }
 
   Object.entries(styles).forEach(([name, value]) => {
-    targetStyle.setProperty(camelCaseToKebabCase(name), value);
+    const styleName = camelCaseToKebabCase(name);
+    if (typeof targetStyle.setProperty === "function") {
+      targetStyle.setProperty(styleName, value);
+    } else {
+      targetStyle[styleName] = value;
+    }
   });
 }
 
@@ -80,7 +86,11 @@ export function setElementCssProps(targetEl: HTMLElement, props: Record<string, 
   }
 
   Object.entries(props).forEach(([name, value]) => {
-    targetStyle.setProperty(name, value);
+    if (typeof targetStyle.setProperty === "function") {
+      targetStyle.setProperty(name, value);
+    } else {
+      targetStyle[name] = value;
+    }
   });
 }
 

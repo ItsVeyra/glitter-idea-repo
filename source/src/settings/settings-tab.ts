@@ -6,8 +6,13 @@ import { App, PluginSettingTab, Setting, getLanguage } from "obsidian";
 import GlitterPlugin from "../plugin/GlitterPlugin";
 import { DEFAULT_SETTINGS } from "./defaults";
 import { getSettingsText } from "./settings-locale";
+import type { PluginInterfaceLanguage } from "./settings";
 
 // 设置项渲染辅助。
+type SettingsTabPlugin = GlitterPlugin & {
+  refreshOpenGlitterViews?: () => void;
+};
+
 type SectionSkeletonSlots = {
   commonContentEl: HTMLDivElement;
   advancedContentEl: HTMLDivElement | null;
@@ -80,7 +85,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
   private isReplacingAiApiKey = false;
   private aiApiKeyDraft = DEFAULT_SETTINGS.ai.apiKey;
 
-  constructor(app: App, private readonly plugin: GlitterPlugin) {
+  constructor(app: App, private readonly plugin: SettingsTabPlugin) {
     super(app, plugin);
   }
 
@@ -471,6 +476,25 @@ export default class GlitterSettingTab extends PluginSettingTab {
             uiThemeMode: nextValue
           };
           await this.plugin.savePluginSettings();
+        });
+      });
+    new Setting(appearanceSection.commonContentEl)
+      .setName(text.labels.interfaceLanguage)
+      .setDesc(withActivation(text.descriptions.interfaceLanguage, text.activation.refresh))
+      .addDropdown((dropdown) => {
+        dropdown.addOption("zh-CN", "中文");
+        dropdown.addOption("en", "English");
+        dropdown.setValue(this.plugin.settings.interfaceLanguage).onChange(async (value) => {
+          if (value !== "zh-CN" && value !== "en") {
+            return;
+          }
+
+          this.plugin.settings = {
+            ...this.plugin.settings,
+            interfaceLanguage: value as PluginInterfaceLanguage
+          };
+          await this.plugin.savePluginSettings();
+          this.plugin.refreshOpenGlitterViews?.();
         });
       });
     new Setting(appearanceSection.advancedContentEl!)

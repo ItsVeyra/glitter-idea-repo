@@ -456,6 +456,90 @@ describe("GlitterSettingTab", () => {
     expect(obsidianMockState.details.every((detail) => detail.open === false)).toBe(true);
   });
 
+  it("renders Glitter interface language as a native dropdown in the Appearance & Experience section", () => {
+    const plugin = {
+      settings: {
+        ...DEFAULT_SETTINGS,
+        interfaceLanguage: "zh-CN" as const
+      },
+      activateMainView: vi.fn(async () => undefined)
+    };
+
+    const tab = new GlitterSettingTab({} as never, plugin as never);
+    tab.display();
+
+    const interfaceLanguageSetting = obsidianMockState.settings.find(
+      (setting) => setting.name === "Glitter 界面语言"
+    );
+
+    expect(interfaceLanguageSetting).toMatchObject({
+      name: "Glitter 界面语言",
+      sectionTitle: "外观与体验",
+      group: "common",
+      dropdownValue: "zh-CN"
+    });
+    expect(interfaceLanguageSetting?.dropdownOptions).toEqual([
+      { value: "zh-CN", label: "中文" },
+      { value: "en", label: "English" }
+    ]);
+  });
+
+  it("keeps settings page text tied to Obsidian language instead of interfaceLanguage", () => {
+    obsidianMockState.language = "en";
+
+    const plugin = {
+      settings: {
+        ...DEFAULT_SETTINGS,
+        interfaceLanguage: "zh-CN" as const
+      },
+      activateMainView: vi.fn(async () => undefined)
+    };
+
+    const tab = new GlitterSettingTab({} as never, plugin as never);
+    tab.display();
+
+    const headingSettings = obsidianMockState.settings.filter((setting) => setting.isHeading);
+    const interfaceLanguageSetting = obsidianMockState.settings.find(
+      (setting) => setting.name === "Glitter interface language"
+    );
+
+    expect(headingSettings[0]).toMatchObject({
+      name: "Glitter Settings"
+    });
+    expect(interfaceLanguageSetting).toMatchObject({
+      name: "Glitter interface language"
+    });
+  });
+
+  it("saves Glitter interface language changes without changing settings page locale", async () => {
+    const plugin = {
+      settings: {
+        ...DEFAULT_SETTINGS,
+        interfaceLanguage: "zh-CN" as const
+      },
+      activateMainView: vi.fn(async () => undefined),
+      savePluginSettings: vi.fn(async () => undefined),
+      refreshOpenGlitterViews: vi.fn()
+    };
+
+    const tab = new GlitterSettingTab({} as never, plugin as never);
+    tab.display();
+
+    const interfaceLanguageSetting = obsidianMockState.settings.find(
+      (setting) => setting.name === "Glitter 界面语言"
+    );
+    await interfaceLanguageSetting?.dropdownOnChange?.("en");
+
+    const headingSettings = obsidianMockState.settings.filter((setting) => setting.isHeading);
+
+    expect(plugin.settings.interfaceLanguage).toBe("en");
+    expect(plugin.savePluginSettings).toHaveBeenCalledTimes(1);
+    expect(plugin.refreshOpenGlitterViews).toHaveBeenCalledTimes(1);
+    expect(headingSettings[0]).toMatchObject({
+      name: "Glitter 设置"
+    });
+  });
+
   it("uses native setting heading rows, a larger page title, and dividers between groups", () => {
     const plugin = {
       settings: DEFAULT_SETTINGS,

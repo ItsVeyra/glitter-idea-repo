@@ -372,7 +372,7 @@ describe("GlitterSearchView", () => {
     expect(toastShowMock).toHaveBeenCalledWith(
       expect.objectContaining({
         status: "error",
-        message: expect.stringContaining("Search")
+        message: expect.stringContaining("搜索")
       })
     );
 

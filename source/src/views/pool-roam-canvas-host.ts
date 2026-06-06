@@ -1,5 +1,6 @@
 import { TFile, WorkspaceLeaf as ObsidianWorkspaceLeaf, type App, type WorkspaceLeaf } from "obsidian";
 import { formatPoolRoamBoardDisplayName } from "../application/pool-workbench/pool-roam-workflow";
+import { setElementStyles } from "../ui/shared/theme-state";
 
 export interface PoolRoamCanvasHost {
   mountInlineBoard(containerEl: HTMLElement, boardPath: string): Promise<void>;
@@ -29,9 +30,6 @@ type HiddenLeafChrome = {
   display: string;
 };
 
-type DisplayStyleElement = HTMLElement & {
-  setCssStyles?: (styles: Partial<CSSStyleDeclaration>) => void;
-};
 
 type WorkspaceLeafConstructor = new (appOrWorkspace: unknown) => WorkspaceLeaf;
 
@@ -58,18 +56,7 @@ function resolveBoardDisplayName(file: TFile): string {
 }
 
 function setDisplayStyle(element: HTMLElement, display: string): void {
-  const displayStyleElement = element as DisplayStyleElement;
-  if (typeof displayStyleElement.setCssStyles === "function") {
-    displayStyleElement.setCssStyles({ display });
-    return;
-  }
-
-  if (typeof displayStyleElement.style?.setProperty === "function") {
-    displayStyleElement.style.setProperty("display", display);
-    return;
-  }
-
-  Object.assign(displayStyleElement.style, { display });
+  setElementStyles(element, { display });
 }
 
 function syncMountedBoardDisplayText(viewContainerEl: HTMLElement, displayName: string): void {

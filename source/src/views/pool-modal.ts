@@ -5,6 +5,7 @@
 
 import { Modal } from "obsidian";
 import type { FirstUseCommitResult } from "../application/first-use/first-use-workflow";
+import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import { CREATE_NEW_POOL_ID } from "../plugin/constants";
 import { renderPoolView } from "../ui/pool/render-pool";
@@ -93,14 +94,16 @@ export class PoolModal extends Modal {
       this.step === "create"
         ? buildFirstUseCreatePoolState({
             flowContext: this.flowContext,
-            poolColors: this.plugin.settings?.poolColors
+            poolColors: this.plugin.settings?.poolColors,
+            interfaceLanguage: this.plugin.settings?.interfaceLanguage
           })
         : buildFirstUseChoosePoolState({
             pools: (await this.plugin.poolService.listPools()).map((pool) => ({
               id: pool.id,
               name: pool.name,
               ideaCount: 0
-            }))
+            })),
+            interfaceLanguage: this.plugin.settings?.interfaceLanguage
           });
 
     renderPoolView(this.contentEl, state, {
@@ -131,7 +134,7 @@ export class PoolModal extends Modal {
         ".glitter-pool-stage__field-input--textarea"
       );
       const createInput = {
-        name: nameInput?.value?.trim() || "新建池",
+        name: nameInput?.value?.trim() || getInterfaceText(this.plugin.settings?.interfaceLanguage).pool.newPoolLabel,
         description: descriptionInput?.value?.trim() || undefined,
         color: this.resolveCreatePoolColor()
       };

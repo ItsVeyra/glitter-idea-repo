@@ -3,7 +3,9 @@
  * 负责把搜索运行时结果或固定评审场景转换成搜索工作区可渲染的视图状态。
  */
 
+import { getInterfaceText } from "../../i18n/interface-language";
 import type { ReviewScenario } from "../../review/scenarios";
+import type { PluginInterfaceLanguage } from "../../settings/settings";
 import { SEARCH_DEMO_RESULTS } from "./search-demo-data";
 
 // 搜索页的视图模型定义。
@@ -46,6 +48,8 @@ interface SearchBatchSummary {
 }
 
 interface SearchViewStateBase {
+  title: string;
+  subtitle: string;
   query: SearchQueryState;
   controls: SearchControlsState;
   results: SearchResultRow[];
@@ -81,11 +85,15 @@ export function buildSearchViewStateFromRuntime(input: {
   query: string;
   results: Array<{ id: string; title: string; meta: string; selected?: boolean }>;
   selectedCount: number;
+  interfaceLanguage?: PluginInterfaceLanguage;
 }): SearchViewState {
+  const text = getInterfaceText(input.interfaceLanguage);
   const baseState: SearchViewStateBase = {
+    title: text.search.title,
+    subtitle: text.search.subtitle,
     query: {
-      placeholder: "Search ideas, pools, tags",
-      buttonLabel: "Search",
+      placeholder: text.search.queryPlaceholder,
+      buttonLabel: text.search.submitLabel,
       value: input.query
     },
     controls: {
@@ -124,11 +132,14 @@ export function buildSearchViewStateFromRuntime(input: {
 }
 
 // 固定评审场景状态构造。
-export function buildSearchViewState(scenario: ReviewScenario): SearchViewState {
+export function buildSearchViewState(scenario: ReviewScenario, options: { interfaceLanguage?: PluginInterfaceLanguage } = {}): SearchViewState {
+  const text = getInterfaceText(options.interfaceLanguage);
   const baseState: SearchViewStateBase = {
+    title: text.search.title,
+    subtitle: text.search.subtitle,
     query: {
-      placeholder: "Search ideas, pools, tags",
-      buttonLabel: "Search"
+      placeholder: text.search.queryPlaceholder,
+      buttonLabel: text.search.submitLabel
     },
     controls: {
       filterLabel: "Filter",

@@ -10,6 +10,7 @@ import type {
   AiSettings,
   GlitterPluginSettings,
   HomeFieldView,
+  PluginInterfaceLanguage,
   PoolColorSettings,
   RoamSettings,
   UiThemeMode
@@ -19,11 +20,15 @@ type LoadedAiSettings = Partial<Record<keyof AiSettings, unknown>>;
 type LoadedRoamSettings = Partial<Record<keyof RoamSettings, unknown>>;
 
 type LoadedPluginSettings = Partial<
-  Omit<GlitterPluginSettings, "hotkeys" | "reviewScenario" | "poolColors" | "uiThemeMode" | "homeFieldView" | "ai" | "roam">
+  Omit<
+    GlitterPluginSettings,
+    "hotkeys" | "reviewScenario" | "poolColors" | "uiThemeMode" | "homeFieldView" | "interfaceLanguage" | "ai" | "roam"
+  >
 > & {
   reviewScenario?: unknown;
   uiThemeMode?: unknown;
   homeFieldView?: unknown;
+  interfaceLanguage?: unknown;
   hotkeys?: Partial<GlitterPluginSettings["hotkeys"]> | null;
   poolColors?: Partial<Record<keyof PoolColorSettings, unknown>> | null;
   ai?: LoadedAiSettings | null;
@@ -42,6 +47,7 @@ export const DEFAULT_SETTINGS: GlitterPluginSettings = {
   uiThemeMode: "follow-obsidian",
   // 空态与首次进入首页都以圆满视图为默认基线，涟漪只在 populated 首页按用户选择启用。
   homeFieldView: "water",
+  interfaceLanguage: "zh-CN",
   ai: {
     enabled: false,
     quickCapturePolishEnabled: true,
@@ -97,6 +103,14 @@ function normalizeHomeFieldView(value: unknown): HomeFieldView {
   }
 
   return "water";
+}
+
+function normalizePluginInterfaceLanguage(value: unknown): PluginInterfaceLanguage {
+  if (value === "zh-CN" || value === "en") {
+    return value;
+  }
+
+  return "zh-CN";
 }
 
 function normalizeStorageDirectory(value: unknown, fallback: string): string {
@@ -161,6 +175,7 @@ export function mergePluginSettings(loaded: LoadedPluginSettings | null | undefi
     poolColors,
     uiThemeMode,
     homeFieldView,
+    interfaceLanguage,
     mediaStorageDirectory,
     fileStorageDirectory,
     roam,
@@ -173,6 +188,7 @@ export function mergePluginSettings(loaded: LoadedPluginSettings | null | undefi
     ...rest,
     uiThemeMode: normalizeUiThemeMode(uiThemeMode),
     homeFieldView: normalizeHomeFieldView(homeFieldView),
+    interfaceLanguage: normalizePluginInterfaceLanguage(interfaceLanguage),
     mediaStorageDirectory: normalizeStorageDirectory(mediaStorageDirectory, DEFAULT_SETTINGS.mediaStorageDirectory),
     fileStorageDirectory: normalizeStorageDirectory(fileStorageDirectory, DEFAULT_SETTINGS.fileStorageDirectory),
     roam: {

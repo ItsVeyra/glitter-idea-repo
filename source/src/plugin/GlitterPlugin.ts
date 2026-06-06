@@ -352,6 +352,27 @@ export default class GlitterPlugin extends Plugin {
     });
   }
 
+  refreshOpenGlitterViews(): void {
+    this.app.workspace.getLeavesOfType(MAIN_VIEW_TYPE).forEach((leaf) => {
+      const view = leaf.view;
+      if (view instanceof GlitterMainView) {
+        view.refreshInterfaceText();
+      }
+    });
+    this.app.workspace.getLeavesOfType(SEARCH_VIEW_TYPE).forEach((leaf) => {
+      const view = leaf.view;
+      if (view instanceof GlitterSearchView) {
+        view.refreshInterfaceText();
+      }
+    });
+    this.app.workspace.getLeavesOfType(POOL_VIEW_TYPE).forEach((leaf) => {
+      const view = leaf.view;
+      if (view instanceof GlitterPoolView) {
+        view.refreshInterfaceText();
+      }
+    });
+  }
+
   // 自动化启动与设置持久化。
   async maybeOpenMainViewForAutomation(): Promise<void> {
     if (!this.settings.openMainViewOnNextLoad) {

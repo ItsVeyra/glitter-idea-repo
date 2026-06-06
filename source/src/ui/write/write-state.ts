@@ -3,11 +3,11 @@
  * 负责把快速记录运行时模型或评审场景转换成写作界面可直接渲染的视图状态。
  */
 
+import { getInterfaceText } from "../../i18n/interface-language";
+import type { PluginInterfaceLanguage } from "../../settings/settings";
 import {
   CREATE_NEW_POOL_ID,
-  CREATE_NEW_POOL_LABEL,
-  DEFAULT_POOL_ID,
-  DEFAULT_POOL_LABEL
+  DEFAULT_POOL_ID
 } from "../../plugin/constants";
 
 // 写作与快速记录共用的视图模型。
@@ -27,8 +27,6 @@ export type WriteImportState = "idle" | "loading" | "error";
 export type WriteMediaPreviewKind = "image" | "video";
 export type WriteLinkAttachmentIcon = "paperclip" | "loader" | "alert";
 export type WriteAiPolishState = "idle" | "loading" | "reviewing" | "error";
-
-const EMPTY_SUBMIT_FEEDBACK_MESSAGE = "还没有灵感写入，请再抓住它吧～";
 
 interface WriteChoiceOption {
   id: string;
@@ -95,6 +93,33 @@ export interface WriteViewState {
     createFileChecked?: boolean;
     hasCaptureFieldEdits?: boolean;
     aiPolish?: WriteAiPolishViewState;
+    labels?: {
+      aiPolishTrigger: string;
+      aiPolishLoading: string;
+      aiPolishAccept: string;
+      aiPolishRedo: string;
+      aiPolishBack: string;
+      aiPolishDefaultError: string;
+      aiPolishEmptyResult: string;
+      aiPolishStaleWarning: string;
+      defaultSaveHelperText: string;
+      closeQuickCapture: string;
+      attachmentPick: string;
+      linkAttachmentRemove: string;
+      mediaPreviewOpen: string;
+      selectedImage: string;
+      selectedVideo: string;
+      previousImage: string;
+      nextImage: string;
+      addImage: string;
+      replaceImage: string;
+      removeImage: string;
+      replaceVideo: string;
+      removeVideo: string;
+      mediaPreviewClose: string;
+      mediaPreviewImage: string;
+      mediaPreviewVideo: string;
+    };
     attachedMediaCount?: number;
     attachedMediaLabels?: string[];
     attachedMediaPreviewUrl?: string;
@@ -142,6 +167,7 @@ export interface WriteViewState {
 
 export interface QuickCaptureWriteStateModel {
   shell?: "quick-capture";
+  interfaceLanguage?: PluginInterfaceLanguage;
   flowContext: WriteFlowContext;
   phase: WritePhase;
   contentKind: WriteContentKind;
@@ -217,8 +243,10 @@ function createImmersiveBaseState(): WriteViewState {
 
 // 快速记录文案与池选择派生。
 function resolveAutoTitle(model: QuickCaptureWriteStateModel): string {
+  const text = getInterfaceText(model.interfaceLanguage);
+
   if (model.flowContext === "first-use") {
-    return "我的第一条灵感";
+    return text.write.firstIdeaTitle;
   }
 
   if (model.contentKind === "media") {
@@ -227,7 +255,7 @@ function resolveAutoTitle(model: QuickCaptureWriteStateModel): string {
       return firstAttachedLabel;
     }
 
-    return "媒体灵感";
+    return text.write.mediaIdeaTitle;
   }
 
   const generated = model.generatedTitle?.trim();
@@ -235,7 +263,7 @@ function resolveAutoTitle(model: QuickCaptureWriteStateModel): string {
     return generated;
   }
 
-  return "自动生成标题";
+  return text.write.autoTitleFallback;
 }
 
 function createCaptureCopy(model: QuickCaptureWriteStateModel): {
@@ -248,51 +276,57 @@ function createCaptureCopy(model: QuickCaptureWriteStateModel): {
   successMessage: string;
   errorStatusText: string;
 } {
+  const text = getInterfaceText(model.interfaceLanguage).write;
+
   if (model.contentKind === "link") {
     return {
-      bodyPlaceholder: "粘贴链接后自动提取标题与摘要，可继续补充你的判断。",
-      bodyInputPlaceholder: "可选：补充备注或行动项...",
-      captureSubtext: "支持 URL 粘贴；识别中可继续编辑下方文本。",
-      clipHint: "粘贴链接后自动识别",
-      loadingMessage: "正在识别链接，请稍后…",
-      errorMessage: "读取链接内容失败，可手动书写灵感",
-      successMessage: "识别完成，可继续补充灵感",
-      errorStatusText: "链接识别失败，可重试后再保存。"
+      bodyPlaceholder: text.linkBodyPlaceholder,
+      bodyInputPlaceholder: text.linkInputPlaceholder,
+      captureSubtext: text.linkCaptureSubtext,
+      clipHint: text.linkClipHint,
+      loadingMessage: text.linkLoadingMessage,
+      errorMessage: text.linkErrorMessage,
+      successMessage: text.linkSuccessMessage,
+      errorStatusText: text.linkErrorStatusText
     };
   }
 
   if (model.contentKind === "media") {
     return {
-      bodyPlaceholder: "粘贴媒体链接或附件后可提取关键信息，保留上下文更高效。",
-      bodyInputPlaceholder: "可选：补充媒体备注或灵感说明...",
-      captureSubtext: "支持图片/音视频链接或附件，识别完成后可继续编辑。",
-      clipHint: "粘贴附件/媒体链接后自动识别",
-      loadingMessage: "正在识别媒体内容...",
-      errorMessage: "媒体识别失败，请重试",
-      successMessage: "识别完成，可继续补充灵感",
-      errorStatusText: "媒体识别失败，可重试后再保存。"
+      bodyPlaceholder: text.mediaBodyPlaceholder,
+      bodyInputPlaceholder: text.mediaInputPlaceholder,
+      captureSubtext: text.mediaCaptureSubtext,
+      clipHint: text.mediaClipHint,
+      loadingMessage: text.mediaLoadingMessage,
+      errorMessage: text.mediaErrorMessage,
+      successMessage: text.mediaSuccessMessage,
+      errorStatusText: text.mediaErrorStatusText
     };
   }
 
   return {
-    bodyPlaceholder: "输入你现在想到的内容，保存后可继续整理到目标池。",
-    bodyInputPlaceholder: "记录灵感，后续可继续补充...",
-    captureSubtext: "可选：勾选\"保存灵感并创建文件\"，直接生成 Obsidian 文件。",
-    clipHint: "粘贴附件/链接后自动识别",
-    loadingMessage: "正在识别内容...",
-    errorMessage: "内容识别失败，请重试",
-    successMessage: "识别完成，可继续补充灵感",
-    errorStatusText: "识别失败，可重试后再保存。"
+    bodyPlaceholder: text.textBodyPlaceholder,
+    bodyInputPlaceholder: text.textInputPlaceholder,
+    captureSubtext: text.textCaptureSubtext,
+    clipHint: text.textClipHint,
+    loadingMessage: text.textLoadingMessage,
+    errorMessage: text.textErrorMessage,
+    successMessage: text.textSuccessMessage,
+    errorStatusText: text.textErrorStatusText
   };
 }
 
-const GLOBAL_QUICK_CAPTURE_POOL_OPTIONS: WritePoolOption[] = [
-  { id: DEFAULT_POOL_ID, label: DEFAULT_POOL_LABEL },
-  { id: CREATE_NEW_POOL_ID, label: CREATE_NEW_POOL_LABEL }
-];
+function resolveGlobalQuickCapturePoolOptions(language?: PluginInterfaceLanguage): WritePoolOption[] {
+  const text = getInterfaceText(language).pool;
+  return [
+    { id: DEFAULT_POOL_ID, label: text.defaultPoolName },
+    { id: CREATE_NEW_POOL_ID, label: text.newPoolLabel }
+  ];
+}
 
 function resolvePoolPickerState(model: QuickCaptureWriteStateModel): WritePoolPickerState {
-  const fallbackOptions = model.flowContext === "first-use" ? [] : GLOBAL_QUICK_CAPTURE_POOL_OPTIONS;
+  const text = getInterfaceText(model.interfaceLanguage).pool;
+  const fallbackOptions = model.flowContext === "first-use" ? [] : resolveGlobalQuickCapturePoolOptions(model.interfaceLanguage);
   const options =
     model.poolOptions && (model.flowContext === "first-use" || model.poolOptions.length > 0)
       ? model.poolOptions
@@ -309,17 +343,17 @@ function resolvePoolPickerState(model: QuickCaptureWriteStateModel): WritePoolPi
       selectedLabel: selectedById.label,
       dropdownVisible: model.poolDropdownVisible ?? false,
       options,
-      createActionLabel: model.poolCreateActionLabel?.trim() || "新建池..."
+      createActionLabel: model.poolCreateActionLabel?.trim() || `${text.newPoolLabel}...`
     };
   }
 
   if (selectedPoolId) {
     return {
       selectedId: selectedPoolId,
-      selectedLabel: selectedPoolLabel ?? fallbackOption?.label ?? DEFAULT_POOL_LABEL,
+      selectedLabel: selectedPoolLabel ?? fallbackOption?.label ?? text.defaultPoolName,
       dropdownVisible: model.poolDropdownVisible ?? false,
       options,
-      createActionLabel: model.poolCreateActionLabel?.trim() || "新建池..."
+      createActionLabel: model.poolCreateActionLabel?.trim() || `${text.newPoolLabel}...`
     };
   }
 
@@ -329,20 +363,51 @@ function resolvePoolPickerState(model: QuickCaptureWriteStateModel): WritePoolPi
       selectedLabel: selectedPoolLabel,
       dropdownVisible: model.poolDropdownVisible ?? false,
       options,
-      createActionLabel: model.poolCreateActionLabel?.trim() || "新建池..."
+      createActionLabel: model.poolCreateActionLabel?.trim() || `${text.newPoolLabel}...`
     };
   }
 
   return {
     selectedId: fallbackOption?.id ?? DEFAULT_POOL_ID,
-    selectedLabel: fallbackOption?.label ?? DEFAULT_POOL_LABEL,
+    selectedLabel: fallbackOption?.label ?? text.defaultPoolName,
     dropdownVisible: model.poolDropdownVisible ?? false,
     options,
-    createActionLabel: model.poolCreateActionLabel?.trim() || "新建池..."
+    createActionLabel: model.poolCreateActionLabel?.trim() || `${text.newPoolLabel}...`
   };
 }
 
 // AI 润色视图态需要同时保留当前正文与结果生成时的原文，用于控制采纳按钮和脏结果提示。
+function createQuickCaptureLabels(model: QuickCaptureWriteStateModel): NonNullable<WriteViewState["quickCapture"]>["labels"] {
+  const text = getInterfaceText(model.interfaceLanguage).write;
+  return {
+    aiPolishTrigger: text.aiPolishTrigger,
+    aiPolishLoading: text.aiPolishLoading,
+    aiPolishAccept: text.aiPolishAccept,
+    aiPolishRedo: text.aiPolishRedo,
+    aiPolishBack: text.aiPolishBack,
+    aiPolishDefaultError: text.aiPolishDefaultError,
+    aiPolishEmptyResult: text.aiPolishEmptyResult,
+    aiPolishStaleWarning: text.aiPolishStaleWarning,
+    defaultSaveHelperText: text.defaultSaveHelperText,
+    closeQuickCapture: text.closeQuickCaptureLabel,
+    attachmentPick: text.attachmentPickLabel,
+    linkAttachmentRemove: text.linkAttachmentRemoveLabel,
+    mediaPreviewOpen: text.mediaPreviewOpenLabel,
+    selectedImage: text.selectedImageLabel,
+    selectedVideo: text.selectedVideoLabel,
+    previousImage: text.previousImageLabel,
+    nextImage: text.nextImageLabel,
+    addImage: text.addImageLabel,
+    replaceImage: text.replaceImageLabel,
+    removeImage: text.removeImageLabel,
+    replaceVideo: text.replaceVideoLabel,
+    removeVideo: text.removeVideoLabel,
+    mediaPreviewClose: text.mediaPreviewCloseLabel,
+    mediaPreviewImage: text.mediaPreviewImageLabel,
+    mediaPreviewVideo: text.mediaPreviewVideoLabel
+  };
+}
+
 function createAiPolishState(model: QuickCaptureWriteStateModel): WriteAiPolishViewState {
   const state = model.flowContext === "global" ? (model.aiPolishState ?? "idle") : "idle";
   const sourceValue = model.flowContext === "global" ? (model.inputText ?? model.aiPolishSourceValue ?? "") : "";
@@ -361,6 +426,7 @@ function createAiPolishState(model: QuickCaptureWriteStateModel): WriteAiPolishV
 // 快速记录采集态状态构造。
 function createQuickCaptureCaptureState(model: QuickCaptureWriteStateModel): WriteViewState {
   const importState: WriteImportState = model.importState ?? "idle";
+  const text = getInterfaceText(model.interfaceLanguage);
   const copy = createCaptureCopy(model);
   const isFirstUse = model.flowContext === "first-use";
   const mediaCount = model.attachedMediaCount ?? 0;
@@ -413,32 +479,33 @@ function createQuickCaptureCaptureState(model: QuickCaptureWriteStateModel): Wri
     phase: "capture",
     contentKind: model.contentKind,
     importState,
-    title: isFirstUse ? "记录第一条灵感" : "灵感速记",
-    subtitle: "输入内容后保存，稍后可继续归池整理。",
+    title: isFirstUse ? text.write.firstUseTitle : text.write.title,
+    subtitle: text.write.subtitle,
     fields: {
       title: {
-        label: "标题（自动）",
+        label: text.write.titleLabel,
         placeholder: autoTitle,
         value: titleValue
       },
       body: {
-        label: "灵感内容",
+        label: text.write.bodyLabel,
         placeholder: isLinkCapture && importState !== "idle" ? linkBodyPlaceholder : copy.bodyPlaceholder,
         value: bodyValue,
-        inputPlaceholder: isLinkCapture ? linkBodyPlaceholder : copy.bodyInputPlaceholder,
+        inputPlaceholder: isLinkCapture ? linkBodyPlaceholder : isFirstUse ? copy.bodyInputPlaceholder : text.write.contentPlaceholder,
         autofocus: false
       },
-      poolHint: `池：${poolPicker.selectedLabel}`
+      poolHint: text.write.poolHint(poolPicker.selectedLabel)
     },
     poolPicker,
     quickCapture: {
       clipHint: clipHintText,
-      shortcutHint: "Esc 关闭 · Cmd/Ctrl+Enter 保存",
-      keyboardActionLabel: "快捷键设置",
-      createFileActionLabel: "保存灵感并创建文件",
+      shortcutHint: text.write.shortcutHint,
+      keyboardActionLabel: text.write.keyboardActionLabel,
+      createFileActionLabel: text.write.createFileActionLabel,
       createFileChecked: model.createFileChecked ?? false,
       hasCaptureFieldEdits: model.hasCaptureFieldEdits,
       aiPolish,
+      labels: createQuickCaptureLabels(model),
       attachedMediaCount: mediaCount,
       attachedMediaLabels: model.attachedMediaLabels,
       attachedMediaPreviewUrl: model.attachedMediaPreviewUrl,
@@ -452,14 +519,14 @@ function createQuickCaptureCaptureState(model: QuickCaptureWriteStateModel): Wri
       captureSubtext: copy.captureSubtext,
       closeConfirm: {
         visible: model.closeConfirmVisible ?? false,
-        title: "关闭将打断灵感记录",
-        description: "当前内容会留在本次记录窗口中，继续记录可返回当前编辑状态。",
-        resumeLabel: "继续记录",
-        exitLabel: "立即关闭"
+        title: text.write.closeConfirmTitle,
+        description: text.write.closeConfirmDescription,
+        resumeLabel: text.write.closeConfirmResume,
+        exitLabel: text.write.closeConfirmExit
       },
       emptySubmitFeedback: {
         visible: model.emptySubmitFeedbackVisible ?? false,
-        message: EMPTY_SUBMIT_FEEDBACK_MESSAGE
+        message: text.write.emptySubmitFeedback
       }
     },
     linkImport: {
@@ -472,10 +539,10 @@ function createQuickCaptureCaptureState(model: QuickCaptureWriteStateModel): Wri
     },
     footer: {
       secondaryAction: {
-        label: "关闭"
+        label: text.write.close
       },
       primaryAction: {
-        label: isFirstUse ? "保存并下一步" : "完成记录",
+        label: isFirstUse ? text.write.saveAndNext : text.write.completeCapture,
         tone: importState === "loading" || primaryActionDisabled ? "muted" : "primary",
         ...(primaryActionDisabled ? { disabled: true } : {})
       },
@@ -484,10 +551,14 @@ function createQuickCaptureCaptureState(model: QuickCaptureWriteStateModel): Wri
   };
 }
 
-function formatSavedPoolLabel(label?: string): string {
+function formatSavedPoolLabel(label: string | undefined, language?: PluginInterfaceLanguage): string {
   const trimmed = label?.trim();
   if (!trimmed) {
-    return DEFAULT_POOL_LABEL;
+    return getInterfaceText(language).pool.defaultPoolName;
+  }
+
+  if (language === "en") {
+    return trimmed;
   }
 
   return trimmed.endsWith("池") ? trimmed : `${trimmed}池`;
@@ -495,7 +566,8 @@ function formatSavedPoolLabel(label?: string): string {
 
 // 全局速记的保存反馈状态。
 function createQuickCaptureGlobalSaveState(model: QuickCaptureWriteStateModel): WriteViewState {
-  const savedPoolLabel = formatSavedPoolLabel(model.selectedPoolLabel);
+  const text = getInterfaceText(model.interfaceLanguage);
+  const savedPoolLabel = formatSavedPoolLabel(model.selectedPoolLabel, model.interfaceLanguage);
 
   if (model.phase === "saving") {
     return {
@@ -504,8 +576,8 @@ function createQuickCaptureGlobalSaveState(model: QuickCaptureWriteStateModel): 
       phase: "saving",
       contentKind: model.contentKind,
       importState: model.importState ?? "idle",
-      title: "灵感保存中",
-      subtitle: "正在写入灵感池与索引，请稍候…",
+      title: text.write.savingTitle,
+      subtitle: text.write.savingSubtitle,
       fields: {
         title: {
           label: "",
@@ -519,21 +591,28 @@ function createQuickCaptureGlobalSaveState(model: QuickCaptureWriteStateModel): 
         poolHint: ""
       },
       choice: {
-        title: "处理中",
+        title: text.write.savingChoiceTitle,
         options: [
           {
             id: "processing",
             label: "",
-            description: "· 正在保存标题与正文\n· 正在同步池归属与状态标记"
+            description: text.write.savingChoiceDescription
           }
         ]
       },
+      quickCapture: {
+        clipHint: "",
+        shortcutHint: "",
+        keyboardActionLabel: "",
+        createFileActionLabel: "",
+        labels: createQuickCaptureLabels(model)
+      },
       footer: {
         secondaryAction: {
-          label: "请稍候"
+          label: text.write.savingSecondaryLabel
         },
         primaryAction: {
-          label: "保存中…",
+          label: text.write.savingPrimaryLabel,
           tone: "muted"
         }
       }
@@ -547,8 +626,8 @@ function createQuickCaptureGlobalSaveState(model: QuickCaptureWriteStateModel): 
       phase: "save-failed",
       contentKind: model.contentKind,
       importState: model.importState ?? "idle",
-      title: "灵感保存失败",
-      subtitle: "保存未完成，请检查必填信息或稍后重试。",
+      title: text.write.saveFailedTitle,
+      subtitle: text.write.saveFailedSubtitle,
       fields: {
         title: {
           label: "",
@@ -562,21 +641,28 @@ function createQuickCaptureGlobalSaveState(model: QuickCaptureWriteStateModel): 
         poolHint: ""
       },
       choice: {
-        title: "需处理",
+        title: text.write.saveFailedChoiceTitle,
         options: [
           {
             id: "failed",
             label: "",
-            description: "· 池名称或内容可能为空\n· 网络或文件系统暂不可用"
+            description: text.write.saveFailedChoiceDescription
           }
         ]
       },
+      quickCapture: {
+        clipHint: "",
+        shortcutHint: "",
+        keyboardActionLabel: "",
+        createFileActionLabel: "",
+        labels: createQuickCaptureLabels(model)
+      },
       footer: {
         secondaryAction: {
-          label: "返回编辑"
+          label: text.write.saveFailedSecondaryLabel
         },
         primaryAction: {
-          label: "重试保存",
+          label: text.write.saveFailedPrimaryLabel,
           tone: "primary"
         }
       }
@@ -589,7 +675,7 @@ function createQuickCaptureGlobalSaveState(model: QuickCaptureWriteStateModel): 
     phase: "saved-feedback",
     contentKind: model.contentKind,
     importState: model.importState ?? "idle",
-    title: "灵感已入池",
+    title: text.write.savedFeedbackTitle,
     subtitle: "",
     fields: {
       title: {
@@ -603,22 +689,29 @@ function createQuickCaptureGlobalSaveState(model: QuickCaptureWriteStateModel): 
       },
       poolHint: ""
     },
+    quickCapture: {
+      clipHint: "",
+      shortcutHint: "",
+      keyboardActionLabel: "",
+      createFileActionLabel: "",
+      labels: createQuickCaptureLabels(model)
+    },
     choice: {
       title: "",
       options: [
         {
           id: "saved",
           label: "",
-          description: `· 已保存到${savedPoolLabel}\n· 可在池内继续编辑与创建文件`
+          description: text.write.savedFeedbackDescription(savedPoolLabel)
         }
       ]
     },
     footer: {
       secondaryAction: {
-        label: "继续记录"
+        label: text.write.savedFeedbackSecondaryLabel
       },
       primaryAction: {
-        label: "进入池内",
+        label: text.write.savedFeedbackPrimaryLabel,
         tone: "primary"
       }
     }
@@ -631,6 +724,7 @@ function createQuickCaptureSavedFeedbackState(model: QuickCaptureWriteStateModel
     return createQuickCaptureGlobalSaveState(model);
   }
 
+  const text = getInterfaceText(model.interfaceLanguage);
   const poolPicker = resolvePoolPickerState(model);
 
   return {
@@ -639,38 +733,45 @@ function createQuickCaptureSavedFeedbackState(model: QuickCaptureWriteStateModel
     phase: "saved-feedback",
     contentKind: model.contentKind,
     importState: model.importState ?? "idle",
-    title: "灵感已保存",
-    subtitle: "继续选择这条灵感要进入的灵感池。",
+    title: text.write.firstUseSavedTitle,
+    subtitle: text.write.firstUseSavedSubtitle,
     fields: {
       title: {
-        label: "标题（自动）",
+        label: text.write.titleLabel,
         placeholder: resolveAutoTitle(model)
       },
       body: {
-        label: "灵感内容",
-        placeholder: "已保存成功",
+        label: text.write.bodyLabel,
+        placeholder: text.write.firstUseSavedBodyPlaceholder,
         value: model.inputText ?? "",
         autofocus: false
       },
-      poolHint: `池：${poolPicker.selectedLabel}`
+      poolHint: text.write.poolHint(poolPicker.selectedLabel)
     },
     poolPicker,
+    quickCapture: {
+      clipHint: "",
+      shortcutHint: "",
+      keyboardActionLabel: "",
+      createFileActionLabel: "",
+      labels: createQuickCaptureLabels(model)
+    },
     choice: {
-      title: "下一步",
+      title: text.write.firstUseSavedChoiceTitle,
       options: [
         {
           id: "choose-pool",
-          label: "选择归池",
-          description: "继续为这条灵感选择目标池。"
+          label: text.write.firstUseSavedChoiceLabel,
+          description: text.write.firstUseSavedChoiceDescription
         }
       ]
     },
     footer: {
       secondaryAction: {
-        label: "返回首页"
+        label: text.write.firstUseSavedSecondaryLabel
       },
       primaryAction: {
-        label: "选择归池",
+        label: text.write.firstUseSavedPrimaryLabel,
         tone: "primary"
       }
     }

@@ -5,6 +5,7 @@
 
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { createToastService } from "../feedback/toast-service";
+import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import type { HomeFieldView } from "../settings/settings";
 import {
@@ -90,6 +91,12 @@ export class GlitterMainView extends ItemView {
     }
   }
 
+  refreshInterfaceText(): void {
+    if (!this.isClosed) {
+      this.renderMainShell();
+    }
+  }
+
   // 首页数据加载与渲染。
   private renderMainShell(): void {
     const renderVersion = ++this.renderVersion;
@@ -108,6 +115,7 @@ export class GlitterMainView extends ItemView {
     const state = buildHomeViewStateFromRuntime(runtime, {
       poolColors: this.plugin.settings.poolColors,
       homeFieldView: this.plugin.settings.homeFieldView,
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage,
       searchFeedbackMessage: runtime.mode === "populated" ? this.activeSearchFeedbackMessage : undefined
     });
 
@@ -219,7 +227,8 @@ export class GlitterMainView extends ItemView {
       return;
     }
 
-    this.showSearchFeedback("未读取到搜索内容");
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
+    this.showSearchFeedback(text.home.emptySearchFeedback);
   }
 
   private showSearchFeedback(message: string): void {
@@ -497,7 +506,8 @@ export class GlitterMainView extends ItemView {
       return;
     }
 
-    const confirmed = globalThis.confirm?.(`确认删除“${pool.name}”吗？池内灵感将归入默认池。`) ?? false;
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
+    const confirmed = globalThis.confirm?.(text.home.deletePoolConfirm(pool.name)) ?? false;
     if (!confirmed) {
       return;
     }

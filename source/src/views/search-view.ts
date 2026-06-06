@@ -7,6 +7,7 @@ import { ItemView, WorkspaceLeaf, type ViewStateResult } from "obsidian";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import { GLITTER_ICON_ID, SEARCH_VIEW_TYPE } from "../plugin/constants";
 import { createToastService } from "../feedback/toast-service";
+import { getInterfaceText } from "../i18n/interface-language";
 import { renderSearchView } from "../ui/search/render-search";
 import { buildSearchViewStateFromRuntime } from "../ui/search/search-state";
 
@@ -72,6 +73,12 @@ export class GlitterSearchView extends ItemView {
     }
   }
 
+  refreshInterfaceText(): void {
+    if (!this.isClosed) {
+      this.renderSearchShell();
+    }
+  }
+
   // 查询执行与渲染更新。
   private renderSearchShell(): void {
     const renderVersion = ++this.renderVersion;
@@ -79,6 +86,7 @@ export class GlitterSearchView extends ItemView {
   }
 
   private async renderSearchShellAsync(renderVersion: number): Promise<void> {
+    const text = getInterfaceText(this.plugin.settings?.interfaceLanguage);
     let ideas;
     try {
       ideas = await this.plugin.ideaService.queryIdeas({
@@ -89,7 +97,7 @@ export class GlitterSearchView extends ItemView {
       if (!this.shouldSkipRender(renderVersion)) {
         this.toastService.show({
           status: "error",
-          message: "Search failed. Please try again."
+          message: text.search.failed
         });
       }
       return;
@@ -107,7 +115,8 @@ export class GlitterSearchView extends ItemView {
         meta: `${idea.poolId} · Updated ${idea.updatedAt}`,
         selected: this.selectedResultIds.has(idea.id)
       })),
-      selectedCount: ideas.filter((idea) => this.selectedResultIds.has(idea.id)).length
+      selectedCount: ideas.filter((idea) => this.selectedResultIds.has(idea.id)).length,
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage
     });
 
     renderSearchView(this.contentEl, state, {
