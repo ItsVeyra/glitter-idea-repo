@@ -9,11 +9,7 @@ As your ideas accumulate, Glitter also gives them a visual space to grow. With t
 Glitter is built around a simple design philosophy: respect your taste and working habits, follow the visual language of the theme you already love, and make the plugin feel as native and unobtrusive as possible in daily use.
 
 
-## Why Use Glitter
 
-At the core of Glitter's design is not making every idea immediately conform to Obsidian's file structure, but giving inspiration a lighter landing place before it becomes a formal note.
-
-It tries to separate two things that are often tied together: **worth keeping**, and **worth turning into a file right away**. You can save an idea first, then decide whether to categorize it, create a Markdown file for it, or insert it back into your note to keep writing. This both reduces the large number of temporary files created in the vault for quick capture, and makes truly important ideas easier to revisit, reuse, and develop.
 
 ## Core Capabilities
 
@@ -42,6 +38,9 @@ When an idea is ready to enter the writing stage, Glitter lets you insert saved 
 
 ### 5. AI Polish
 For text you have already written, Glitter can also call a model you configure yourself to perform a real rewrite and polish pass, helping you continue refining and deepening the expression.
+
+
+
 
 ## Quick Start
 
@@ -98,9 +97,13 @@ While writing notes, you can insert saved ideas back into the note body for quot
 - Hotkey: `Mod (Command/Ctrl) + Shift + I`;
 - ![Snippet Insertion](assets/images/snippet-insertion.png)
 
-#### 6. Other
-- The home page **Switch View** is now available, allowing you to browse between the **Fulfillment** and **Ripple** home idea fields;
-- Card sharing is still being planned.
+#### 6. Home View Display
+The home idea pool display has two view options: **Fulfillment** and **Ripple**. You can choose the one that best fits your preference.
+  ![Home View Display](assets/images/view.png)
+
+#### 7. Bilingual Plugin Interface
+Glitter now supports an English interface, which you can choose from the settings page.
+  ![Bilingual Plugin Interface](assets/images/language.png)
 
 ## Installation and Updates
 
@@ -170,5 +173,10 @@ A: Yes. Glitter supports inserting ideas into the note body as snippets, making 
 **Q: What features will this plugin continue to update in the future?**  
 A: Future updates will continue improving idea quick capture, the roam board, card sharing, bubble data charts, and the finer dynamic interaction details inside the plugin views.
 
+## Why Use Glitter
+
+At the core of Glitter's design is not making every idea immediately conform to Obsidian's file structure, but giving inspiration a lighter landing place before it becomes a formal note.
+
+It tries to separate two things that are often tied together: **worth keeping**, and **worth turning into a file right away**. You can save an idea first, then decide whether to categorize it, create a Markdown file for it, or insert it back into your note to keep writing. This both reduces the large number of temporary files created in the vault for quick capture, and makes truly important ideas easier to revisit, reuse, and develop.
 
 ![alt text](assets/images/star.png)
