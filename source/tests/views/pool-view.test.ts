@@ -32,7 +32,7 @@ const {
   quickCaptureInstances: [] as Array<{
     step: "capture" | "saved-feedback";
     handlers: {
-      onSaved?: () => void;
+      onSaved?: (selection?: { poolId?: string; poolLabel?: string; createFileChecked?: boolean }) => void;
     };
     options?: {
       flowContext?: "first-use" | "global";
@@ -57,7 +57,7 @@ const {
   ideaEditInstances: [] as Array<{
     ideaId: string;
     handlers: {
-      onSaved?: () => void;
+      onSaved?: (selection?: { poolId?: string; poolLabel?: string; createFileChecked?: boolean }) => void;
     };
   }>,
   snippetLocationsOpenMock: vi.fn(),
@@ -151,7 +151,7 @@ vi.mock("../../src/views/quick-capture-modal", () => {
     constructor(
       _plugin: unknown,
       step: "capture" | "saved-feedback",
-      handlers: { onSaved?: () => void },
+      handlers: { onSaved?: (selection?: { poolId?: string; poolLabel?: string; createFileChecked?: boolean }) => void },
       options?: {
         flowContext?: "first-use" | "global";
         initialSelectedPoolId?: string;
@@ -4196,6 +4196,22 @@ describe("GlitterPoolView", () => {
     expect(quickCaptureOpenMock).toHaveBeenCalledTimes(1);
     expect(quickCaptureInstances[0]?.step).toBe("capture");
     expect(quickCaptureInstances[0]?.options).toEqual(
+      expect.objectContaining({
+        flowContext: "global",
+        initialSelectedPoolId: "pool-default",
+        initialSelectedPoolLabel: "默认池"
+      })
+    );
+
+    quickCaptureInstances[0]?.handlers.onSaved?.({
+      poolId: "pool-default",
+      poolLabel: "默认池",
+      createFileChecked: true
+    });
+    await Promise.resolve();
+    expect(quickCaptureOpenMock).toHaveBeenCalledTimes(2);
+    expect(quickCaptureInstances[1]?.step).toBe("saved-feedback");
+    expect(quickCaptureInstances[1]?.options).toEqual(
       expect.objectContaining({
         flowContext: "global",
         initialSelectedPoolId: "pool-default",

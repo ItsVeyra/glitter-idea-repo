@@ -3231,6 +3231,81 @@ describe("renderPoolView", () => {
     expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).toBeNull();
   });
 
+  it("keeps media preview triggers attached to the visible stage after a newly created media card is rendered", () => {
+    const container = createContainer();
+    const actions = {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onQueryChange() {},
+      onBrowseOverlayToggle() {},
+      onBrowseOverlayClose() {},
+      onContentFilterChange() {},
+      onStatusChange() {},
+      onSortChange() {},
+      onBatchModeToggle() {},
+      onMoveSelectionToPool() {},
+      onCreateFile() {},
+      onOpenPrimaryFile() {},
+      onEditIdea() {},
+      onShareIdea() {},
+      onPoolSwitch() {}
+    };
+    const existingImageCard = {
+      id: "idea-image-existing",
+      title: "Existing image idea",
+      selected: false,
+      typeIcon: "image",
+      contentKind: "image",
+      bodyText: "existing body",
+      mediaPath: "assets/image-existing.png",
+      mediaThumbnailUrl: "app://local/assets/image-existing.png",
+      updatedLabel: "2026-04-18 10:00",
+      fileCreated: false,
+      statusLabels: [],
+      menuActions: [],
+      snippetLocations: []
+    } as any;
+    const newVideoCard = {
+      id: "idea-video-new",
+      title: "New video idea",
+      selected: false,
+      typeIcon: "video",
+      contentKind: "video",
+      bodyText: "new video body",
+      mediaPath: "assets/video-new.mp4",
+      mediaThumbnailUrl: "app://local/assets/video-new.mp4",
+      updatedLabel: "2026-04-18 10:01",
+      fileCreated: false,
+      statusLabels: [],
+      menuActions: [],
+      snippetLocations: []
+    } as any;
+
+    renderPoolView(container, createBrowseState({ browse: { cards: [existingImageCard] } }), actions);
+    renderPoolView(container, createBrowseState({ browse: { cards: [newVideoCard, existingImageCard] } }), actions);
+
+    const previewButtons = container.querySelectorAll("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement[];
+    expect(previewButtons).toHaveLength(2);
+
+    const stage = container.querySelector(".glitter-pool-stage") as unknown as FakeElement | null;
+    const firstCardContent = container.querySelector(".glitter-pool-stage__card-content") as unknown as FakeElement | null;
+
+    previewButtons[0]?.click();
+    const videoOverlay = container.querySelector(".glitter-pool-stage__media-preview-overlay") as unknown as FakeElement | null;
+    expect(container.querySelector(".glitter-pool-stage__media-preview-video")).not.toBeNull();
+    expect(videoOverlay?.parent).toBe(stage);
+    expect(videoOverlay?.parent).not.toBe(firstCardContent);
+
+    const closeButton = container.querySelector(".glitter-pool-stage__media-preview-close") as unknown as FakeElement | null;
+    closeButton?.click();
+    expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).toBeNull();
+
+    previewButtons[1]?.click();
+    const previewImage = container.querySelector(".glitter-pool-stage__media-preview-image") as unknown as FakeElement | null;
+    expect(previewImage?.getAttribute?.("src")).toBe("app://local/assets/image-existing.png");
+  });
+
   it("renders image preview trigger as a native button for keyboard accessibility", () => {
     const container = createContainer();
     const state = createBrowseState({
@@ -3279,6 +3354,10 @@ describe("renderPoolView", () => {
     expect(previewButton?.tagName).toBe("BUTTON");
     expect((previewButton as unknown as { type?: string } | null)?.type).toBe("button");
     expect(previewButton?.getAttribute?.("aria-label")).toBe("Image preview keyboard idea，查看大图");
+  });
+
+  it("keeps thumbnail hit testing on the preview button instead of the media element", () => {
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__card-media-thumbnail", ["pointer-events: none;"]);
   });
 
   it("renders inline image switching controls on the media content without a separate preview button", () => {
@@ -4360,6 +4439,72 @@ describe("renderPoolView", () => {
     }
   });
 
+  it("clears card isolation when the isolated card is removed after deletion", () => {
+    vi.useFakeTimers();
+    try {
+      const container = createContainer();
+      const cardA = {
+        id: "idea-a",
+        title: "Idea A",
+        selected: false,
+        typeIcon: "text",
+        contentKind: "text",
+        bodyText: "A",
+        updatedLabel: "2026-04-18 11:22 已更新",
+        fileCreated: false,
+        statusLabels: [],
+        menuActions: [],
+        snippetLocations: []
+      } as any;
+      const cardB = { ...cardA, id: "idea-b", title: "Idea B", bodyText: "B" };
+      const cardC = { ...cardA, id: "idea-c", title: "Idea C", bodyText: "C" };
+      const actions = {
+        onBack() {},
+        onItemSelect() {},
+        onCreateIdea() {},
+        onQueryChange() {},
+        onBrowseOverlayToggle() {},
+        onBrowseOverlayClose() {},
+        onContentFilterChange() {},
+        onStatusChange() {},
+        onSortChange() {},
+        onBatchModeToggle() {},
+        onMoveSelectionToPool() {},
+        onCreateFile() {},
+        onOpenPrimaryFile() {},
+        onEditIdea() {},
+        onShareIdea() {},
+        onPoolSwitch() {}
+      };
+
+      renderPoolView(container, createBrowseState({ browse: { cards: [cardA, cardB, cardC] } }), actions);
+
+      const stage = container.querySelector(".glitter-pool-stage") as unknown as FakeElement | null;
+      const cardShells = container.querySelectorAll(".glitter-pool-stage__card-shell") as unknown as FakeElement[];
+      cardShells[0]?.setRectSize(280, 180);
+      cardShells[1]?.setRectSize(280, 180);
+      cardShells[2]?.setRectSize(280, 180);
+      cardShells[0]!.style.transform = "translate3d(120px, 0px, 0px)";
+      cardShells[1]!.style.transform = "translate3d(304px, 0px, 0px)";
+      cardShells[2]!.style.transform = "translate3d(880px, 0px, 0px)";
+
+      cardShells[1]?.trigger("mouseenter");
+      vi.advanceTimersByTime(3000);
+      expect(stage?.className).toContain("glitter-pool-stage--card-isolation-reading");
+      expect(cardShells[1]?.className).toContain("glitter-pool-stage__card-shell--isolation-active");
+
+      renderPoolView(container, createBrowseState({ browse: { cards: [cardA, cardC] } }), actions);
+
+      const remainingShells = container.querySelectorAll(".glitter-pool-stage__card-shell") as unknown as FakeElement[];
+      expect(remainingShells.map((cardShell) => cardShell.dataset.ideaId)).toEqual(["idea-a", "idea-c"]);
+      expect(stage?.className).not.toContain("glitter-pool-stage--card-isolation-reading");
+      expect(remainingShells.some((cardShell) => cardShell.className.includes("glitter-pool-stage__card-shell--isolation-active"))).toBe(false);
+      expect(remainingShells.some((cardShell) => cardShell.className.includes("glitter-pool-stage__card-shell--isolation-muted"))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("opens and closes a rendered card more menu in place without remounting the isolated card", () => {
     vi.useFakeTimers();
     try {
@@ -5284,6 +5429,10 @@ describe("renderPoolView", () => {
           element.setRectSize(280, 140);
         }
 
+        if (element.className.includes("glitter-pool-stage__card-surface")) {
+          element.setRectSize(280, 140);
+        }
+
         if (element.className.includes("glitter-pool-stage__card-more-trigger")) {
           element.setRectSize(28, 28);
         }
@@ -5337,6 +5486,80 @@ describe("renderPoolView", () => {
 
     expect(menu).toBeTruthy();
     expect(menu?.style.maxHeight).toBe("86px");
+    expect(menu?.style.minHeight).toBe("80px");
+  });
+
+  it("keeps the more menu scrollable when missing media collapses a card below menu height", () => {
+    const container = createContainer({
+      configureElement(element) {
+        if (element.className.includes("glitter-pool-stage__card-shell")) {
+          element.setRectSize(280, 36);
+        }
+
+        if (element.className.includes("glitter-pool-stage__card-surface")) {
+          element.setRectSize(280, 36);
+        }
+
+        if (element.className.includes("glitter-pool-stage__card-more-trigger")) {
+          element.setRectSize(28, 28);
+        }
+      }
+    });
+
+    const baseState = buildPoolViewState("pool-browse");
+    const firstCard = baseState.browse!.cards[0]!;
+    const stateWithMissingMediaCard = createBrowseState({
+      browse: {
+        cards: [
+          {
+            ...firstCard,
+            id: "idea-missing-media",
+            title: "Missing media",
+            typeIcon: "image",
+            contentKind: "empty",
+            bodyText: undefined,
+            mediaPath: "assets/deleted-image.png",
+            mediaThumbnailUrl: undefined,
+            menuActions: [
+              { kind: "create-file", label: "创建文件" },
+              { kind: "open-primary-file", label: "打开主文件" },
+              { kind: "open-snippet-note", label: "打开插入笔记" },
+              { kind: "open-snippet-locations", label: "查看插入位置（2）" }
+            ]
+          }
+        ]
+      }
+    });
+
+    renderPoolView(container, stateWithMissingMediaCard, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onQueryChange() {},
+      onBrowseOverlayToggle() {},
+      onBrowseOverlayClose() {},
+      onContentFilterChange() {},
+      onStatusChange() {},
+      onSortChange() {},
+      onBatchModeToggle() {},
+      onMoveSelectionToPool() {},
+      onCreateFile() {},
+      onOpenPrimaryFile() {},
+      onOpenSnippetNote() {},
+      onOpenSnippetLocations() {},
+      onEditIdea() {},
+      onShareIdea() {},
+      onPoolSwitch() {},
+      isCardMenuOpen(ideaId: string) {
+        return ideaId === "idea-missing-media";
+      }
+    });
+
+    const menu = container.querySelector(".glitter-pool-stage__card-more-menu") as unknown as FakeElement | null;
+
+    expect(menu).toBeTruthy();
+    expect(menu?.style.maxHeight).toBe("80px");
+    expect(menu?.style.minHeight).toBe("80px");
   });
 
   it("calls onOpenCardMovePicker when clicking the move menu item", () => {
@@ -6909,7 +7132,8 @@ describe("renderPoolView", () => {
       "height: 100%;",
       "display: block;",
       "border-radius: inherit;",
-      "object-position: center;"
+      "object-position: center;",
+      "pointer-events: none;"
     ]);
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__card-media-hitbox", [
       "width: 100%;",

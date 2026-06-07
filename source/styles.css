@@ -8158,6 +8158,7 @@
   display: block;
   border-radius: inherit;
   object-position: center;
+  pointer-events: none;
 }
 
 .glitter-pool-stage__card-media-hitbox {

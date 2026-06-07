@@ -4,7 +4,7 @@ import type { PoolBrowseOverlay } from "../ui/pool/pool-state";
 import type { PoolViewActions } from "../ui/pool/render-pool";
 import type { PoolViewContentFilter, PoolViewSort, PoolViewStatus } from "./pool-view-history";
 import { IdeaEditModal } from "./idea-edit-modal";
-import { QuickCaptureModal } from "./quick-capture-modal";
+import { QuickCaptureModal, type QuickCaptureSavedSelection } from "./quick-capture-modal";
 
 type PoolBrowseRuntimeState = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWorkflow"]["loadPoolState"]>>;
 
@@ -98,21 +98,46 @@ export function createPoolViewActions(deps: PoolViewActionFactoryDeps): PoolView
     onCreateIdea: () => {
       deps.closeCardMenu({ rerender: false });
       const activePool = deps.runtime.poolOptions.find((pool) => pool.selected);
-      const modal = new QuickCaptureModal(
-        deps.plugin,
-        "capture",
-        {
-          onSaved: () => {
-            deps.renderPoolShell();
+      const openSavedFeedback = (selection?: QuickCaptureSavedSelection): void => {
+        const savedPoolId = selection?.poolId ?? deps.activePoolId;
+        const savedPoolLabel = selection?.poolLabel ?? activePool?.label;
+        deps.renderPoolShell();
+        const feedbackModal = new QuickCaptureModal(
+          deps.plugin,
+          "saved-feedback",
+          {
+            onSaved: () => {
+              openCapture();
+            },
+            onBackHome: () => {
+              deps.renderPoolShell();
+            }
+          },
+          {
+            flowContext: "global",
+            initialCreateFileChecked: selection?.createFileChecked ?? false,
+            initialSelectedPoolId: savedPoolId,
+            initialSelectedPoolLabel: savedPoolLabel
           }
-        },
-        {
-          flowContext: "global",
-          initialSelectedPoolId: deps.activePoolId,
-          initialSelectedPoolLabel: activePool?.label
-        }
-      );
-      modal.open();
+        );
+        feedbackModal.open();
+      };
+      const openCapture = (): void => {
+        const modal = new QuickCaptureModal(
+          deps.plugin,
+          "capture",
+          {
+            onSaved: openSavedFeedback
+          },
+          {
+            flowContext: "global",
+            initialSelectedPoolId: deps.activePoolId,
+            initialSelectedPoolLabel: activePool?.label
+          }
+        );
+        modal.open();
+      };
+      openCapture();
     },
     onQueryChange: (query) => {
       deps.closeCardMenu({ rerender: false });

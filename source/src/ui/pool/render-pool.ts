@@ -141,6 +141,19 @@ function closePoolMediaPreviewOverlay(stage: HTMLElement): void {
   stage.querySelector(".glitter-pool-stage__media-preview-overlay")?.remove();
 }
 
+function findClosestPoolStage(element: HTMLElement, fallback: HTMLElement): HTMLElement {
+  let current: HTMLElement | null = element;
+  while (current) {
+    const classTokens = current.className.split(/\s+/);
+    if (classTokens.includes("glitter-pool-stage")) {
+      return current;
+    }
+    current = current.parentElement ?? (current.parentNode as HTMLElement | null) ?? ((current as unknown as { parent?: HTMLElement | null }).parent ?? null);
+  }
+
+  return fallback;
+}
+
 function openPoolMediaPreviewOverlay(
   stage: HTMLElement,
   input:
@@ -246,6 +259,7 @@ const POOL_CARD_SCROLL_INDICATOR_TOP_INSET_PX = 14;
 const POOL_CARD_SCROLL_INDICATOR_BOTTOM_INSET_PX = 24;
 const POOL_CARD_SCROLL_INDICATOR_THUMB_WIDTH_PX = 8;
 const POOL_CARD_SCROLL_INDICATOR_THUMB_HEIGHT_PX = 14;
+const POOL_CARD_MORE_MENU_MIN_HEIGHT_PX = 80;
 const POOL_CARD_STRUCTURE_SIGNATURE_KEY = "__glitterPoolCardStructureSignature";
 
 type PoolCardIsolationRuntimeState = {
@@ -2653,8 +2667,12 @@ function syncPoolCardMoreMenuMaxHeight(cardShell: HTMLElement): void {
   const menuGap = 6;
   const menuBottomInset = 10;
   const triggerHeight = Math.max(readElementHeight(moreTrigger), 28);
-  const maxMenuHeight = Math.max(0, cardHeight - menuTopInset - triggerHeight - menuGap - menuBottomInset);
+  const maxMenuHeight = Math.max(
+    POOL_CARD_MORE_MENU_MIN_HEIGHT_PX,
+    cardHeight - menuTopInset - triggerHeight - menuGap - menuBottomInset
+  );
   setInlineStyle(moreMenu, "maxHeight", `${maxMenuHeight}px`);
+  setInlineStyle(moreMenu, "minHeight", `${POOL_CARD_MORE_MENU_MIN_HEIGHT_PX}px`);
 }
 
 // 顶部栏渲染：承接返回、池标题与池切换、内联改名以及进入灵感速记的主入口。
@@ -3261,11 +3279,19 @@ function patchRenderedBrowseWorkbench(containerEl: HTMLElement, state: PoolViewS
   }
 
   const nextCardIds = new Set(nextCards.map((card) => card.id));
+  const removedActiveIsolationCard = existingCardShells.some((cardShell) => {
+    const ideaId = cardShell.dataset.ideaId ?? "";
+    return !nextCardIds.has(ideaId) && cardShell.className.includes("glitter-pool-stage__card-shell--isolation-active");
+  });
   existingCardShells.forEach((cardShell) => {
     if (!nextCardIds.has(cardShell.dataset.ideaId ?? "")) {
       cardShell.remove();
     }
   });
+  if (removedActiveIsolationCard) {
+    resetPoolCardIsolationState(containerEl);
+    clearPoolCardIsolation(stage, existingCardShells);
+  }
 
   const refreshReusableCardMasonry = (): void => {
     const currentCardShells = Array.from(existingCardStack.querySelectorAll(".glitter-pool-stage__card-shell")) as HTMLElement[];
@@ -3565,8 +3591,9 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
             return;
           }
 
+          const currentStage = findClosestPoolStage(content, stage);
           if (card.contentKind === "image") {
-            openPoolMediaPreviewOverlay(stage, {
+            openPoolMediaPreviewOverlay(currentStage, {
               src: currentPreviewSrc,
               title: card.title,
               kind: "image",
@@ -3577,7 +3604,7 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
             return;
           }
 
-          openPoolMediaPreviewOverlay(stage, {
+          openPoolMediaPreviewOverlay(currentStage, {
             src: currentPreviewSrc,
             title: card.title,
             kind: "video",
