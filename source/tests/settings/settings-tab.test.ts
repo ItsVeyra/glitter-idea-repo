@@ -380,7 +380,7 @@ describe("GlitterSettingTab", () => {
     };
 
     const tab = new GlitterSettingTab({} as never, plugin as never);
-    const withAdvanced = (tab as any).renderSection((tab as any).containerEl, "Section title", "Section description", "Advanced");
+    const withAdvanced = (tab as any).renderSection((tab as any).containerEl, "Section title", "Advanced");
 
     expect(withAdvanced).toHaveProperty("commonContentEl");
     expect(withAdvanced).toHaveProperty("advancedContentEl");
@@ -393,25 +393,25 @@ describe("GlitterSettingTab", () => {
     ]);
 
     resetObsidianMockState();
-    const withoutAdvanced = (tab as any).renderSection((tab as any).containerEl, "Section title", "Section description");
+    const withoutAdvanced = (tab as any).renderSection((tab as any).containerEl, "Section title");
     expect(withoutAdvanced.advancedContentEl).toBeNull();
     expect(obsidianMockState.details).toEqual([]);
   });
 
-  it("renders each section intro as a native setting heading row instead of custom title blocks", () => {
+  it("renders each section intro as a native setting heading row without section subtitle copy", () => {
     const plugin = {
       settings: DEFAULT_SETTINGS,
       activateMainView: vi.fn(async () => undefined)
     };
 
     const tab = new GlitterSettingTab({} as never, plugin as never);
-    (tab as any).renderSection((tab as any).containerEl, "Section title", "Section description", "Advanced");
+    (tab as any).renderSection((tab as any).containerEl, "Section title", "Advanced");
 
     expect(obsidianMockState.settings[0]).toMatchObject({
       name: "Section title",
-      desc: "Section description",
       isHeading: true
     });
+    expect(obsidianMockState.settings[0]?.desc).toBeUndefined();
     expect(obsidianMockState.elements.some((element) => element.tag === "h3" && element.text === "Section title")).toBe(false);
     expect(obsidianMockState.elements.some((element) => element.tag === "p" && element.text === "Section description")).toBe(false);
   });
@@ -444,6 +444,7 @@ describe("GlitterSettingTab", () => {
       "Appearance & Experience",
       "About Glitter"
     ]);
+    expect(headingSettings.slice(1).every((setting) => setting.desc === undefined)).toBe(true);
 
     expect(obsidianMockState.headerButtons).toHaveLength(0);
     expect(obsidianMockState.details).toHaveLength(4);
@@ -1220,6 +1221,7 @@ describe("GlitterSettingTab", () => {
       "外观与体验",
       "关于 Glitter"
     ]);
+    expect(headingSettings.slice(1).every((setting) => setting.desc === undefined)).toBe(true);
     expect(obsidianMockState.paragraphs).not.toContain("围绕工作区入口、快速记录、片段、灵感池、媒体与体验配置 Glitter。");
     expect(obsidianMockState.headerButtons).toHaveLength(0);
     expect(obsidianMockState.details.map((detail) => detail.summary)).toEqual([

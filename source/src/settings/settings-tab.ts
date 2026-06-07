@@ -102,12 +102,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
       .setName(text.pageTitle)
       .setClass("glitter-settings-tab__page-title")
       .setHeading();
-    const workspaceSection = this.renderSection(
-      containerEl,
-      text.sections.workspace.title,
-      text.sections.workspace.description,
-      text.advancedGroup
-    );
+    const workspaceSection = this.renderSection(containerEl, text.sections.workspace.title, text.advancedGroup);
     new Setting(workspaceSection.commonContentEl)
       .setName(text.labels.showHomeRibbonIcon)
       .setDesc(withActivation(text.descriptions.showHomeRibbonIcon, text.activation.immediate))
@@ -138,11 +133,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
         })
       );
 
-    const quickCaptureSection = this.renderSection(
-      containerEl,
-      text.sections.quickCapture.title,
-      text.sections.quickCapture.description
-    );
+    const quickCaptureSection = this.renderSection(containerEl, text.sections.quickCapture.title);
     new Setting(quickCaptureSection.commonContentEl)
       .setName(text.labels.enableQuickCapture)
       .setDesc(withActivation(text.descriptions.enableQuickCapture, text.activation.reload))
@@ -180,7 +171,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
       );
 
     // AI 设置区集中收口快速记录润色所需的开关与直连模型配置。
-    const aiSection = this.renderSection(containerEl, text.sections.ai.title, text.sections.ai.description);
+    const aiSection = this.renderSection(containerEl, text.sections.ai.title);
     new Setting(aiSection.commonContentEl)
       .setName(text.labels.enableAi)
       .setDesc(withActivation(text.descriptions.enableAi, text.activation.immediate))
@@ -249,12 +240,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
       );
     this.renderAiApiKeySetting(aiSection.commonContentEl, text);
 
-    const snippetsSection = this.renderSection(
-      containerEl,
-      text.sections.snippets.title,
-      text.sections.snippets.description,
-      text.advancedGroup
-    );
+    const snippetsSection = this.renderSection(containerEl, text.sections.snippets.title, text.advancedGroup);
     new Setting(snippetsSection.commonContentEl)
       .setName(text.labels.enableInsertIdeaReference)
       .setDesc(withActivation(text.descriptions.enableInsertIdeaReference, text.activation.reload))
@@ -341,12 +327,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
           })
       );
 
-    const poolsSection = this.renderSection(
-      containerEl,
-      text.sections.pools.title,
-      text.sections.pools.description,
-      text.advancedGroup
-    );
+    const poolsSection = this.renderSection(containerEl, text.sections.pools.title, text.advancedGroup);
     for (const { key, label } of [
       { key: "unsorted", label: text.labels.poolColorUnsorted },
       { key: "product", label: text.labels.poolColorProduct },
@@ -374,11 +355,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
         );
     }
 
-    const roamSection = this.renderSection(
-      containerEl,
-      text.sections.roam.title,
-      text.sections.roam.description
-    );
+    const roamSection = this.renderSection(containerEl, text.sections.roam.title);
     new Setting(roamSection.commonContentEl)
       .setName(text.labels.roamBoardStorageDirectory)
       .setDesc(withActivation(text.descriptions.roamBoardStorageDirectory, text.activation.newContent))
@@ -401,11 +378,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
           })
       );
 
-    const filesSection = this.renderSection(
-      containerEl,
-      text.sections.files.title,
-      text.sections.files.description
-    );
+    const filesSection = this.renderSection(containerEl, text.sections.files.title);
     new Setting(filesSection.commonContentEl)
       .setName(text.labels.mediaStorageDirectory)
       .setDesc(withActivation(text.descriptions.mediaStorageDirectory, text.activation.newContent))
@@ -437,12 +410,7 @@ export default class GlitterSettingTab extends PluginSettingTab {
           })
       );
 
-    const appearanceSection = this.renderSection(
-      containerEl,
-      text.sections.appearance.title,
-      text.sections.appearance.description,
-      text.advancedGroup
-    );
+    const appearanceSection = this.renderSection(containerEl, text.sections.appearance.title, text.advancedGroup);
     new Setting(appearanceSection.commonContentEl)
       .setName(text.labels.enableReducedMotion)
       .setDesc(withActivation(text.descriptions.enableReducedMotion, text.activation.refresh))
@@ -598,14 +566,10 @@ export default class GlitterSettingTab extends PluginSettingTab {
   private renderSection(
     containerEl: HTMLElement,
     title: string,
-    description?: string,
     advancedSummary?: string
   ): SectionSkeletonSlots {
     const sectionEl = containerEl.createDiv({ cls: "glitter-settings-tab__section" });
-    const heading = new Setting(sectionEl).setName(title).setHeading();
-    if (description) {
-      heading.setDesc(description);
-    }
+    new Setting(sectionEl).setName(title).setHeading();
 
     const commonContentEl = sectionEl.createDiv();
 
