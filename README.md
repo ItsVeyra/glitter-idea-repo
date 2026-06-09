@@ -179,7 +179,7 @@ At the core of Glitter's design is not making every idea immediately conform to 
 
 It tries to separate two things that are often tied together: **worth keeping**, and **worth turning into a file right away**. You can save an idea first, then decide whether to categorize it, create a Markdown file for it, or insert it back into your note to keep writing. This both reduces the large number of temporary files created in the vault for quick capture, and makes truly important ideas easier to revisit, reuse, and develop.
 
-![alt text](assets/images/star.png)
+
 
 ## Support Glitter
 
@@ -200,3 +200,5 @@ It tries to separate two things that are often tied together: **worth keeping**,
 </table>
 
 </div>
+
+![alt text](assets/images/star.png)
