@@ -181,7 +181,7 @@ It tries to separate two things that are often tied together: **worth keeping**,
 
 
 
-## Support Glitter
+![alt text](assets/images/star.png)
 
 <div align="center">
 
@@ -201,4 +201,4 @@ It tries to separate two things that are often tied together: **worth keeping**,
 
 </div>
 
-![alt text](assets/images/star.png)
+
