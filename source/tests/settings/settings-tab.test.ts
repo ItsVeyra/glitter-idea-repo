@@ -42,11 +42,15 @@ type ElementRecord = {
   text: string;
   cls?: string;
   href?: string;
+  src?: string;
+  alt?: string;
+  onClick?: () => AsyncOrSync<void>;
 };
 type MockElementAttrs = {
   text?: string;
   cls?: string;
   href?: string;
+  attr?: Record<string, string>;
 };
 
 type MockElement = {
@@ -59,6 +63,8 @@ type MockElement = {
   createEl: (tag: string, attrs?: MockElementAttrs) => MockElement;
   createDiv: (attrs?: MockElementAttrs | string) => MockElement;
   addEventListener: (event: string, handler: () => AsyncOrSync<void>) => void;
+  addClass: (...classNames: string[]) => void;
+  prepend: (child: MockElement) => void;
 };
 // 直接载入真实样式文本，确保结构断言与当前界面契约保持一致。
 const stylesCss = readFileSync(resolve(process.cwd(), "styles.css"), "utf8");
@@ -91,13 +97,15 @@ function createMockElement(
   context: Pick<MockElement, "sectionTitle" | "settingGroup"> = {}
 ): MockElement {
   const text = attrs?.text ?? "";
-
-  obsidianMockState.elements.push({
+  const elementRecord: ElementRecord = {
     tag,
     text,
     cls: attrs?.cls,
-    href: attrs?.href
-  });
+    href: attrs?.href,
+    src: attrs?.attr?.src,
+    alt: attrs?.attr?.alt
+  };
+  const elementRecordIndex = obsidianMockState.elements.push(elementRecord) - 1;
 
   if (tag === "h1" || tag === "h2" || tag === "h3") {
     obsidianMockState.headings.push(text);
@@ -117,7 +125,7 @@ function createMockElement(
   }
 
   let buttonRecordIndex: number | undefined;
-  if (tag === "button") {
+  if (tag === "button" && !context.sectionTitle) {
     buttonRecordIndex = obsidianMockState.headerButtons.push({ text }) - 1;
   }
 
@@ -167,9 +175,19 @@ function createMockElement(
       return createMockElement("div", normalizedAttrs, detailRecord, childContext);
     },
     addEventListener: (event: string, handler: () => AsyncOrSync<void>) => {
-      if (tag === "button" && event === "click" && buttonRecordIndex !== undefined) {
-        obsidianMockState.headerButtons[buttonRecordIndex].onClick = handler;
+      if (tag === "button" && event === "click") {
+        obsidianMockState.elements[elementRecordIndex].onClick = handler;
+        if (buttonRecordIndex !== undefined) {
+          obsidianMockState.headerButtons[buttonRecordIndex].onClick = handler;
+        }
       }
+    },
+    addClass: (...classNames: string[]) => {
+      const existingClasses = obsidianMockState.elements[elementRecordIndex].cls?.split(/\s+/u).filter(Boolean) ?? [];
+      obsidianMockState.elements[elementRecordIndex].cls = [...existingClasses, ...classNames].join(" ");
+    },
+    prepend: (_child: MockElement) => {
+      return undefined;
     }
   };
 
@@ -190,6 +208,18 @@ function createMockElement(
 // 用模块桩固定外部依赖，让断言聚焦当前单元的编排结果。
 vi.mock("obsidian", () => {
   class App {}
+
+  class Modal {
+    contentEl = createMockElement("div");
+
+    open(): void {
+      (this as { onOpen?: () => void }).onOpen?.();
+    }
+
+    close(): void {
+      (this as { onClose?: () => void }).onClose?.();
+    }
+  }
 
   class PluginSettingTab {
     containerEl: MockElement;
@@ -357,6 +387,7 @@ vi.mock("obsidian", () => {
 
   return {
     App,
+    Modal,
     PluginSettingTab,
     Setting,
     getLanguage: () => obsidianMockState.language
@@ -365,10 +396,13 @@ vi.mock("obsidian", () => {
 
 import GlitterSettingTab from "../../src/settings/settings-tab";
 import { DEFAULT_SETTINGS } from "../../src/settings/defaults";
+import { AlipaySupportModal } from "../../src/views/alipay-support-modal";
 
 // 覆盖视图宿主在生命周期、渲染与回调桥接上的核心契约。
 describe("GlitterSettingTab", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     obsidianMockState.language = "zh-CN";
     resetObsidianMockState();
   });
@@ -1094,19 +1128,16 @@ describe("GlitterSettingTab", () => {
     const aboutRows = obsidianMockState.settings.filter(
       (setting) => setting.sectionTitle === "About Glitter" && setting.group === "common" && !setting.isHeading
     );
-    expect(aboutRows).toHaveLength(3);
+    expect(aboutRows).toHaveLength(2);
     expect(aboutRows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           name: "",
           desc: "Glitter is for ideas worth keeping but not worth turning into full notes right away. You can use global quick capture to save text, links, images, and videos in a lighter way, with automatic detail filling when you paste a link; later, organize them into pools, search and revisit them, and create a Markdown note or insert a snippet only when needed."
-        }),
-        expect.objectContaining({
-          name: "",
-          desc: "Developer: ItsVeyra"
         })
       ])
     );
+    expect(aboutRows.some((setting) => setting.desc?.includes("Developer:"))).toBe(false);
     expect(obsidianMockState.elements).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ tag: "span", text: "GitHub: " }),
@@ -1149,8 +1180,11 @@ describe("GlitterSettingTab", () => {
     expect(plugin.savePluginSettings).toHaveBeenCalledTimes(8);
   });
 
-  it("renders About intro as a native description row alongside GitHub and developer info", () => {
+  it("renders About support actions without a developer row and wires both support buttons", async () => {
     obsidianMockState.language = "en";
+    const openSpy = vi.fn();
+    vi.stubGlobal("window", { open: openSpy });
+    const alipayModalOpenSpy = vi.spyOn(AlipaySupportModal.prototype, "onOpen").mockImplementation(() => undefined);
 
     const plugin = {
       settings: DEFAULT_SETTINGS,
@@ -1160,39 +1194,63 @@ describe("GlitterSettingTab", () => {
     const tab = new GlitterSettingTab({} as never, plugin as never);
     tab.display();
 
-    const aboutHeading = obsidianMockState.settings.find((setting) => setting.name === "About Glitter");
-    expect(aboutHeading?.desc).toBeUndefined();
-    expect(obsidianMockState.paragraphs).not.toContain(
-      "Glitter is for ideas worth keeping but not worth turning into full notes right away. You can use global quick capture to save text, links, images, and videos in a lighter way, with automatic detail filling when you paste a link; later, organize them into pools, search and revisit them, and create a Markdown note or insert a snippet only when needed."
-    );
     const aboutRows = obsidianMockState.settings.filter(
       (setting) => setting.sectionTitle === "About Glitter" && setting.group === "common" && !setting.isHeading
     );
-    expect(aboutRows).toHaveLength(3);
-    expect(aboutRows).toEqual(
+    expect(aboutRows).toHaveLength(2);
+    expect(aboutRows.some((setting) => setting.desc?.includes("Developer:"))).toBe(false);
+
+    const supportButtons = obsidianMockState.elements.filter(
+      (element) => element.tag === "button" && element.cls?.includes("glitter-settings-support-card__button")
+    );
+    expect(supportButtons).toHaveLength(2);
+    expect(supportButtons).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          name: "",
-          desc: "Glitter is for ideas worth keeping but not worth turning into full notes right away. You can use global quick capture to save text, links, images, and videos in a lighter way, with automatic detail filling when you paste a link; later, organize them into pools, search and revisit them, and create a Markdown note or insert a snippet only when needed."
+          cls: expect.stringContaining("glitter-settings-support-card__button--paypal"),
+          text: "Support via PayPal"
         }),
         expect.objectContaining({
-          name: "",
-          desc: "Developer: ItsVeyra"
+          cls: expect.stringContaining("glitter-settings-support-card__button--alipay"),
+          text: "Support via Alipay"
         })
       ])
     );
+    expect(obsidianMockState.elements.some((element) => element.cls === "glitter-settings-support-card__title")).toBe(false);
     expect(obsidianMockState.elements).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ tag: "span", text: "GitHub: " }),
         expect.objectContaining({
-          tag: "a",
-          text: "https://github.com/ItsVeyra/glitter-idea-repo",
-          href: "https://github.com/ItsVeyra/glitter-idea-repo",
-          cls: "external-link"
+          tag: "img",
+          cls: "glitter-settings-support-card__button-icon",
+          alt: "",
+          src: expect.stringContaining("data:image/svg+xml")
+        }),
+        expect.objectContaining({
+          tag: "img",
+          cls: "glitter-settings-support-card__button-icon",
+          alt: "",
+          src: expect.stringContaining("data:image/svg+xml")
         })
       ])
     );
+
+    await supportButtons.find((element) => element.cls?.includes("--paypal"))?.onClick?.();
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(openSpy.mock.calls[0]?.slice(0, 2)).toEqual(["https://paypal.me/ItsVeyraYu", "_blank"]);
+
+    await supportButtons.find((element) => element.cls?.includes("--alipay"))?.onClick?.();
+    expect(alipayModalOpenSpy).toHaveBeenCalledTimes(1);
+
+    expect(stylesCss).toContain(".glitter-settings-support-card {");
+    expect(stylesCss).toMatch(/\.glitter-settings-support-card \{[\s\S]*border: none;/);
+    expect(stylesCss).toContain(".glitter-settings-support-card__actions {");
+    expect(stylesCss).toMatch(/\.glitter-settings-support-card__actions \{[\s\S]*flex-wrap: nowrap;/);
+    expect(stylesCss).toContain(".glitter-settings-support-card__button {");
+    expect(stylesCss).toContain(".glitter-settings-support-card__button-icon {");
+    expect(stylesCss).toContain(".glitter-support-modal__content {");
+    expect(stylesCss).toContain(".glitter-support-modal__qr {");
     expect(stylesCss).not.toContain(".glitter-settings-tab__about-meta {");
+    expect(stylesCss).not.toContain(".glitter-settings-support-card__title {");
   });
 
   it("renders the localized skeleton in zh-CN", () => {
@@ -1224,6 +1282,18 @@ describe("GlitterSettingTab", () => {
     expect(headingSettings.slice(1).every((setting) => setting.desc === undefined)).toBe(true);
     expect(obsidianMockState.paragraphs).not.toContain("围绕工作区入口、快速记录、片段、灵感池、媒体与体验配置 Glitter。");
     expect(obsidianMockState.headerButtons).toHaveLength(0);
+
+    const supportButtons = obsidianMockState.elements.filter(
+      (element) => element.tag === "button" && element.cls?.includes("glitter-settings-support-card__button")
+    );
+    expect(supportButtons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ text: "用 PayPal" }),
+        expect.objectContaining({ text: "用支付宝" })
+      ])
+    );
+    expect(obsidianMockState.elements.some((element) => element.cls === "glitter-settings-support-card__title")).toBe(false);
+
     expect(obsidianMockState.details.map((detail) => detail.summary)).toEqual([
       "高级",
       "高级",

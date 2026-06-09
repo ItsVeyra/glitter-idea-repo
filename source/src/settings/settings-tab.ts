@@ -3,10 +3,17 @@
  * 负责渲染 Glitter 设置分区，并在交互时把修改同步回插件设置持久化层。
  */
 import { App, PluginSettingTab, Setting, getLanguage } from "obsidian";
+import { AlipaySupportModal } from "../views/alipay-support-modal";
 import GlitterPlugin from "../plugin/GlitterPlugin";
 import { DEFAULT_SETTINGS } from "./defaults";
 import { getSettingsText } from "./settings-locale";
 import type { PluginInterfaceLanguage } from "./settings";
+import {
+  SUPPORT_ALIPAY_ICON_DATA_URL,
+  SUPPORT_ALIPAY_QR_DATA_URL,
+  SUPPORT_PAYPAL_ICON_DATA_URL,
+  SUPPORT_PAYPAL_URL
+} from "./support-assets";
 
 // 设置项渲染辅助。
 type SettingsTabPlugin = GlitterPlugin & {
@@ -78,6 +85,29 @@ function renderAboutLinkSetting(containerEl: HTMLDivElement, description: string
     href: linkDescription.href,
     cls: "external-link"
   });
+}
+
+type SupportButtonOptions = {
+  className: string;
+  label: string;
+  iconDataUrl: string;
+  onClick: () => void;
+};
+
+function renderSupportButton(containerEl: HTMLDivElement, options: SupportButtonOptions): void {
+  const buttonEl = containerEl.createEl("button", {
+    cls: `glitter-settings-support-card__button ${options.className}`,
+    text: options.label
+  });
+  const iconEl = buttonEl.createEl("img", {
+    cls: "glitter-settings-support-card__button-icon",
+    attr: {
+      src: options.iconDataUrl,
+      alt: ""
+    }
+  });
+  buttonEl.prepend(iconEl);
+  buttonEl.addEventListener("click", options.onClick);
 }
 
 // Obsidian 设置页实现。
@@ -481,7 +511,37 @@ export default class GlitterSettingTab extends PluginSettingTab {
     const aboutSection = this.renderSection(containerEl, text.sections.about.title);
     new Setting(aboutSection.commonContentEl).setDesc(text.descriptions.aboutIntro);
     renderAboutLinkSetting(aboutSection.commonContentEl, text.descriptions.aboutGithub);
-    new Setting(aboutSection.commonContentEl).setDesc(text.descriptions.aboutDeveloper);
+    this.renderAboutSupportCard(aboutSection.commonContentEl, text);
+  }
+
+  private renderAboutSupportCard(containerEl: HTMLDivElement, text: ReturnType<typeof getSettingsText>): void {
+    const supportCardEl = containerEl.createDiv({ cls: "glitter-settings-support-card" });
+    supportCardEl.createEl("p", {
+      text: text.descriptions.aboutSupportBody,
+      cls: "glitter-settings-support-card__body"
+    });
+
+    const actionsEl = supportCardEl.createDiv({ cls: "glitter-settings-support-card__actions" });
+    renderSupportButton(actionsEl, {
+      className: "glitter-settings-support-card__button--paypal",
+      label: text.labels.supportPayPal,
+      iconDataUrl: SUPPORT_PAYPAL_ICON_DATA_URL,
+      onClick: () => {
+        window.open(SUPPORT_PAYPAL_URL, "_blank", "noopener,noreferrer");
+      }
+    });
+    renderSupportButton(actionsEl, {
+      className: "glitter-settings-support-card__button--alipay",
+      label: text.labels.supportAlipay,
+      iconDataUrl: SUPPORT_ALIPAY_ICON_DATA_URL,
+      onClick: () => {
+        new AlipaySupportModal(this.app, SUPPORT_ALIPAY_QR_DATA_URL, {
+          title: text.descriptions.alipaySupportTitle,
+          thanks: text.descriptions.alipaySupportThanks,
+          qrAlt: text.descriptions.alipaySupportQrAlt
+        }).open();
+      }
+    });
   }
 
   private async commitAiApiKeyDraft(hasConfiguredApiKey: boolean): Promise<void> {

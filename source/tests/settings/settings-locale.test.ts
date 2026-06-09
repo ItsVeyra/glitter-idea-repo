@@ -58,7 +58,7 @@ const expectedChineseText = {
     },
     about: {
       title: "关于 Glitter",
-      description: "为插件介绍、GitHub 地址和开发者信息预留固定位置。"
+      description: "为插件介绍、GitHub 地址与支持入口预留固定位置。"
     }
   },
   labels: {
@@ -86,6 +86,8 @@ const expectedChineseText = {
     aiApiKey: "API Key",
     replaceAiApiKey: "替换 API Key",
     clearAiApiKey: "清空 API Key",
+    supportPayPal: "用 PayPal",
+    supportAlipay: "用支付宝",
     poolColorUnsorted: "默认池颜色",
     poolColorProduct: "池颜色 1",
     poolColorResearch: "池颜色 2",
@@ -121,7 +123,10 @@ const expectedChineseText = {
     poolColor: "设置对应灵感池的颜色值。",
     aboutIntro: "Glitter 适合保存那些值得留下、却不一定需要立刻建成正式笔记的小点子、片段和灵感。你可以先用全局快速记录把文本、链接、图片、视频轻量收住，粘贴链接时自动识别并补全信息；之后再按灵感池整理、搜索与回看，并在需要时创建 Markdown 文件或插入笔记正文。",
     aboutGithub: "GitHub：https://github.com/ItsVeyra/glitter-idea-repo",
-    aboutDeveloper: "开发者：ItsVeyra"
+    aboutSupportBody: "如果 Glitter 对你有帮助，欢迎通过 PayPal 或支付宝支持我继续打磨这款插件。",
+    alipaySupportTitle: "通过支付宝支持 Glitter",
+    alipaySupportThanks: "Glitter有你支持得以持续。",
+    alipaySupportQrAlt: "Glitter 支付宝收款码"
   },
   placeholders: {
     globalQuickCaptureHotkey: "留空则恢复默认行为",
@@ -189,7 +194,7 @@ const expectedEnglishText = {
     },
     about: {
       title: "About Glitter",
-      description: "Reserve a stable place for plugin introduction, GitHub, and developer information."
+      description: "Reserve a stable place for plugin introduction, GitHub, and support links."
     }
   },
   labels: {
@@ -217,6 +222,8 @@ const expectedEnglishText = {
     aiApiKey: "API key",
     replaceAiApiKey: "Replace API key",
     clearAiApiKey: "Clear API key",
+    supportPayPal: "Support via PayPal",
+    supportAlipay: "Support via Alipay",
     poolColorUnsorted: "Default pool color",
     poolColorProduct: "Pool color 1",
     poolColorResearch: "Pool color 2",
@@ -252,7 +259,10 @@ const expectedEnglishText = {
     poolColor: "Set the color value for the matching pool.",
     aboutIntro: "Glitter is for ideas worth keeping but not worth turning into full notes right away. You can use global quick capture to save text, links, images, and videos in a lighter way, with automatic detail filling when you paste a link; later, organize them into pools, search and revisit them, and create a Markdown note or insert a snippet only when needed.",
     aboutGithub: "GitHub: https://github.com/ItsVeyra/glitter-idea-repo",
-    aboutDeveloper: "Developer: ItsVeyra"
+    aboutSupportBody: "If Glitter helps your quick capture flow, you can support ongoing development via PayPal or Alipay.",
+    alipaySupportTitle: "Support Glitter with Alipay",
+    alipaySupportThanks: "Glitter continues thanks to your support.",
+    alipaySupportQrAlt: "Glitter Alipay QR code"
   },
   placeholders: {
     globalQuickCaptureHotkey: "Leave empty to restore the default behavior",

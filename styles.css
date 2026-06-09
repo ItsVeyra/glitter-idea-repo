@@ -10109,3 +10109,87 @@ video.glitter-pool-stage__card-media-thumbnail {
 .glitter-settings-tab__advanced-details[open] > .glitter-settings-tab__advanced-summary::before {
   transform: rotate(90deg);
 }
+
+.glitter-settings-support-card {
+  margin-top: 16px;
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  background: var(--background-secondary);
+}
+
+.glitter-settings-support-card__body {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.glitter-settings-support-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  margin-top: 16px;
+}
+
+.glitter-settings-support-card__button {
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+
+.glitter-settings-support-card__button:hover {
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+.glitter-settings-support-card__button-icon {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.glitter-support-modal__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0 4px;
+  text-align: center;
+}
+
+.glitter-support-modal__title {
+  margin: 0;
+}
+
+.glitter-support-modal__qr-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.glitter-support-modal__qr {
+  width: min(280px, 100%);
+  max-width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
+
+.glitter-support-modal__thanks {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

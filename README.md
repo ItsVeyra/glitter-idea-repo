@@ -180,3 +180,23 @@ At the core of Glitter's design is not making every idea immediately conform to 
 It tries to separate two things that are often tied together: **worth keeping**, and **worth turning into a file right away**. You can save an idea first, then decide whether to categorize it, create a Markdown file for it, or insert it back into your note to keep writing. This both reduces the large number of temporary files created in the vault for quick capture, and makes truly important ideas easier to revisit, reuse, and develop.
 
 ![alt text](assets/images/star.png)
+
+## Support Glitter
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center">
+      <sub>SUPPORT GLITTER</sub><br />
+      <strong>If Glitter has been useful in your workflow, you can support its ongoing development.</strong><br />
+      <sub>
+        <a href="https://paypal.me/ItsVeyraYu">International · PayPal.me</a>
+        |
+        <a href="assets/images/support-alipay-qr.png">中国大陆 · Alipay QR</a>
+      </sub>
+    </td>
+  </tr>
+</table>
+
+</div>
