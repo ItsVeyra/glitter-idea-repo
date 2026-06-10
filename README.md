@@ -192,7 +192,7 @@ It tries to separate two things that are often tied together: **worth keeping**,
       <sub>
         <a href="https://paypal.me/ItsVeyraYu">International · PayPal.me</a>
         |
-        <a href="assets/images/support-alipay-qr.png">中国大陆 · Alipay QR</a>
+        <a href="assets/images/support-alipay.png">中国大陆 · Alipay QR</a>
       </sub>
     </td>
   </tr>
