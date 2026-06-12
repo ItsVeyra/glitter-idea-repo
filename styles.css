@@ -1106,6 +1106,118 @@
   white-space: nowrap;
 }
 
+.glitter-home-stage__language-selector {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: -28px;
+  z-index: 5;
+}
+
+.glitter-home-stage__language-trigger {
+  min-height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--glitter-home-empty-pill-border) 76%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--glitter-home-empty-pill-bg) 94%, transparent);
+  color: var(--glitter-home-empty-pill-text);
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.glitter-home-stage__language-trigger-label,
+.glitter-home-stage__language-trigger-value {
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.glitter-home-stage__language-trigger-value {
+  color: color-mix(in srgb, var(--glitter-home-empty-pill-text) 76%, var(--glitter-shell-accent) 24%);
+}
+
+.glitter-home-stage__language-trigger-chevron {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.glitter-home-stage__language-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 8;
+  min-width: max-content;
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--glitter-shell-border-strong) 72%, white 12%);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--glitter-shell-panel-soft) 96%, transparent) 0%, color-mix(in srgb, var(--glitter-shell-panel) 94%, transparent) 100%);
+  box-shadow: 0 16px 40px color-mix(in srgb, black 14%, transparent);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-6px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.glitter-home-stage__language-menu--open,
+.glitter-home-stage__language-selector--open .glitter-home-stage__language-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.glitter-home-stage__language-option {
+  min-height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none !important;
+  border-radius: 12px;
+  background: transparent !important;
+  color: color-mix(in srgb, var(--glitter-shell-text) 86%, var(--glitter-shell-accent) 14%);
+  box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  font: inherit;
+}
+
+.glitter-home-stage__language-option--selected {
+  background: color-mix(in srgb, var(--glitter-shell-accent) 14%, transparent) !important;
+  color: var(--glitter-shell-text);
+}
+
+.glitter-home-stage__language-option:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.glitter-home-stage__language-option:disabled:hover {
+  background: transparent !important;
+}
+
 .glitter-home-stage__empty-prompt-pill,
 .glitter-home-stage__empty-prompt-pill--attached {
   display: inline-flex;
@@ -9571,6 +9683,7 @@ video.glitter-pool-stage__card-media-thumbnail {
 .glitter-snippet-locations-modal__card {
   position: relative;
   display: grid;
+  width: 100%;
   gap: 12px;
   padding: 14px 16px;
   border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 72%, transparent);
@@ -9580,6 +9693,8 @@ video.glitter-pool-stage__card-media-thumbnail {
   overflow: hidden;
   isolation: isolate;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   transition: border-color 140ms ease, background 140ms ease, transform 180ms ease;
 }
 
