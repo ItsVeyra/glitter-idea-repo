@@ -5,6 +5,7 @@ import {
   type PoolRoamAttachSourceInput,
   type PoolRoamBoardRecord,
   type PoolRoamCanvasData,
+  type PoolRoamCanvasPosition,
   type PoolRoamSourceContent
 } from "./pool-roam-workflow";
 import { collectPoolRoamManagedSourceBlocks } from "./pool-roam-source-blocks";
@@ -24,6 +25,7 @@ import type { createIdeaService } from "../../domain/idea/idea-service";
 import type { createPoolService } from "../../domain/pool/pool-service";
 import type { createVaultFileStore } from "../../storage/vault-file-store";
 import { getInterfaceText } from "../../i18n/interface-language";
+import { resolvePoolDisplayName } from "../../plugin/constants";
 import type { PluginInterfaceLanguage } from "../../settings/settings";
 
 export type PoolWorkbenchStatus = "all" | "referenced" | "file-created" | "with-markers";
@@ -127,6 +129,9 @@ export interface PoolWorkbenchWorkflow {
   attachIdeaSourceToNewRoamBoard(input: PoolRoamAttachSourceInput): Promise<{ path: string; canvas: PoolRoamCanvasData }>;
   attachIdeaSourceToRoamBoard(
     input: PoolRoamAttachSourceInput & { boardPath?: string }
+  ): Promise<{ path: string; canvas: PoolRoamCanvasData }>;
+  attachIdeaSourceToCanvas(
+    input: PoolRoamAttachSourceInput & { boardPath: string; position: PoolRoamCanvasPosition }
   ): Promise<{ path: string; canvas: PoolRoamCanvasData }>;
   detachIdeaSourceFromRoamBoard(input: { boardPath: string; nodeId: string }): Promise<{ path: string; canvas: PoolRoamCanvasData }>;
   syncIdeaSourceInRoamBoards(ideaId: string): Promise<number>;
@@ -258,7 +263,10 @@ export function createPoolWorkbenchWorkflow({
   onIdeasMoved = () => undefined,
   onIdeaDeleted = () => undefined,
   resolveFileStorageDirectory = () => "Glitter",
-  resolveRoamBoardStorageDirectory = () => "Glitter/灵感漫游"
+  resolveRoamBoardStorageDirectory = () => "Glitter/灵感漫游",
+  listManagedCanvasPaths = async () => [],
+  registerManagedCanvasPath = async () => undefined,
+  removeManagedCanvasPath = async () => undefined
 }: {
   poolService: ReturnType<typeof createPoolService>;
   ideaService: ReturnType<typeof createIdeaService>;
@@ -270,6 +278,9 @@ export function createPoolWorkbenchWorkflow({
   onIdeaDeleted?: (ideaId: string) => void;
   resolveFileStorageDirectory?: () => string;
   resolveRoamBoardStorageDirectory?: () => string;
+  listManagedCanvasPaths?: () => Promise<string[]>;
+  registerManagedCanvasPath?: (path: string) => Promise<void>;
+  removeManagedCanvasPath?: (path: string) => Promise<void>;
 }): PoolWorkbenchWorkflow {
   let activePoolId: string | null = null;
   const poolRoamWorkflow = createPoolRoamWorkflow({
@@ -318,8 +329,11 @@ export function createPoolWorkbenchWorkflow({
       return 0;
     }
 
-    const boardPaths = (await poolRoamWorkflow.listRoamBoards()).map((board) => board.path);
-    if (boardPaths.length === 0) {
+    const roamBoardPaths = (await poolRoamWorkflow.listRoamBoards()).map((board) => board.path);
+    const registeredCanvasPaths = await listManagedCanvasPaths();
+    const registeredCanvasPathSet = new Set(registeredCanvasPaths);
+    const boardPaths = new Set<string>([...roamBoardPaths, ...registeredCanvasPaths]);
+    if (boardPaths.size === 0) {
       return 0;
     }
 
@@ -329,10 +343,24 @@ export function createPoolWorkbenchWorkflow({
     let updatedBoards = 0;
 
     for (const boardPath of boardPaths) {
+      const isRegisteredCanvasPath = registeredCanvasPathSet.has(boardPath);
+
       try {
+        const boardFile = vault.getAbstractFileByPath(boardPath);
+        if (!isFileLikeWithPath(boardFile)) {
+          if (isRegisteredCanvasPath) {
+            await removeManagedCanvasPath(boardPath);
+          }
+          continue;
+        }
+
         const { canvas } = await poolRoamWorkflow.readRoamBoard(boardPath);
-        const matchingBlocks = collectPoolRoamManagedSourceBlocks(canvas).filter((block) => isRoamSourceBlockForIdea(block, ideaId));
+        const managedBlocks = collectPoolRoamManagedSourceBlocks(canvas);
+        const matchingBlocks = managedBlocks.filter((block) => isRoamSourceBlockForIdea(block, ideaId));
         if (matchingBlocks.length === 0) {
+          if (isRegisteredCanvasPath && managedBlocks.length === 0) {
+            await removeManagedCanvasPath(boardPath);
+          }
           continue;
         }
 
@@ -348,15 +376,18 @@ export function createPoolWorkbenchWorkflow({
               nodeId,
               content: latestContent
             });
-            continue;
+          } else {
+            await poolRoamWorkflow.markSourceNodeMissing({
+              boardPath,
+              nodeId
+            });
           }
-
-          await poolRoamWorkflow.markSourceNodeMissing({
-            boardPath,
-            nodeId
-          });
         }
 
+        const refreshed = await poolRoamWorkflow.readRoamBoard(boardPath);
+        if (isRegisteredCanvasPath && collectPoolRoamManagedSourceBlocks(refreshed.canvas).length === 0) {
+          await removeManagedCanvasPath(boardPath);
+        }
         updatedBoards += 1;
       } catch {
         failedBoardPaths.push(boardPath);
@@ -364,9 +395,7 @@ export function createPoolWorkbenchWorkflow({
     }
 
     if (failedBoardPaths.length > 0) {
-      throw new Error(
-        `Failed to sync idea source in ${failedBoardPaths.length} roam board(s): ${failedBoardPaths.join(", ")}`
-      );
+      throw new Error(`Failed to sync managed source blocks in: ${failedBoardPaths.join(", ")}`);
     }
 
     return updatedBoards;
@@ -476,7 +505,7 @@ export function createPoolWorkbenchWorkflow({
         },
         poolOptions: poolsWithCounts.map((pool) => ({
           id: pool.id,
-          label: pool.name,
+          label: resolvePoolDisplayName(pool, input.interfaceLanguage),
           count: pool.ideaCount,
           selected: scope === "pool" && pool.id === activePool?.id
         }))
@@ -574,6 +603,12 @@ export function createPoolWorkbenchWorkflow({
       }
 
       return poolRoamWorkflow.attachIdeaSourceToNewBoard(input);
+    },
+
+    async attachIdeaSourceToCanvas(input) {
+      const result = await poolRoamWorkflow.attachIdeaSourceToBoard(input);
+      await registerManagedCanvasPath(result.path);
+      return result;
     },
 
     async detachIdeaSourceFromRoamBoard(input) {

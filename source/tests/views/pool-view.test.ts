@@ -1052,7 +1052,7 @@ describe("GlitterPoolView", () => {
           open: false,
           mode: "empty",
           historyEnabled: true,
-          floatingActions: ["download", "share", "history"],
+          floatingActions: ["download", "share", "history", "idea-block"],
           boundaryAnchors: []
         }),
         preview: expect.objectContaining({
@@ -8074,6 +8074,7 @@ describe("GlitterPoolView", () => {
           getLeaf
         }
       },
+      settings: { interfaceLanguage: "zh-CN" as const },
       focusedIdeaId: null,
       pendingFocusedPoolId: null,
       activateMainView: vi.fn(async () => undefined),
@@ -8103,7 +8104,7 @@ describe("GlitterPoolView", () => {
     expect(toastShowMock).toHaveBeenCalledWith(
       expect.objectContaining({
         status: "error",
-        message: "Open file failed. Please try again."
+        message: "打开文件失败，请重试。"
       })
     );
   });
@@ -8162,6 +8163,7 @@ describe("GlitterPoolView", () => {
           getLeaf
         }
       },
+      settings: { interfaceLanguage: "en" as const },
       focusedIdeaId: null,
       pendingFocusedPoolId: null,
       activateMainView: vi.fn(async () => undefined),
@@ -8298,6 +8300,118 @@ describe("GlitterPoolView", () => {
     expect(openFile).toHaveBeenCalledWith(abstractFile);
     expect(querySelector).toHaveBeenCalledWith('[data-glitteridea-id="idea-1"], [data-glitter-idea-id="idea-1"]');
     expect(markerScrollIntoView).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+  });
+
+  it("falls back to source-editor snippet targeting when the rendered marker is unavailable", async () => {
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [
+        {
+          id: "idea-1",
+          title: "Idea 1",
+          excerpt: "excerpt",
+          hasBodyContent: true,
+          selected: false,
+          contentType: "text" as const,
+          sourceUrl: undefined,
+          attachmentPaths: [],
+          fileCreated: false,
+          filePath: undefined,
+          referenced: true,
+          snippetLocations: [
+            {
+              notePath: "Folder/Note A.md",
+              noteTitle: "Note A",
+              occurrenceCount: 2,
+              stale: false
+            }
+          ],
+          updatedAt: "2026-04-12T00:00:00.000Z"
+        }
+      ],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+
+    const querySelector = vi.fn(() => null);
+    const setCursor = vi.fn();
+    const editorScrollIntoView = vi.fn();
+    const focus = vi.fn();
+    const openFile = vi.fn(async () => undefined);
+    const leaf = {
+      openFile,
+      view: {
+        containerEl: {
+          querySelector
+        },
+        editor: {
+          lineCount: () => 4,
+          getLine: (line: number) => line === 2 ? "> [!GlitterIdea] [Idea 1](glitter://idea/idea-1)" : "Plain text",
+          setCursor,
+          scrollIntoView: editorScrollIntoView,
+          focus
+        }
+      }
+    };
+    const getLeaf = vi.fn(() => leaf);
+    const abstractFile = new TFile();
+    const getAbstractFileByPath = vi.fn(() => abstractFile);
+
+    const plugin = {
+      app: {
+        vault: {
+          getAbstractFileByPath
+        },
+        workspace: {
+          getLeaf
+        }
+      },
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView({} as any, plugin as any);
+    await view.onOpen();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenSnippetNote: (ideaId: string) => void;
+    };
+
+    actions.onOpenSnippetNote("idea-1");
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(getAbstractFileByPath).toHaveBeenCalledWith("Folder/Note A.md");
+    expect(getLeaf).toHaveBeenCalledWith(true);
+    expect(openFile).toHaveBeenCalledWith(abstractFile);
+    expect(querySelector).toHaveBeenCalledWith('[data-glitteridea-id="idea-1"], [data-glitter-idea-id="idea-1"]');
+    expect(setCursor).toHaveBeenCalledWith({ line: 2, ch: 0 });
+    expect(editorScrollIntoView).toHaveBeenCalledWith({ line: 2, ch: 0 }, { line: 2, ch: 0 });
+    expect(focus).toHaveBeenCalledTimes(1);
   });
 
   it("routes stale single-location snippet opens to the locations modal", async () => {

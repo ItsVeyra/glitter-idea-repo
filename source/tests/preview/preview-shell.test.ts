@@ -1090,21 +1090,23 @@ describe("mountPreviewShell first-use flow simulation", () => {
         (node) => node.textContent === "核心优势优先：先看正文入灵感、Markdown 嵌入与文件链路双回溯。"
       )
     ).toHaveLength(0);
-    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-item")).toHaveLength(4);
-    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-icon-wrap")).toHaveLength(4);
-    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-icon")).toHaveLength(4);
-    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-copy")).toHaveLength(4);
+    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-item")).toHaveLength(5);
+    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-icon-wrap")).toHaveLength(5);
+    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-icon")).toHaveLength(5);
+    expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-copy")).toHaveLength(5);
     expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-title").map((node) => node.textContent)).toEqual([
       "全局快捷记录",
       "自动识别链接",
       "多类型内容速记",
-      "正文内嵌入灵感片段"
+      "正文内嵌入灵感片段",
+      "漫游模式"
     ]);
     expect(root.querySelectorAll(".glitter-followup-guidance-view__feature-description").map((node) => node.textContent)).toEqual([
       "任意场景快速记录，不打断当前工作流。",
       "粘贴链接，自动识别并添入内容。",
       "灵感速记窗口内粘贴链接/图片/视频，快速切换布局。",
-      "正文内右键 或 自定义快捷键，快速嵌入灵感片段。"
+      "正文内右键 或 自定义快捷键，快速嵌入灵感片段。",
+      "在漫游模式里沿着灵感之间的连接继续浏览，快速展开关联与脉络。"
     ]);
     expect(
       findElements(root, (node) => node.textContent === "本引导仅首次弹出；关闭后可在设置页重新打开。")

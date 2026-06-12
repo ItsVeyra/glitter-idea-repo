@@ -1,7 +1,14 @@
 import type { PluginInterfaceLanguage } from "../settings/settings";
 
+type InterfaceLanguageOptionText = {
+  value: PluginInterfaceLanguage;
+  label: string;
+};
+
 export interface InterfaceText {
   home: {
+    heroTitle: string;
+    populatedHeroSubtitle: string;
     searchPlaceholder: string;
     quickCapture: string;
     openSearch: string;
@@ -10,6 +17,26 @@ export interface InterfaceText {
     fileFilter: string;
     createPool: string;
     emptySearchFeedback: string;
+    firstUseBadge: string;
+    firstUseOrbTitle: string;
+    firstUseOrbSubtitle: string;
+    firstUseLanguageLabel: string;
+    firstUseLanguageOptions: ReadonlyArray<InterfaceLanguageOptionText>;
+    firstUseLanguageSaveFailed: string;
+    followupGuidanceTitle: string;
+    followupGuidanceCloseLabel: string;
+    followupGuidanceContinueLabel: string;
+    followupGuidanceFootnote: string;
+    followupGuidanceGlobalShortcutTitle: string;
+    followupGuidanceGlobalShortcutDescription: string;
+    followupGuidanceAutoLinkTitle: string;
+    followupGuidanceAutoLinkDescription: string;
+    followupGuidanceMultiContentTitle: string;
+    followupGuidanceMultiContentDescription: string;
+    followupGuidanceSnippetTitle: string;
+    followupGuidanceSnippetDescription: string;
+    followupGuidanceRoamModeTitle: string;
+    followupGuidanceRoamModeDescription: string;
     editPool: string;
     deletePool: string;
     enterPool: string;
@@ -147,6 +174,28 @@ export interface InterfaceText {
     mediaPreviewClose: string;
     mediaPreviewImage: string;
   };
+  picker: {
+    snippetMenuTitle: (hotkey: string) => string;
+    snippetInsertedNotice: string;
+    canvasMenuItemTitle: string;
+    canvasInsertedNotice: string;
+    canvasIdeaUnavailableNotice: string;
+    canvasPoolUnavailableNotice: string;
+    roamBlockInsertedNotice: string;
+    snippetTitle: string;
+    canvasTitle: string;
+    roamBlockTitle: string;
+    closeLabel: string;
+    queryPlaceholder: string;
+    recentSectionTitle: string;
+    resultsSectionTitle: string;
+    emptyResults: string;
+    emptyBody: string;
+    untitledPool: string;
+    resultActionLabel: (ideaTitle: string) => string;
+    canvasResultActionLabel: (ideaTitle: string) => string;
+    roamBlockResultActionLabel: (ideaTitle: string) => string;
+  };
   pool: {
     shareOpenBoard: string;
     shareCopyBoardPath: string;
@@ -162,6 +211,7 @@ export interface InterfaceText {
     roamDownloadCurrentBoard: string;
     roamShareCurrentBoard: string;
     roamOpenHistory: string;
+    roamAddIdeaBlock: string;
     roamErrorTitle: string;
     roamErrorDescription: string;
     roamEmptyTitle: string;
@@ -184,6 +234,12 @@ export interface InterfaceText {
     cardOpenPrimaryFile: string;
     cardOpenSnippetNote: string;
     cardOpenSnippetLocations: (count: number) => string;
+    snippetLocationsTitle: string;
+    snippetLocationsCloseLabel: string;
+    snippetLocationsSummary: (count: number) => string;
+    snippetLocationsOccurrenceCount: (count: number) => string;
+    snippetLocationsMissingFile: string;
+    openFileFailed: string;
     cardFileCreatedStatus: string;
     cardSnippetStatus: (count: number) => string;
     createPoolGlobalTitle: string;
@@ -283,6 +339,7 @@ export interface InterfaceText {
   roamModal: {
     downloadCurrentBoard: string;
     shareCurrentBoard: string;
+    addCurrentBoardIdeaBlock: string;
     previousBoard: string;
     nextBoard: string;
     title: string;
@@ -321,6 +378,8 @@ export interface InterfaceText {
 const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
   "zh-CN": {
     home: {
+      heroTitle: "Glitter · 灵感池",
+      populatedHeroSubtitle: "先校准主舞台、池球层级和关键操作位。",
       searchPlaceholder: "搜索灵感、片段或池",
       quickCapture: "快速记录",
       openSearch: "打开搜索",
@@ -329,6 +388,29 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       fileFilter: "已引用 / 已建文件快速筛选",
       createPool: "创建池",
       emptySearchFeedback: "未读取到搜索内容",
+      firstUseBadge: "首次引导",
+      firstUseOrbTitle: "灵感待录入",
+      firstUseOrbSubtitle: "点击开始首次记录",
+      firstUseLanguageLabel: "界面语言",
+      firstUseLanguageOptions: [
+        { value: "zh-CN", label: "简体中文" },
+        { value: "en", label: "English" }
+      ],
+      firstUseLanguageSaveFailed: "界面语言保存失败，请稍后重试。",
+      followupGuidanceTitle: "后续使用指引",
+      followupGuidanceCloseLabel: "关闭后续使用指引窗口",
+      followupGuidanceContinueLabel: "灵感入池",
+      followupGuidanceFootnote: "本引导仅首次弹出；关闭后可在设置页重新打开。",
+      followupGuidanceGlobalShortcutTitle: "全局快捷记录",
+      followupGuidanceGlobalShortcutDescription: "任意场景快速记录，不打断当前工作流。",
+      followupGuidanceAutoLinkTitle: "自动识别链接",
+      followupGuidanceAutoLinkDescription: "粘贴链接，自动识别并添入内容。",
+      followupGuidanceMultiContentTitle: "多类型内容速记",
+      followupGuidanceMultiContentDescription: "灵感速记窗口内粘贴链接/图片/视频，快速切换布局。",
+      followupGuidanceSnippetTitle: "正文内嵌入灵感片段",
+      followupGuidanceSnippetDescription: "正文内右键 或 自定义快捷键，快速嵌入灵感片段。",
+      followupGuidanceRoamModeTitle: "漫游模式",
+      followupGuidanceRoamModeDescription: "在漫游模式里沿着灵感之间的连接继续浏览，快速展开关联与脉络。",
       editPool: "编辑池",
       deletePool: "删除池",
       enterPool: "进入池",
@@ -474,6 +556,28 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       mediaPreviewClose: "关闭大图预览",
       mediaPreviewImage: "媒体大图预览"
     },
+    picker: {
+      snippetMenuTitle: (hotkey) => (hotkey ? `插入灵感片段（${hotkey}）` : "插入灵感片段"),
+      snippetInsertedNotice: "已插入灵感片段",
+      canvasMenuItemTitle: "将灵感设为 Canvas 块标题",
+      canvasInsertedNotice: "已将灵感设为 Canvas 块标题",
+      canvasIdeaUnavailableNotice: "所选灵感已不可用，请重新选择",
+      canvasPoolUnavailableNotice: "所选灵感所属灵感池已不可用，请重新选择",
+      roamBlockInsertedNotice: "已向漫游白板加入灵感块",
+      snippetTitle: "插入 Glitter 灵感",
+      canvasTitle: "为 Canvas 块选择灵感标题",
+      roamBlockTitle: "为漫游白板选择灵感块",
+      closeLabel: "关闭灵感选择窗口",
+      queryPlaceholder: "搜索灵感标题或正文",
+      recentSectionTitle: "最近使用",
+      resultsSectionTitle: "搜索结果",
+      emptyResults: "没有找到匹配的灵感",
+      emptyBody: "无正文",
+      untitledPool: "未命名池",
+      resultActionLabel: (ideaTitle) => `插入灵感 ${ideaTitle}`,
+      canvasResultActionLabel: (ideaTitle) => `将灵感 ${ideaTitle} 设为 Canvas 块标题`,
+      roamBlockResultActionLabel: (ideaTitle) => `向漫游白板加入灵感 ${ideaTitle}`
+    },
     pool: {
       shareOpenBoard: "打开白板文件",
       shareCopyBoardPath: "复制白板路径",
@@ -489,6 +593,7 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       roamDownloadCurrentBoard: "下载当前漫游白板",
       roamShareCurrentBoard: "分享当前漫游白板",
       roamOpenHistory: "打开漫游白板历史",
+      roamAddIdeaBlock: "增加灵感块",
       roamErrorTitle: "漫游白板暂时不可用",
       roamErrorDescription: "请稍后再试。",
       roamEmptyTitle: "新的空白漫游区",
@@ -511,6 +616,12 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       cardOpenPrimaryFile: "打开主文件",
       cardOpenSnippetNote: "打开插入笔记",
       cardOpenSnippetLocations: (count) => `查看插入位置（${count}）`,
+      snippetLocationsTitle: "选择文件",
+      snippetLocationsCloseLabel: "关闭选择文件窗口",
+      snippetLocationsSummary: (count) => `当前灵感已在 ${count} 个文件中插入，选择要打开的文件。`,
+      snippetLocationsOccurrenceCount: (count) => `出现 ${count} 次`,
+      snippetLocationsMissingFile: "文件缺失",
+      openFileFailed: "打开文件失败，请重试。",
       cardFileCreatedStatus: "已创建文件",
       cardSnippetStatus: (count) => `已引用为 ${count} 个片段`,
       createPoolGlobalTitle: "新建池",
@@ -620,6 +731,7 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
     roamModal: {
       downloadCurrentBoard: "下载当前历史漫游白板",
       shareCurrentBoard: "分享当前历史漫游白板",
+      addCurrentBoardIdeaBlock: "向当前历史漫游白板增加灵感块",
       previousBoard: "上一张历史漫游白板",
       nextBoard: "下一张历史漫游白板",
       title: "漫游白板历史",
@@ -656,6 +768,8 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
   },
   en: {
     home: {
+      heroTitle: "Glitter · Idea Pools",
+      populatedHeroSubtitle: "Calibrate the main stage, pool hierarchy, and key actions first.",
       searchPlaceholder: "Search ideas, snippets, or pools",
       quickCapture: "Quick capture",
       openSearch: "Open search",
@@ -664,6 +778,29 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       fileFilter: "Referenced / file-created quick filter",
       createPool: "Create pool",
       emptySearchFeedback: "No matching content found",
+      firstUseBadge: "First-use",
+      firstUseOrbTitle: "Idea waiting to be captured",
+      firstUseOrbSubtitle: "Click to start your first capture",
+      firstUseLanguageLabel: "Interface language",
+      firstUseLanguageOptions: [
+        { value: "zh-CN", label: "简体中文" },
+        { value: "en", label: "English" }
+      ],
+      firstUseLanguageSaveFailed: "Failed to save the interface language. Please try again.",
+      followupGuidanceTitle: "Next-use guide",
+      followupGuidanceCloseLabel: "Close next-use guide",
+      followupGuidanceContinueLabel: "Go to idea pool",
+      followupGuidanceFootnote: "This guide appears only once. You can reopen it later from Settings.",
+      followupGuidanceGlobalShortcutTitle: "Global quick capture",
+      followupGuidanceGlobalShortcutDescription: "Capture ideas from anywhere without breaking your flow.",
+      followupGuidanceAutoLinkTitle: "Automatic link detection",
+      followupGuidanceAutoLinkDescription: "Paste a link and Glitter will detect it and bring the content in.",
+      followupGuidanceMultiContentTitle: "Multi-content quick capture",
+      followupGuidanceMultiContentDescription: "Paste links, images, or videos in Quick Capture and switch layouts quickly.",
+      followupGuidanceSnippetTitle: "Embed idea snippets in notes",
+      followupGuidanceSnippetDescription: "Use the note context menu or your custom shortcut to insert idea snippets quickly.",
+      followupGuidanceRoamModeTitle: "Roam mode",
+      followupGuidanceRoamModeDescription: "Follow connections between ideas in Roam mode and expand related threads quickly.",
       editPool: "Edit",
       deletePool: "Delete",
       enterPool: "Enter",
@@ -809,6 +946,28 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       mediaPreviewClose: "Close large preview",
       mediaPreviewImage: "Media large preview"
     },
+    picker: {
+      snippetMenuTitle: (hotkey) => (hotkey ? `Insert Glitter snippet (${hotkey})` : "Insert Glitter snippet"),
+      snippetInsertedNotice: "Glitter snippet inserted",
+      canvasMenuItemTitle: "Use idea for canvas block title",
+      canvasInsertedNotice: "Idea set as canvas block title",
+      canvasIdeaUnavailableNotice: "The selected idea is no longer available. Please pick another one.",
+      canvasPoolUnavailableNotice: "The selected idea's pool is no longer available. Please pick another one.",
+      roamBlockInsertedNotice: "Idea block added to the roam board",
+      snippetTitle: "Insert Glitter snippet",
+      canvasTitle: "Use idea for canvas block title",
+      roamBlockTitle: "Choose an idea block for the roam board",
+      closeLabel: "Close idea picker",
+      queryPlaceholder: "Search idea title or body",
+      recentSectionTitle: "Recent",
+      resultsSectionTitle: "Results",
+      emptyResults: "No matching ideas found",
+      emptyBody: "No body",
+      untitledPool: "Untitled pool",
+      resultActionLabel: (ideaTitle) => `Insert idea ${ideaTitle}`,
+      canvasResultActionLabel: (ideaTitle) => `Use idea ${ideaTitle} for canvas block title`,
+      roamBlockResultActionLabel: (ideaTitle) => `Add idea ${ideaTitle} to the roam board`
+    },
     pool: {
       shareOpenBoard: "Open board file",
       shareCopyBoardPath: "Copy board path",
@@ -824,6 +983,7 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       roamDownloadCurrentBoard: "Download current roam board",
       roamShareCurrentBoard: "Share current roam board",
       roamOpenHistory: "Open roam board history",
+      roamAddIdeaBlock: "Add idea block",
       roamErrorTitle: "Roam board is temporarily unavailable",
       roamErrorDescription: "Please try again later.",
       roamEmptyTitle: "New blank roam area",
@@ -846,6 +1006,12 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       cardOpenPrimaryFile: "Open primary file",
       cardOpenSnippetNote: "Open inserted note",
       cardOpenSnippetLocations: (count) => `View insertion locations (${count})`,
+      snippetLocationsTitle: "Choose a file",
+      snippetLocationsCloseLabel: "Close file picker",
+      snippetLocationsSummary: (count) => `This idea has been inserted in ${count} file${count === 1 ? "" : "s"}. Choose one to open.`,
+      snippetLocationsOccurrenceCount: (count) => `Appears ${count} time${count === 1 ? "" : "s"}`,
+      snippetLocationsMissingFile: "File missing",
+      openFileFailed: "Open file failed. Please try again.",
       cardFileCreatedStatus: "File created",
       cardSnippetStatus: (count) => `Referenced in ${count} snippet${count === 1 ? "" : "s"}`,
       createPoolGlobalTitle: "New pool",
@@ -955,6 +1121,7 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
     roamModal: {
       downloadCurrentBoard: "Download current historical roam board",
       shareCurrentBoard: "Share current historical roam board",
+      addCurrentBoardIdeaBlock: "Add idea block to the current historical roam board",
       previousBoard: "Previous historical roam board",
       nextBoard: "Next historical roam board",
       title: "Roam board history",

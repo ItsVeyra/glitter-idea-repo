@@ -1121,8 +1121,8 @@ describe("renderHomeView", () => {
     expect(glowBlock).toContain("opacity: 0.94;");
   });
 
-  it("keeps the empty prompt pointer icon and roomier empty-orb copy spacing", () => {
-    expect(stylesCss).toContain("M4 4l7.07 17 2.51-7.39L21 11.07z");
+  it("keeps the empty-orb copy spacing and language trigger chrome", () => {
+    expect(stylesCss).toContain(".glitter-home-stage__language-trigger-chevron");
 
     expectRuleHasDeclarations(".glitter-home-stage__empty-orb-content", ["gap: 9px;"]);
     expectRuleHasDeclarations(".glitter-home-stage__empty-orb-content-title", [
@@ -1188,16 +1188,26 @@ describe("renderHomeView", () => {
     expect(container.querySelector(".glitter-home-stage__empty-guide-top")).toBeNull();
     expect(container.querySelector(".glitter-home-stage__guide-helper--side")).toBeNull();
 
-    const emptyPromptPill = container.querySelector(".glitter-home-stage__empty-prompt-pill") as
-      | (HTMLElement & { textContent: string; children: Array<{ className: string; textContent: string }> })
+    const languageSelector = container.querySelector(".glitter-home-stage__language-selector") as
+      | (HTMLElement & { parent: unknown; className: string })
       | null;
-    expect(emptyPromptPill).not.toBeNull();
-    expect(container.querySelector(".glitter-home-stage__empty-prompt-pill--attached")).not.toBeNull();
-    expect(container.querySelector(".glitter-home-stage__empty-prompt-icon")).not.toBeNull();
-    expect(container.querySelector(".glitter-home-stage__empty-prompt-text")).not.toBeNull();
-    expect(emptyPromptPill?.children[0]?.className).toContain("glitter-home-stage__empty-prompt-icon");
-    expect(emptyPromptPill?.children[1]?.className).toContain("glitter-home-stage__empty-prompt-text");
-    expect(emptyPromptPill?.children[1]?.textContent).toContain("点击空灵感球开始流程");
+    const languageTrigger = container.querySelector(".glitter-home-stage__language-trigger") as
+      | (HTMLElement & { textContent: string; getAttribute: (name: string) => string | null; parent: unknown })
+      | null;
+    const languageMenu = container.querySelector(".glitter-home-stage__language-menu") as
+      | (HTMLElement & { className: string; getAttribute: (name: string) => string | null; parent: unknown })
+      | null;
+    expect(container.querySelector(".glitter-home-stage__empty-prompt-pill")).toBeNull();
+    expect(languageSelector).not.toBeNull();
+    expect(languageTrigger).not.toBeNull();
+    expect(languageMenu).not.toBeNull();
+    expect(languageTrigger?.parent).toBe(languageSelector);
+    expect(languageMenu?.parent).toBe(languageSelector);
+    expect(languageTrigger?.textContent).toContain("界面语言");
+    expect(languageTrigger?.textContent).toContain("简体中文");
+    expect(languageTrigger?.getAttribute("aria-expanded")).toBe("false");
+    expect(languageMenu?.getAttribute("aria-hidden")).toBe("true");
+    expect(languageMenu?.className).not.toContain("glitter-home-stage__language-menu--open");
 
     const emptyHitArea = container.querySelector(".glitter-home-stage__empty-orb-hit-area") as
       | (HTMLElement & { parent: unknown; getAttribute: (name: string) => string | null })
@@ -1235,6 +1245,52 @@ describe("renderHomeView", () => {
     expect(container.querySelector(".glitter-home-stage__action-bar")).toBeNull();
     expect(container.querySelector(".glitter-home-stage__action-primary")).toBeNull();
     expect(container.querySelector(".glitter-home-stage__action-secondary")).toBeNull();
+  });
+
+  it("reveals first-use language options and routes selection through the home action", () => {
+    const container = createContainer();
+    const selectedLanguages: string[] = [];
+
+    renderHomeView(container, buildHomeViewState("home-empty", { interfaceLanguage: "zh-CN" }), {
+      onPrimaryAction() {},
+      onSecondaryAction() {},
+      onPoolSelect() {},
+      onSearchSubmit() {},
+      onFirstUseLanguageSelect: (language) => {
+        selectedLanguages.push(language);
+      }
+    });
+
+    const languageTrigger = container.querySelector(".glitter-home-stage__language-trigger") as
+      | HTMLButtonElement
+      | null;
+    const languageMenu = container.querySelector(".glitter-home-stage__language-menu") as
+      | (HTMLElement & { className: string; getAttribute: (name: string) => string | null })
+      | null;
+    const languageOptions = Array.from(container.querySelectorAll(".glitter-home-stage__language-option")) as
+      HTMLButtonElement[];
+
+    expect(languageMenu?.getAttribute("aria-hidden")).toBe("true");
+    expect(languageMenu?.className).not.toContain("glitter-home-stage__language-menu--open");
+    expect(languageOptions).toHaveLength(2);
+    expect(languageOptions.every((option) => option.disabled)).toBe(true);
+
+    languageTrigger?.click();
+
+    expect(languageTrigger?.getAttribute("aria-expanded")).toBe("true");
+    expect(languageMenu?.getAttribute("aria-hidden")).toBe("false");
+    expect(languageMenu?.className).toContain("glitter-home-stage__language-menu--open");
+    expect(languageOptions[0]?.textContent).toContain("简体中文");
+    expect(languageOptions[1]?.textContent).toContain("English");
+    expect(languageOptions.every((option) => option.disabled === false)).toBe(true);
+
+    languageOptions[1]?.click();
+
+    expect(selectedLanguages).toEqual(["en"]);
+    expect(languageTrigger?.getAttribute("aria-expanded")).toBe("false");
+    expect(languageMenu?.getAttribute("aria-hidden")).toBe("true");
+    expect(languageMenu?.className).not.toContain("glitter-home-stage__language-menu--open");
+    expect(languageOptions.every((option) => option.disabled)).toBe(true);
   });
 
   it("renders populated home with a populated stage class and a single bottom action shell", () => {
@@ -4516,7 +4572,20 @@ describe("renderHomeView", () => {
       "color: var(--glitter-home-empty-icon);",
       "text-shadow: 0 1px 6px color-mix(in srgb, var(--glitter-home-empty-halo) 46%, transparent);"
     ]);
-    expectRuleHasDeclarations(".glitter-home-stage__empty-prompt-pill--attached", ["margin-top: -28px;"]);
+    expectRuleHasDeclarations(".glitter-home-stage__language-selector", ["margin-top: -28px;"]);
+    expectRuleHasDeclarations(".glitter-home-stage__language-trigger", [
+      "min-height: 32px;",
+      "border-radius: 999px;"
+    ]);
+    expectRuleHasDeclarations(".glitter-home-stage__language-menu", [
+      "position: absolute;",
+      "top: calc(100% + 8px);"
+    ]);
+    expectRuleHasDeclarations(".glitter-home-stage__language-option", ["min-height: 32px;"]);
+    expectRuleHasDeclarations(".glitter-home-stage__language-option:disabled", ["cursor: default;"]);
+    expectRuleHasDeclarations(".glitter-home-stage__language-option:disabled:hover", [
+      "background: transparent !important;"
+    ]);
   });
 
   it("keeps empty-state responsive constraints for narrow or short viewports without shrinking populated orb diameters", () => {
@@ -4532,7 +4601,7 @@ describe("renderHomeView", () => {
     expect(stylesCss).toContain("min-height: clamp(230px, min(48vh, 60vw), 360px);");
     expect(stylesCss).toContain("width: clamp(148px, 42vw, 204px);");
     expect(stylesCss).toContain("font-size: clamp(16px, 4vw, 20px);");
-    expect(stylesCss).toContain(".glitter-home-stage__empty-prompt-pill--attached {");
+    expect(stylesCss).toContain(".glitter-home-stage__language-selector {");
     expect(stylesCss).toContain("@media (max-height: 680px) {");
     expect(stylesCss).toContain("min-height: 220px;");
     expect(stylesCss).not.toContain("container-type: inline-size;");

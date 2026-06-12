@@ -4,8 +4,16 @@
  */
 
 import { Modal } from "obsidian";
+import { reconcileIdeaRuntimeState } from "../application/idea-query/idea-runtime-source";
 import { buildIdeaStatusLabels, countDistinctSnippetNotes, type Idea } from "../domain/idea/idea-model";
+import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
+
+export type IdeaPickerModalMode = "snippet" | "canvas-block" | "roam-block";
+
+export interface IdeaPickerModalOptions {
+  mode?: IdeaPickerModalMode;
+}
 
 // 片段选择器的查询、选中与渲染流程。
 export class IdeaPickerModal extends Modal {
@@ -31,9 +39,14 @@ export class IdeaPickerModal extends Modal {
 
   constructor(
     private readonly plugin: GlitterPlugin,
-    private readonly onPick: (ideaId: string) => Promise<void>
+    private readonly onPick: (ideaId: string) => Promise<void>,
+    private readonly options: IdeaPickerModalOptions = {}
   ) {
     super(plugin.app);
+  }
+
+  private get pickerText() {
+    return getInterfaceText(this.plugin.settings?.interfaceLanguage).picker;
   }
 
   // 打开时搭建搜索框与结果容器。
@@ -41,6 +54,14 @@ export class IdeaPickerModal extends Modal {
     this.containerEl?.addClass?.("GlitterIdea-picker-modal-host");
     this.modalEl?.addClass?.("GlitterIdea-picker-modal");
     this.contentEl.empty();
+
+    const pickerText = this.pickerText;
+    const title =
+      this.options.mode === "canvas-block"
+        ? pickerText.canvasTitle
+        : this.options.mode === "roam-block"
+          ? pickerText.roamBlockTitle
+          : pickerText.snippetTitle;
 
     const surface = this.contentEl.createDiv({
       cls: "GlitterIdea-picker-modal__surface GlitterIdea-edit-modal__surface"
@@ -50,13 +71,13 @@ export class IdeaPickerModal extends Modal {
     });
     header.createEl("h2", {
       cls: "GlitterIdea-picker-modal__title GlitterIdea-edit-modal__heading",
-      text: "插入 Glitter 灵感"
+      text: title
     });
     const closeButton = header.createEl("button", {
       cls: "GlitterIdea-picker-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     });
     closeButton.type = "button";
-    closeButton.setAttribute?.("aria-label", "关闭插入灵感窗口");
+    closeButton.setAttribute?.("aria-label", pickerText.closeLabel);
     closeButton.createEl("span", {
       cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
     });
@@ -69,7 +90,7 @@ export class IdeaPickerModal extends Modal {
     });
     queryInput.type = "search";
     queryInput.value = this.query;
-    queryInput.placeholder = "搜索灵感标题或正文";
+    queryInput.placeholder = pickerText.queryPlaceholder;
     queryInput.addEventListener("input", () => {
       this.query = queryInput.value;
       this.clearSelectableResults();
@@ -161,6 +182,17 @@ export class IdeaPickerModal extends Modal {
     });
   }
 
+  private commitRenderedResults(renderedResults: Idea[]): void {
+    this.renderedResults = renderedResults;
+    this.activeIndex =
+      renderedResults.length === 0
+        ? -1
+        : this.activeIndex < 0
+          ? -1
+          : Math.min(this.activeIndex, renderedResults.length - 1);
+    this.paintResults();
+  }
+
   private async pickIdea(ideaId: string): Promise<void> {
     if (this.isQueryPending || this.isPicking) {
       return;
@@ -170,6 +202,8 @@ export class IdeaPickerModal extends Modal {
     try {
       await this.onPick(ideaId);
       this.close();
+    } catch {
+      return;
     } finally {
       this.isPicking = false;
     }
@@ -180,6 +214,34 @@ export class IdeaPickerModal extends Modal {
     this.renderedResults = [];
     this.activeIndex = -1;
     this.resultsEl?.empty();
+  }
+
+  private async hydrateResultsWithRuntimeState(results: Idea[]): Promise<Idea[]> {
+    if (results.length === 0) {
+      return results;
+    }
+
+    try {
+      return await reconcileIdeaRuntimeState(this.plugin.ideaService, this.plugin.app.vault, results);
+    } catch {
+      return results;
+    }
+  }
+
+  private async reconcileRenderedResults(requestVersion: number, renderedResults: Idea[]): Promise<void> {
+    await new Promise<void>((resolve) => {
+      globalThis.setTimeout(resolve, 0);
+    });
+    if (!this.resultsEl || requestVersion !== this.queryRequestVersion) {
+      return;
+    }
+
+    const runtimeRenderedResults = await this.hydrateResultsWithRuntimeState(renderedResults);
+    if (!this.resultsEl || requestVersion !== this.queryRequestVersion) {
+      return;
+    }
+
+    this.commitRenderedResults(runtimeRenderedResults);
   }
 
   // 预加载池名称，补全结果元信息。
@@ -211,15 +273,20 @@ export class IdeaPickerModal extends Modal {
       return;
     }
 
+    const interfaceText = getInterfaceText(this.plugin.settings?.interfaceLanguage);
+    const pickerText = interfaceText.picker;
+    const poolText = interfaceText.pool;
+
     resultsEl.empty();
     if (this.sectionTitleEl) {
-      this.sectionTitleEl.textContent = this.query.trim().length === 0 ? "最近使用" : "搜索结果";
+      this.sectionTitleEl.textContent =
+        this.query.trim().length === 0 ? pickerText.recentSectionTitle : pickerText.resultsSectionTitle;
     }
 
     if (this.renderedResults.length === 0) {
       resultsEl.createDiv({
         cls: "GlitterIdea-picker-modal__empty",
-        text: "没有找到匹配的灵感"
+        text: pickerText.emptyResults
       });
       return;
     }
@@ -245,26 +312,40 @@ export class IdeaPickerModal extends Modal {
       });
       content.createEl("span", {
         cls: "GlitterIdea-picker-modal__result-body",
-        text: idea.body.replace(/\s+/g, " ").trim() || "无正文"
+        text: idea.body.replace(/\s+/g, " ").trim() || pickerText.emptyBody
       });
       const actionButton = header.createEl("button", {
         cls: "GlitterIdea-picker-modal__result-action",
         text: "+"
       });
       actionButton.type = "button";
-      actionButton.setAttribute?.("aria-label", `插入灵感 ${idea.title}`);
+      actionButton.setAttribute?.(
+        "aria-label",
+        this.options.mode === "canvas-block"
+          ? pickerText.canvasResultActionLabel(idea.title)
+          : this.options.mode === "roam-block"
+            ? pickerText.roamBlockResultActionLabel(idea.title)
+            : pickerText.resultActionLabel(idea.title)
+      );
 
       const meta = row.createDiv({
         cls: "GlitterIdea-picker-modal__result-meta"
       });
       meta.createEl("span", {
         cls: "GlitterIdea-picker-modal__result-pool",
-        text: this.poolNameById.get(idea.poolId) ?? "未命名池"
+        text: this.poolNameById.get(idea.poolId) ?? pickerText.untitledPool
       });
-      buildIdeaStatusLabels({
-        fileCreated: idea.fileCreated,
-        snippetCount: countDistinctSnippetNotes(idea)
-      }).forEach((label) => {
+      const statusLabels = buildIdeaStatusLabels(
+        {
+          fileCreated: idea.fileCreated,
+          snippetCount: countDistinctSnippetNotes(idea)
+        },
+        {
+          fileCreatedStatus: poolText.cardFileCreatedStatus,
+          snippetStatus: poolText.cardSnippetStatus
+        }
+      );
+      statusLabels.forEach((label) => {
         meta.createEl("span", {
           cls: "GlitterIdea-picker-modal__result-status",
           text: label
@@ -298,10 +379,8 @@ export class IdeaPickerModal extends Modal {
       }
 
       const renderedResults = query.trim().length === 0 ? results.slice(0, 2) : results;
-      this.renderedResults = renderedResults;
-      this.activeIndex =
-        renderedResults.length === 0 ? -1 : this.activeIndex < 0 ? -1 : Math.min(this.activeIndex, renderedResults.length - 1);
-      this.paintResults();
+      this.commitRenderedResults(renderedResults);
+      void this.reconcileRenderedResults(requestVersion, renderedResults);
     } catch {
       if (!this.resultsEl || requestVersion !== this.queryRequestVersion) {
         return;

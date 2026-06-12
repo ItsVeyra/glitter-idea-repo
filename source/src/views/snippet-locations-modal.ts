@@ -4,6 +4,8 @@
  */
 
 import { Modal } from "obsidian";
+import { getInterfaceText } from "../i18n/interface-language";
+import type { PluginInterfaceLanguage } from "../settings/settings";
 import type { PoolBrowseSnippetLocation } from "../ui/pool/pool-state";
 
 // 片段位置弹窗的渲染与打开防抖流程。
@@ -13,7 +15,8 @@ export class SnippetLocationsModal extends Modal {
   constructor(
     app: unknown,
     private readonly locations: PoolBrowseSnippetLocation[],
-    private readonly onOpenLocation: (location: PoolBrowseSnippetLocation) => Promise<void>
+    private readonly onOpenLocation: (location: PoolBrowseSnippetLocation) => Promise<void>,
+    private readonly interfaceLanguage?: PluginInterfaceLanguage
   ) {
     super(app as never);
   }
@@ -25,6 +28,7 @@ export class SnippetLocationsModal extends Modal {
     this.contentEl?.addClass?.("glitter-snippet-locations-modal__content");
     this.contentEl.empty();
 
+    const poolText = getInterfaceText(this.interfaceLanguage).pool;
     const surface = this.contentEl.createDiv({
       cls: "glitter-snippet-locations-modal__surface GlitterIdea-edit-modal__surface"
     });
@@ -33,13 +37,13 @@ export class SnippetLocationsModal extends Modal {
     });
     header.createEl("h2", {
       cls: "glitter-snippet-locations-modal__title GlitterIdea-edit-modal__heading",
-      text: "选择文件"
+      text: poolText.snippetLocationsTitle
     });
     const closeButton = header.createEl("button", {
       cls: "glitter-snippet-locations-modal__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
     }) as HTMLButtonElement;
     closeButton.type = "button";
-    closeButton.setAttribute?.("aria-label", "关闭选择文件窗口");
+    closeButton.setAttribute?.("aria-label", poolText.snippetLocationsCloseLabel);
     closeButton.createEl("span", {
       cls: "glitter-write-stage__icon glitter-write-stage__icon--close"
     });
@@ -49,7 +53,7 @@ export class SnippetLocationsModal extends Modal {
 
     surface.createEl("p", {
       cls: "glitter-snippet-locations-modal__summary",
-      text: `当前灵感已在 ${this.locations.length} 个文件中插入，选择要打开的文件。`
+      text: poolText.snippetLocationsSummary(this.locations.length)
     });
 
     const listEl = surface.createDiv({
@@ -57,9 +61,11 @@ export class SnippetLocationsModal extends Modal {
     });
 
     this.locations.forEach((location) => {
-      const card = listEl.createDiv({
+      const card = listEl.createEl("button", {
         cls: "glitter-snippet-locations-modal__card"
-      });
+      }) as HTMLButtonElement;
+      card.type = "button";
+      card.disabled = location.stale;
       card.dataset.notePath = location.notePath;
 
       const cardHeader = card.createDiv({
@@ -75,12 +81,12 @@ export class SnippetLocationsModal extends Modal {
       });
       meta.createEl("span", {
         cls: "glitter-snippet-locations-modal__card-count",
-        text: `出现 ${location.occurrenceCount} 次`
+        text: poolText.snippetLocationsOccurrenceCount(location.occurrenceCount)
       });
       if (location.stale) {
         meta.createEl("span", {
           cls: "glitter-snippet-locations-modal__card-stale",
-          text: "文件缺失"
+          text: poolText.snippetLocationsMissingFile
         });
       }
 
@@ -89,9 +95,11 @@ export class SnippetLocationsModal extends Modal {
         text: location.notePath
       });
 
-      card.addEventListener("click", () => {
-        void this.handleOpenLocation(location);
-      });
+      if (!location.stale) {
+        card.addEventListener("click", () => {
+          void this.handleOpenLocation(location);
+        });
+      }
     });
   }
 

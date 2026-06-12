@@ -3,17 +3,18 @@
  * 负责挂载首页灵感场、同步主题、处理首页搜索，并串联快速记录与归池流程。
  */
 
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, getLanguage } from "obsidian";
 import { createToastService } from "../feedback/toast-service";
 import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
-import type { HomeFieldView } from "../settings/settings";
+import type { HomeFieldView, PluginInterfaceLanguage } from "../settings/settings";
 import {
   CREATE_NEW_POOL_ID,
   DEFAULT_POOL_ID,
-  DEFAULT_POOL_LABEL,
   GLITTER_ICON_ID,
-  MAIN_VIEW_TYPE
+  MAIN_VIEW_TYPE,
+  resolveDefaultPoolName,
+  resolvePoolDisplayName
 } from "../plugin/constants";
 import {
   buildHomeViewStateFromRuntime,
@@ -26,10 +27,7 @@ import { QuickCaptureModal, type QuickCaptureSavedSelection } from "./quick-capt
 import { FollowupGuidanceModal } from "./followup-guidance-modal";
 
 export class GlitterMainView extends ItemView {
-  private globalSelectedPoolState: { id: string; label: string } = {
-    id: DEFAULT_POOL_ID,
-    label: DEFAULT_POOL_LABEL
-  };
+  private globalSelectedPoolState: { id: string; label: string };
 
   private themeTargetEl: HTMLElement | null = null;
 
@@ -45,12 +43,18 @@ export class GlitterMainView extends ItemView {
 
   private lastHomeRuntimeState: HomeRuntimeState | null = null;
 
+  private lastResolvedHomeInterfaceLanguage?: PluginInterfaceLanguage;
+
   private pendingFirstUseReplay = false;
 
   private readonly toastService = createToastService();
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: GlitterPlugin) {
     super(leaf);
+    this.globalSelectedPoolState = {
+      id: DEFAULT_POOL_ID,
+      label: resolveDefaultPoolName(plugin.settings?.interfaceLanguage)
+    };
   }
 
   override getViewType(): string {
@@ -112,10 +116,12 @@ export class GlitterMainView extends ItemView {
 
     this.lastHomeRuntimeState = runtime;
 
+    const interfaceLanguage = this.resolveHomeInterfaceLanguage(runtime.mode);
+    this.lastResolvedHomeInterfaceLanguage = interfaceLanguage;
     const state = buildHomeViewStateFromRuntime(runtime, {
       poolColors: this.plugin.settings.poolColors,
       homeFieldView: this.plugin.settings.homeFieldView,
-      interfaceLanguage: this.plugin.settings?.interfaceLanguage,
+      ...(interfaceLanguage ? { interfaceLanguage } : {}),
       searchFeedbackMessage: runtime.mode === "populated" ? this.activeSearchFeedbackMessage : undefined
     });
 
@@ -167,7 +173,8 @@ export class GlitterMainView extends ItemView {
           status: "with-markers",
           resetFilters: true
         });
-      }
+      },
+      onFirstUseLanguageSelect: (language) => this.handleFirstUseLanguageSelect(language)
     });
 
     if (this.shouldSkipRender(renderVersion)) {
@@ -252,6 +259,51 @@ export class GlitterMainView extends ItemView {
 
     setting?.open?.();
     setting?.openTabById?.(this.plugin.manifest.id);
+  }
+
+  private resolveHomeInterfaceLanguage(runtimeMode: HomeRuntimeState["mode"]): PluginInterfaceLanguage | undefined {
+    const persistedLanguage =
+      this.plugin.settings?.interfaceLanguage === "zh-CN" || this.plugin.settings?.interfaceLanguage === "en"
+        ? this.plugin.settings.interfaceLanguage
+        : undefined;
+
+    if (runtimeMode !== "empty" || this.plugin.hasPersistedInterfaceLanguageSetting) {
+      return persistedLanguage;
+    }
+
+    const hostLanguage = getLanguage().toLowerCase();
+    if (hostLanguage.startsWith("zh")) {
+      return "zh-CN";
+    }
+    if (hostLanguage.startsWith("en")) {
+      return "en";
+    }
+
+    return persistedLanguage;
+  }
+
+  private async handleFirstUseLanguageSelect(language: PluginInterfaceLanguage): Promise<void> {
+    const previousLanguage = this.plugin.settings.interfaceLanguage;
+    const previousPersistedLanguageSetting = Boolean(this.plugin.hasPersistedInterfaceLanguageSetting);
+    if (previousPersistedLanguageSetting && previousLanguage === language) {
+      return;
+    }
+
+    const errorText = getInterfaceText(this.lastResolvedHomeInterfaceLanguage ?? previousLanguage);
+    this.plugin.settings.interfaceLanguage = language;
+    this.plugin.hasPersistedInterfaceLanguageSetting = true;
+
+    try {
+      await this.plugin.savePluginSettings();
+      this.plugin.refreshOpenGlitterViews?.();
+    } catch {
+      this.plugin.settings.interfaceLanguage = previousLanguage;
+      this.plugin.hasPersistedInterfaceLanguageSetting = previousPersistedLanguageSetting;
+      this.toastService.show({
+        status: "error",
+        message: errorText.home.firstUseLanguageSaveFailed
+      });
+    }
   }
 
   // 首页切换底层池场视图时，直接持久化选择，让下次回到 populated 首页时恢复同一视图。
@@ -460,12 +512,12 @@ export class GlitterMainView extends ItemView {
       const pool = await this.plugin.poolService.getPool(poolId);
       this.globalSelectedPoolState = {
         id: poolId,
-        label: pool?.name ?? DEFAULT_POOL_LABEL
+        label: resolvePoolDisplayName(pool, this.plugin.settings?.interfaceLanguage)
       };
     } catch {
       this.globalSelectedPoolState = {
         id: poolId,
-        label: DEFAULT_POOL_LABEL
+        label: resolveDefaultPoolName(this.plugin.settings?.interfaceLanguage)
       };
     }
 
@@ -520,7 +572,7 @@ export class GlitterMainView extends ItemView {
     if (this.globalSelectedPoolState.id === poolId) {
       this.globalSelectedPoolState = {
         id: DEFAULT_POOL_ID,
-        label: DEFAULT_POOL_LABEL
+        label: resolveDefaultPoolName(this.plugin.settings?.interfaceLanguage)
       };
     }
 

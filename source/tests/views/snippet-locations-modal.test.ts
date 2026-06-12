@@ -35,6 +35,7 @@ class FakeElement {
   className = "";
   type = "";
   dataset: Record<string, string> = {};
+  attributes: Record<string, string> = {};
   disabled = false;
   children: FakeElement[] = [];
 
@@ -100,7 +101,19 @@ class FakeElement {
     this.listeners.set(type, existing);
   }
 
+  setAttribute(name: string, value: string): void {
+    this.attributes[name] = value;
+  }
+
+  getAttribute(name: string): string | null {
+    return this.attributes[name] ?? null;
+  }
+
   click(): void {
+    if (this.disabled) {
+      return;
+    }
+
     const listeners = this.listeners.get("click") ?? [];
     listeners.forEach((listener) => listener());
   }
@@ -185,7 +198,7 @@ describe("SnippetLocationsModal", () => {
     return { addClass, removeClass, contentAddClass, contentRemoveClass, empty, contentEl };
   }
 
-  it("renders plugin-styled location cards and opens the chosen file", async () => {
+  it("renders localized location cards and opens the chosen file", async () => {
     const onOpenLocation = vi.fn(async () => undefined);
     const modal = new SnippetLocationsModal(
       {} as any,
@@ -203,7 +216,8 @@ describe("SnippetLocationsModal", () => {
           stale: true
         }
       ],
-      onOpenLocation
+      onOpenLocation,
+      "en"
     );
     const { addClass, contentAddClass, contentEl } = attachModalHost(modal);
     const closeSpy = vi.spyOn(modal as unknown as { close: () => void }, "close");
@@ -213,30 +227,66 @@ describe("SnippetLocationsModal", () => {
     expect(addClass).toHaveBeenCalledWith("glitter-snippet-locations-modal-host");
     expect(addClass).toHaveBeenCalledWith("glitter-snippet-locations-modal");
     expect(contentAddClass).toHaveBeenCalledWith("glitter-snippet-locations-modal__content");
-    expect(contentEl.textContent).toContain("选择文件");
+    expect(contentEl.textContent).toContain("Choose a file");
+    expect(contentEl.textContent).toContain("This idea has been inserted in 2 files. Choose one to open.");
 
     const header = contentEl.querySelector<FakeElement>(".glitter-snippet-locations-modal__header");
     const closeButton = contentEl.querySelector<FakeElement>(".glitter-snippet-locations-modal__close");
     const cards = contentEl.querySelectorAll<FakeElement>(".glitter-snippet-locations-modal__card");
     expect(header).not.toBeNull();
     expect(closeButton?.type).toBe("button");
+    expect(closeButton?.getAttribute("aria-label")).toBe("Close file picker");
     expect(cards).toHaveLength(2);
-    expect(cards[0]?.type).toBe("div");
+    expect(cards[0]?.type).toBe("button");
     expect(cards[0]?.dataset.notePath).toBe("Folder/Note A.md");
+    expect(cards[0]?.disabled).toBe(false);
+    expect(cards[1]?.disabled).toBe(true);
     expect(contentEl.textContent).toContain("Note A");
+    expect(contentEl.textContent).toContain("Appears 2 times");
     expect(contentEl.textContent).toContain("Missing");
-    expect(contentEl.textContent).toContain("文件缺失");
+    expect(contentEl.textContent).toContain("Appears 1 time");
+    expect(contentEl.textContent).toContain("File missing");
 
-    cards[1]?.click();
+    cards[0]?.click();
     await flushMicrotasks();
 
     expect(onOpenLocation).toHaveBeenCalledWith({
-      notePath: "Folder/Missing.md",
-      noteTitle: "Missing",
-      occurrenceCount: 1,
-      stale: true
+      notePath: "Folder/Note A.md",
+      noteTitle: "Note A",
+      occurrenceCount: 2,
+      stale: false
     });
     expect(closeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps stale rows disabled and non-actionable", async () => {
+    const onOpenLocation = vi.fn(async () => undefined);
+    const modal = new SnippetLocationsModal(
+      {} as any,
+      [
+        {
+          notePath: "Folder/Missing.md",
+          noteTitle: "Missing",
+          occurrenceCount: 1,
+          stale: true
+        }
+      ],
+      onOpenLocation,
+      "en"
+    );
+    const { contentEl } = attachModalHost(modal);
+    const closeSpy = vi.spyOn(modal as unknown as { close: () => void }, "close");
+
+    modal.onOpen();
+
+    const card = contentEl.querySelector<FakeElement>(".glitter-snippet-locations-modal__card");
+    expect(card?.disabled).toBe(true);
+
+    card?.click();
+    await flushMicrotasks();
+
+    expect(onOpenLocation).not.toHaveBeenCalled();
+    expect(closeSpy).not.toHaveBeenCalled();
   });
 
   it("keeps the modal open and allows retry when opening a location rejects", async () => {
@@ -288,7 +338,9 @@ describe("SnippetLocationsModal", () => {
     ]);
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-snippet-locations-modal__card", [
       "display: grid;",
+      "width: 100%;",
       "gap: 12px;",
+      "appearance: none;",
       "border-radius: 16px;",
       "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 94%, black 6%);"
     ]);

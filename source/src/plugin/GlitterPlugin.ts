@@ -2,7 +2,7 @@
  * Glitter 插件主入口，负责装配数据存储、领域服务、应用工作流与宿主视图。
  * 同时管理插件生命周期、命令注册、片段增强、视图导航与设置持久化。
  */
-import { addIcon, Plugin, type ViewState, type WorkspaceLeaf } from "obsidian";
+import { Notice, addIcon, Plugin, type ViewState, type WorkspaceLeaf } from "obsidian";
 import {
   createEditorWorkflow,
   type EditorWorkflow
@@ -23,6 +23,7 @@ import {
 import { registerCommands } from "../commands/register-commands";
 import { enhanceGlitterSnippets } from "../editor/snippet-postprocessor";
 import type { Idea } from "../domain/idea/idea-model";
+import { getInterfaceText } from "../i18n/interface-language";
 import { createIdeaRepository } from "../domain/idea/idea-repository";
 import { createIdeaService } from "../domain/idea/idea-service";
 import type { Pool } from "../domain/pool/pool-model";
@@ -34,6 +35,7 @@ import { createIndexStore } from "../storage/index-store";
 import { createPluginDataStore, type PluginDataStore } from "../storage/plugin-data-store";
 import { createVaultFileStore } from "../storage/vault-file-store";
 import { resolveLegacyPluginDataPaths, shouldMigrateLegacyPluginData } from "./plugin-data-migration";
+import { IdeaPickerModal, type IdeaPickerModalMode } from "../views/idea-picker-modal";
 import { GlitterMainView } from "../views/main-view";
 import type { PoolViewNavigationOptions } from "../views/pool-view-history";
 import { GlitterPoolView } from "../views/pool-view";
@@ -43,6 +45,12 @@ import { GLITTER_ICON_ID, MAIN_VIEW_TYPE, PLUGIN_ID, POOL_VIEW_TYPE, SEARCH_VIEW
 // Glitter 视图识别辅助。
 const GLITTER_VIEW_TYPES = [MAIN_VIEW_TYPE, SEARCH_VIEW_TYPE, POOL_VIEW_TYPE] as const;
 const GLITTER_RIBBON_ICON_SVG = "<text x=\"50%\" y=\"50%\" dominant-baseline=\"central\" text-anchor=\"middle\" font-size=\"78\" font-family=\"Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif\">✨</text>";
+
+type IdeaPickerSelection = {
+  idea: Idea;
+  pool: Pool;
+  poolColor: string;
+};
 
 function getLeafViewType(leaf: WorkspaceLeaf | null): string | null {
   const view = leaf?.view as { getViewType?: () => string } | undefined;
@@ -73,6 +81,7 @@ export default class GlitterPlugin extends Plugin {
   vaultFileStore = createVaultFileStore();
   focusedIdeaId: string | null = null;
   pendingFocusedPoolId: string | null = null;
+  hasPersistedInterfaceLanguageSetting = false;
   private homeRibbonIconEl: HTMLElement | null = null;
 
   // 启动装配。
@@ -86,6 +95,10 @@ export default class GlitterPlugin extends Plugin {
 
     const loaded = await this.dataStore.load();
     this.settings = mergePluginSettings(loaded.settings);
+    this.hasPersistedInterfaceLanguageSetting = Object.prototype.hasOwnProperty.call(
+      loaded.settings,
+      "interfaceLanguage"
+    );
 
     const inferredHasCompletedFirstUse =
       loaded.snapshot.ideas.length > 0 || loaded.snapshot.pools.some((pool) => !pool.isDefault);
@@ -145,14 +158,18 @@ export default class GlitterPlugin extends Plugin {
         this.refreshOpenMarkdownPreviews();
       },
       resolveFileStorageDirectory,
-      resolveRoamBoardStorageDirectory
+      resolveRoamBoardStorageDirectory,
+      listManagedCanvasPaths: () => this.listManagedCanvasPaths(),
+      registerManagedCanvasPath: (path) => this.registerManagedCanvasPath(path),
+      removeManagedCanvasPath: (path) => this.removeManagedCanvasPath(path)
     });
     this.quickCaptureWorkflow = createQuickCaptureWorkflow({
       ideaService: this.ideaService,
       poolService: this.poolService,
       vaultFileStore: this.vaultFileStore,
       vault: this.app.vault,
-      resolveFileStorageDirectory
+      resolveFileStorageDirectory,
+      resolveInterfaceLanguage: () => this.settings.interfaceLanguage
     });
     this.editorWorkflow = createEditorWorkflow({
       poolService: this.poolService,
@@ -306,6 +323,114 @@ export default class GlitterPlugin extends Plugin {
     return currentData;
   }
 
+  private async listManagedCanvasPaths(): Promise<string[]> {
+    return (await this.dataStore.load()).snapshot.managedCanvasPaths;
+  }
+
+  private async registerManagedCanvasPath(path: string): Promise<void> {
+    await this.dataStore.mutate((snapshot) => ({
+      ...snapshot,
+      managedCanvasPaths: Array.from(new Set([...snapshot.managedCanvasPaths, path]))
+    }));
+  }
+
+  private async removeManagedCanvasPath(path: string): Promise<void> {
+    await this.dataStore.mutate((snapshot) => ({
+      ...snapshot,
+      managedCanvasPaths: snapshot.managedCanvasPaths.filter((entry) => entry !== path)
+    }));
+  }
+
+  private async resolveIdeaPickerSelection(ideaId: string): Promise<IdeaPickerSelection> {
+    const pickerText = getInterfaceText(this.settings.interfaceLanguage).picker;
+    const idea = await this.ideaService.getIdea(ideaId);
+    if (!idea) {
+      new Notice(pickerText.canvasIdeaUnavailableNotice);
+      throw new Error(pickerText.canvasIdeaUnavailableNotice);
+    }
+
+    const pool = await this.poolService.getPool(idea.poolId);
+    if (!pool) {
+      new Notice(pickerText.canvasPoolUnavailableNotice);
+      throw new Error(pickerText.canvasPoolUnavailableNotice);
+    }
+
+    return {
+      idea,
+      pool,
+      poolColor: pool.color ?? this.settings.poolColors.unsorted
+    };
+  }
+
+  private openIdeaBlockPicker(input: {
+    mode: IdeaPickerModalMode;
+    onPick: (selection: IdeaPickerSelection) => Promise<void>;
+  }): void {
+    const modal = new IdeaPickerModal(
+      this,
+      async (ideaId) => {
+        const selection = await this.resolveIdeaPickerSelection(ideaId);
+        await input.onPick(selection);
+      },
+      {
+        mode: input.mode
+      }
+    );
+
+    modal.open();
+  }
+
+  private async openNativeCanvasIdeaPicker(input: { boardPath: string; position: { x: number; y: number } }): Promise<void> {
+    const pickerText = getInterfaceText(this.settings.interfaceLanguage).picker;
+    this.openIdeaBlockPicker({
+      mode: "canvas-block",
+      onPick: async ({ idea, pool, poolColor }) => {
+        await this.poolWorkbenchWorkflow.attachIdeaSourceToCanvas({
+          boardPath: input.boardPath,
+          position: input.position,
+          ideaId: idea.id,
+          poolId: pool.id,
+          poolName: pool.name,
+          poolColor,
+          title: idea.title,
+          body: idea.body,
+          contentType: idea.contentType,
+          sourceUrl: idea.sourceUrl,
+          attachmentPaths: idea.attachmentPaths
+        });
+
+        new Notice(pickerText.canvasInsertedNotice);
+      }
+    });
+  }
+
+  openRoamIdeaBlockPicker(input: {
+    boardPath: string;
+    onAttached?: (result: Awaited<ReturnType<PoolWorkbenchWorkflow["attachIdeaSourceToRoamBoard"]>>) => void | Promise<void>;
+  }): void {
+    const pickerText = getInterfaceText(this.settings.interfaceLanguage).picker;
+    this.openIdeaBlockPicker({
+      mode: "roam-block",
+      onPick: async ({ idea, pool, poolColor }) => {
+        const result = await this.poolWorkbenchWorkflow.attachIdeaSourceToRoamBoard({
+          boardPath: input.boardPath,
+          ideaId: idea.id,
+          poolId: pool.id,
+          poolName: pool.name,
+          poolColor,
+          title: idea.title,
+          body: idea.body,
+          contentType: idea.contentType,
+          sourceUrl: idea.sourceUrl,
+          attachmentPaths: idea.attachmentPaths
+        });
+
+        new Notice(pickerText.roamBlockInsertedNotice);
+        await input.onAttached?.(result);
+      }
+    });
+  }
+
   // 片段聚焦与预览刷新。
   async focusIdeaById(ideaId: string): Promise<void> {
     const target = await this.editorWorkflow.resolveSnippetTarget(ideaId);
@@ -388,7 +513,21 @@ export default class GlitterPlugin extends Plugin {
   }
 
   async savePluginSettings(): Promise<void> {
-    const saved = await this.dataStore.updateSettings(() => ({ ...this.settings }));
+    const saved = await this.dataStore.updateSettings((settings) => {
+      const nextSettings: Record<string, unknown> = {
+        ...settings,
+        ...this.settings
+      };
+
+      if (!this.hasPersistedInterfaceLanguageSetting) {
+        delete nextSettings.interfaceLanguage;
+      } else {
+        nextSettings.interfaceLanguage = this.settings.interfaceLanguage;
+      }
+
+      return nextSettings;
+    });
+    this.hasPersistedInterfaceLanguageSetting = Object.prototype.hasOwnProperty.call(saved, "interfaceLanguage");
     this.settings = mergePluginSettings(saved);
   }
 }

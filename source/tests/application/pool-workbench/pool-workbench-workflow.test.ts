@@ -2416,6 +2416,234 @@ describe("createPoolWorkbenchWorkflow", () => {
     });
   });
 
+  it("registers a native canvas path and syncs managed source blocks inside registered canvases", async () => {
+    const ideaService = createIdeaService();
+    const poolService = createPoolService([], () => ideaService.listIdeas());
+    const defaultPool = await poolService.ensureDefaultPool();
+    const idea = await ideaService.createIdea({
+      title: "Native canvas idea",
+      body: "Old body",
+      contentType: "text",
+      sourceType: "manual",
+      tags: [],
+      poolId: defaultPool.id
+    });
+    const { vault: localVault } = createRoamVaultHarness();
+    const managedCanvasPaths = new Set<string>();
+
+    await localVault.create("Boards/native.canvas", JSON.stringify({ nodes: [], edges: [] }, null, 2));
+
+    const workflow = createPoolWorkbenchWorkflow({
+      poolService,
+      ideaService,
+      vaultFileStore: {
+        ensureFolder: vi.fn(async () => undefined),
+        createUniquePath: vi.fn(async (_folder: string, fileName: string) => `Glitter/${fileName}.md`),
+        buildIdeaFileContent: vi.fn((entry: { title: string; body: string }) => `# ${entry.title}\n\n${entry.body}`)
+      } as any,
+      vault: localVault,
+      listManagedCanvasPaths: vi.fn(async () => [...managedCanvasPaths]),
+      registerManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.add(path);
+      }),
+      removeManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.delete(path);
+      })
+    });
+
+    await workflow.attachIdeaSourceToCanvas({
+      boardPath: "Boards/native.canvas",
+      position: { x: 360, y: 180 },
+      ideaId: idea.id,
+      poolId: defaultPool.id,
+      poolName: defaultPool.name,
+      poolColor: "#6ab5ff",
+      title: idea.title,
+      body: idea.body,
+      contentType: idea.contentType,
+      sourceUrl: idea.sourceUrl,
+      attachmentPaths: idea.attachmentPaths
+    });
+
+    expect([...managedCanvasPaths]).toEqual(["Boards/native.canvas"]);
+
+    await ideaService.updateIdea(idea.id, {
+      title: "Native canvas idea updated",
+      body: "New body",
+      markEdited: true
+    });
+
+    const updatedBoards = await workflow.syncIdeaSourceInRoamBoards(idea.id);
+    expect(updatedBoards).toBe(1);
+
+    const canvas = await workflow.readPoolRoamBoard({ boardPath: "Boards/native.canvas" });
+    expect(collectRoamBlocksForIdea(canvas.canvas, idea.id)[0]?.sourceContent).toMatchObject({
+      title: "Native canvas idea updated",
+      body: "New body"
+    });
+  });
+
+  it("keeps a registered native canvas path when syncing an unrelated idea", async () => {
+    const ideaService = createIdeaService();
+    const poolService = createPoolService([], () => ideaService.listIdeas());
+    const defaultPool = await poolService.ensureDefaultPool();
+    const linkedIdea = await ideaService.createIdea({
+      title: "Linked native idea",
+      body: "Linked body",
+      contentType: "text",
+      sourceType: "manual",
+      tags: [],
+      poolId: defaultPool.id
+    });
+    const otherIdea = await ideaService.createIdea({
+      title: "Other native idea",
+      body: "Other body",
+      contentType: "text",
+      sourceType: "manual",
+      tags: [],
+      poolId: defaultPool.id
+    });
+    const { vault: localVault } = createRoamVaultHarness();
+    const managedCanvasPaths = new Set<string>();
+
+    await localVault.create("Boards/native.canvas", JSON.stringify({ nodes: [], edges: [] }, null, 2));
+
+    const workflow = createPoolWorkbenchWorkflow({
+      poolService,
+      ideaService,
+      vaultFileStore: {
+        ensureFolder: vi.fn(async () => undefined),
+        createUniquePath: vi.fn(async (_folder: string, fileName: string) => `Glitter/${fileName}.md`),
+        buildIdeaFileContent: vi.fn((entry: { title: string; body: string }) => `# ${entry.title}\n\n${entry.body}`)
+      } as any,
+      vault: localVault,
+      listManagedCanvasPaths: vi.fn(async () => [...managedCanvasPaths]),
+      registerManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.add(path);
+      }),
+      removeManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.delete(path);
+      })
+    });
+
+    await workflow.attachIdeaSourceToCanvas({
+      boardPath: "Boards/native.canvas",
+      position: { x: 360, y: 180 },
+      ideaId: linkedIdea.id,
+      poolId: defaultPool.id,
+      poolName: defaultPool.name,
+      poolColor: "#6ab5ff",
+      title: linkedIdea.title,
+      body: linkedIdea.body,
+      contentType: linkedIdea.contentType,
+      sourceUrl: linkedIdea.sourceUrl,
+      attachmentPaths: linkedIdea.attachmentPaths
+    });
+
+    await ideaService.updateIdea(otherIdea.id, {
+      title: "Other native idea updated",
+      body: "Other body updated",
+      markEdited: true
+    });
+
+    const updatedBoards = await workflow.syncIdeaSourceInRoamBoards(otherIdea.id);
+
+    expect(updatedBoards).toBe(0);
+    expect([...managedCanvasPaths]).toEqual(["Boards/native.canvas"]);
+    const canvas = await workflow.readPoolRoamBoard({ boardPath: "Boards/native.canvas" });
+    expect(collectRoamBlocksForIdea(canvas.canvas, linkedIdea.id)).toHaveLength(1);
+  });
+
+  it("removes missing native canvas paths from the managed registry", async () => {
+    const ideaService = createIdeaService();
+    const poolService = createPoolService([], () => ideaService.listIdeas());
+    const defaultPool = await poolService.ensureDefaultPool();
+    const idea = await ideaService.createIdea({
+      title: "Missing native idea",
+      body: "Body",
+      contentType: "text",
+      sourceType: "manual",
+      tags: [],
+      poolId: defaultPool.id
+    });
+    const { vault: localVault } = createRoamVaultHarness();
+    const managedCanvasPaths = new Set<string>(["Boards/missing.canvas"]);
+
+    const workflow = createPoolWorkbenchWorkflow({
+      poolService,
+      ideaService,
+      vaultFileStore: {
+        ensureFolder: vi.fn(async () => undefined),
+        createUniquePath: vi.fn(async (_folder: string, fileName: string) => `Glitter/${fileName}.md`),
+        buildIdeaFileContent: vi.fn((entry: { title: string; body: string }) => `# ${entry.title}\n\n${entry.body}`)
+      } as any,
+      vault: localVault,
+      listManagedCanvasPaths: vi.fn(async () => [...managedCanvasPaths]),
+      registerManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.add(path);
+      }),
+      removeManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.delete(path);
+      })
+    });
+
+    const updatedBoards = await workflow.syncIdeaSourceInRoamBoards(idea.id);
+
+    expect(updatedBoards).toBe(0);
+    expect([...managedCanvasPaths]).toEqual([]);
+  });
+
+  it("removes empty native canvas paths after managed blocks disappear", async () => {
+    const ideaService = createIdeaService();
+    const poolService = createPoolService([], () => ideaService.listIdeas());
+    const defaultPool = await poolService.ensureDefaultPool();
+    const idea = await ideaService.createIdea({
+      title: "Empty native idea",
+      body: "Body",
+      contentType: "text",
+      sourceType: "manual",
+      tags: [],
+      poolId: defaultPool.id
+    });
+    const { vault: localVault } = createRoamVaultHarness();
+    const managedCanvasPaths = new Set<string>(["Boards/native.canvas"]);
+
+    await localVault.create(
+      "Boards/native.canvas",
+      JSON.stringify(
+        {
+          nodes: [{ id: "plain-1", type: "text", text: "旁注", x: 80, y: 60, width: 160, height: 120 }],
+          edges: []
+        },
+        null,
+        2
+      )
+    );
+
+    const workflow = createPoolWorkbenchWorkflow({
+      poolService,
+      ideaService,
+      vaultFileStore: {
+        ensureFolder: vi.fn(async () => undefined),
+        createUniquePath: vi.fn(async (_folder: string, fileName: string) => `Glitter/${fileName}.md`),
+        buildIdeaFileContent: vi.fn((entry: { title: string; body: string }) => `# ${entry.title}\n\n${entry.body}`)
+      } as any,
+      vault: localVault,
+      listManagedCanvasPaths: vi.fn(async () => [...managedCanvasPaths]),
+      registerManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.add(path);
+      }),
+      removeManagedCanvasPath: vi.fn(async (path: string) => {
+        managedCanvasPaths.delete(path);
+      })
+    });
+
+    const updatedBoards = await workflow.syncIdeaSourceInRoamBoards(idea.id);
+
+    expect(updatedBoards).toBe(0);
+    expect([...managedCanvasPaths]).toEqual([]);
+  });
+
   it("keeps syncing later roam boards after one board write fails and then throws", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-28T10:30:00.000Z"));

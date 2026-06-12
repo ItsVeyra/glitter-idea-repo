@@ -23,7 +23,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [],
         pools: [],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     });
   });
@@ -51,7 +52,8 @@ describe("createPluginDataStore", () => {
       version: 1,
       ideas: [],
       pools: [],
-      lastSelectedPoolId: null
+      lastSelectedPoolId: null,
+      managedCanvasPaths: []
     });
   });
 
@@ -83,7 +85,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-1" }],
         pools: [{ id: "pool-1" }],
-        lastSelectedPoolId: "pool-1"
+        lastSelectedPoolId: "pool-1",
+        managedCanvasPaths: []
       }
     });
 
@@ -97,7 +100,39 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-1" }],
         pools: [{ id: "pool-1" }],
-        lastSelectedPoolId: "pool-1"
+        lastSelectedPoolId: "pool-1",
+        managedCanvasPaths: []
+      }
+    });
+  });
+
+  it("normalizes managed canvas registry paths in snapshot", async () => {
+    const store = createPluginDataStore({
+      async loadData() {
+        return {
+          GlitterIdeaSettings: {},
+          GlitterIdeaSnapshot: {
+            version: 1,
+            ideas: [],
+            pools: [],
+            lastSelectedPoolId: null,
+            managedCanvasPaths: ["Boards/native.canvas", "", "Boards/native.canvas", 42, "Boards/extra.canvas"]
+          }
+        };
+      },
+      async saveData() {
+        return;
+      }
+    });
+
+    await expect(store.load()).resolves.toEqual({
+      settings: {},
+      snapshot: {
+        version: 1,
+        ideas: [],
+        pools: [],
+        lastSelectedPoolId: null,
+        managedCanvasPaths: ["Boards/native.canvas", "Boards/extra.canvas"]
       }
     });
   });
@@ -130,7 +165,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-legacy" }],
         pools: [{ id: "pool-legacy" }],
-        lastSelectedPoolId: "pool-legacy"
+        lastSelectedPoolId: "pool-legacy",
+        managedCanvasPaths: []
       }
     });
 
@@ -144,7 +180,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-legacy" }],
         pools: [{ id: "pool-legacy" }],
-        lastSelectedPoolId: "pool-legacy"
+        lastSelectedPoolId: "pool-legacy",
+        managedCanvasPaths: []
       }
     });
   });
@@ -186,7 +223,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-1" }],
         pools: [{ id: "pool-1" }],
-        lastSelectedPoolId: "pool-1"
+        lastSelectedPoolId: "pool-1",
+        managedCanvasPaths: []
       }
     });
   });
@@ -233,7 +271,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-1", meta: { tags: ["initial"] } }],
         pools: [{ id: "pool-1", config: { colors: ["#4A5F84"] } }],
-        lastSelectedPoolId: "pool-1"
+        lastSelectedPoolId: "pool-1",
+        managedCanvasPaths: []
       }
     });
 
@@ -247,7 +286,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-2", meta: { tags: ["saved"] } }],
         pools: [{ id: "pool-2", config: { colors: ["#111111"] } }],
-        lastSelectedPoolId: "pool-2"
+        lastSelectedPoolId: "pool-2",
+        managedCanvasPaths: []
       }
     };
 
@@ -266,7 +306,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-2", meta: { tags: ["saved"] } }],
         pools: [{ id: "pool-2", config: { colors: ["#111111"] } }],
-        lastSelectedPoolId: "pool-2"
+        lastSelectedPoolId: "pool-2",
+        managedCanvasPaths: []
       }
     });
   });
@@ -324,7 +365,8 @@ describe("createPluginDataStore", () => {
         version: 1,
         ideas: [{ id: "idea-1" }],
         pools: [],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     });
   });

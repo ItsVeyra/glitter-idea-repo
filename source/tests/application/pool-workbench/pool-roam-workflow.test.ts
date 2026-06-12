@@ -426,6 +426,31 @@ describe("createPoolRoamWorkflow", () => {
     );
   });
 
+  it("appends a managed text source block at the requested canvas position", async () => {
+    const { vault, seedCanvasFile } = createVaultHarness();
+    seedCanvasFile("Boards/native.canvas", { nodes: [], edges: [] });
+
+    const workflow = createPoolRoamWorkflow({
+      vault,
+      settings: createSettings()
+    });
+
+    const result = await workflow.attachIdeaSourceToBoard({
+      ...buildAttachInput(),
+      boardPath: "Boards/native.canvas",
+      position: { x: 480, y: 220 }
+    });
+
+    expect(result.canvas.nodes[0]).toMatchObject({
+      x: 480,
+      y: 220,
+      glitterSourceBlock: expect.objectContaining({
+        role: "root",
+        sourceId: "idea-1"
+      })
+    });
+  });
+
   it("creates source nodes even when crypto.randomUUID is unavailable", async () => {
     const { vault } = createVaultHarness();
     const workflow = createPoolRoamWorkflow({

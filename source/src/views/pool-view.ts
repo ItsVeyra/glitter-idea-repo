@@ -3,6 +3,7 @@ import {
   formatPoolRoamBoardDisplayName,
   type PoolRoamBoardRecord
 } from "../application/pool-workbench/pool-roam-workflow";
+import { isIdeaSnippetStartLine } from "../editor/snippet-serializer";
 import { createToastService } from "../feedback/toast-service";
 import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
@@ -1088,6 +1089,7 @@ export class GlitterPoolView extends ItemView {
       openPoolRoamHistory: () => this.openPoolRoamHistory(),
       downloadPoolRoamBoard: () => this.downloadPoolRoamBoard(),
       openPoolRoamShareMenu: (anchorEl) => this.openPoolRoamShareMenu(anchorEl),
+      addIdeaBlockToPoolRoam: () => this.openPoolRoamIdeaBlockPicker(),
       togglePoolMarkdownPreview: () => this.togglePoolMarkdownPreview(),
       savePoolMarkdownFile: () => this.savePoolMarkdownFile(),
       toggleBatchMode: () => this.toggleBatchMode(),
@@ -1346,6 +1348,54 @@ export class GlitterPoolView extends ItemView {
     this.renderPoolShell();
   }
 
+  private applyPoolRoamBoardUpdate(
+    result: PoolRoamAttachResult | PoolRoamBoardReadResult,
+    options: { open?: boolean; forceInlineRemount?: boolean } = {}
+  ): void {
+    if (options.open !== undefined) {
+      this.poolRoamOpen = options.open;
+    }
+
+    this.poolRoamBoardPath = result.path;
+    this.poolRoamErrorMessage = undefined;
+    if (options.forceInlineRemount) {
+      this.poolRoamController.destroy();
+    } else {
+      this.poolRoamController.clearSession();
+    }
+    extractSessionBoundaryAnchors(result.canvas).forEach((anchor) => {
+      this.poolRoamController.rememberSessionBoundaryAnchor(anchor);
+    });
+    this.preserveResultScrollOnNextRender = true;
+
+    if (this.rerenderLastRenderedBrowseRuntime()) {
+      return;
+    }
+
+    this.renderPoolShell();
+  }
+
+  private openPoolRoamIdeaBlockPicker(boardPath = this.poolRoamBoardPath): void {
+    if (!boardPath) {
+      return;
+    }
+
+    this.plugin.openRoamIdeaBlockPicker({
+      boardPath,
+      onAttached: async (result) => {
+        this.disablePoolMarkdownPreview();
+        if (this.isClosed || !this.poolRoamOpen || this.poolRoamBoardPath !== result.path) {
+          return;
+        }
+
+        this.applyPoolRoamBoardUpdate(result, {
+          open: true,
+          forceInlineRemount: true
+        });
+      }
+    });
+  }
+
   private async attachPoolRoamSource(ideaId: string): Promise<void> {
     if (this.browseScope !== "pool") {
       return;
@@ -1375,20 +1425,10 @@ export class GlitterPoolView extends ItemView {
       });
 
       this.disablePoolMarkdownPreview();
-      this.poolRoamOpen = true;
-      this.poolRoamBoardPath = result.path;
-      this.poolRoamErrorMessage = undefined;
-      this.poolRoamController.clearSession();
-      extractSessionBoundaryAnchors(result.canvas).forEach((anchor) => {
-        this.poolRoamController.rememberSessionBoundaryAnchor(anchor);
+      this.applyPoolRoamBoardUpdate(result, {
+        open: true,
+        forceInlineRemount: true
       });
-      this.preserveResultScrollOnNextRender = true;
-
-      if (this.rerenderLastRenderedBrowseRuntime()) {
-        return;
-      }
-
-      this.renderPoolShell();
     } catch (_error) {
       this.toastService.show({
         status: "error",
@@ -1432,18 +1472,9 @@ export class GlitterPoolView extends ItemView {
         return;
       }
 
-      this.poolRoamErrorMessage = undefined;
-      this.poolRoamController.clearSession();
-      extractSessionBoundaryAnchors(result.canvas).forEach((anchor) => {
-        this.poolRoamController.rememberSessionBoundaryAnchor(anchor);
+      this.applyPoolRoamBoardUpdate(result, {
+        forceInlineRemount: true
       });
-      this.preserveResultScrollOnNextRender = true;
-
-      if (this.rerenderLastRenderedBrowseRuntime()) {
-        return;
-      }
-
-      this.renderPoolShell();
     } catch (_error) {
       this.toastService.show({
         status: "error",
@@ -1530,6 +1561,29 @@ export class GlitterPoolView extends ItemView {
       onDownloadBoard: (board) => this.downloadPoolRoamBoardByPath(board.path),
       onShareBoard: (board, anchorEl) => {
         this.openPoolRoamShareMenuForBoard(board.path, anchorEl);
+      },
+      onAddIdeaBlock: (board, callbacks) => {
+        this.plugin.openRoamIdeaBlockPicker({
+          boardPath: board.path,
+          onAttached: async (result) => {
+            if (this.poolRoamOpen && this.poolRoamBoardPath === result.path && !this.isClosed) {
+              this.disablePoolMarkdownPreview();
+              this.applyPoolRoamBoardUpdate(result, {
+                open: true,
+                forceInlineRemount: true
+              });
+            }
+
+            let latestBoards: PoolRoamBoardRecord[] | undefined;
+            try {
+              latestBoards = await this.plugin.poolWorkbenchWorkflow.listPoolRoamBoards();
+            } catch {
+              latestBoards = undefined;
+            }
+
+            callbacks.onAttached(latestBoards);
+          }
+        });
       },
       onClose: () => {
         if (this.activePoolRoamBoardModal === modal) {
@@ -2472,7 +2526,7 @@ export class GlitterPoolView extends ItemView {
 
     const modal = new SnippetLocationsModal(this.plugin.app, card.snippetLocations, async (location) => {
       await this.openIdeaFile(location.notePath, { ideaId });
-    });
+    }, this.plugin.settings?.interfaceLanguage);
     modal.open();
   }
 
@@ -2510,26 +2564,54 @@ export class GlitterPoolView extends ItemView {
     }
 
     try {
-      const containerEl = (leaf as { view?: { containerEl?: { querySelector?: (selector: string) => HTMLElement | null } } })
-        .view?.containerEl;
-      const marker = containerEl?.querySelector?.(
-        `[data-glitteridea-id="${ideaId}"], [data-glitter-idea-id="${ideaId}"]`
-      );
-      marker?.scrollIntoView({
-        block: "center",
-        behavior: "smooth"
-      });
+      const selector = `[data-glitteridea-id="${ideaId}"], [data-glitter-idea-id="${ideaId}"]`;
+      const leafView = (leaf as {
+        view?: {
+          containerEl?: { querySelector?: (query: string) => HTMLElement | null };
+          editor?: {
+            lineCount?: () => number;
+            getLine?: (line: number) => string;
+            setCursor?: (position: { line: number; ch: number }) => void;
+            scrollIntoView?: (from: { line: number; ch: number }, to?: { line: number; ch: number }) => void;
+            focus?: () => void;
+          };
+        };
+      }).view;
+      const marker = leafView?.containerEl?.querySelector?.(selector);
+      if (marker) {
+        marker.scrollIntoView({
+          block: "center",
+          behavior: "smooth"
+        });
+        return;
+      }
+
+      const editor = leafView?.editor;
+      const lineCount = editor?.lineCount?.() ?? 0;
+      for (let line = 0; line < lineCount; line += 1) {
+        const content = editor?.getLine?.(line) ?? "";
+        if (!isIdeaSnippetStartLine(content, ideaId)) {
+          continue;
+        }
+
+        const position = { line, ch: 0 };
+        editor?.setCursor?.(position);
+        editor?.scrollIntoView?.(position, position);
+        editor?.focus?.();
+        return;
+      }
     } catch {
       return;
     }
   }
 
   private async openIdeaFile(filePath: string, options: { ideaId?: string } = {}): Promise<void> {
+    const poolText = getInterfaceText(this.plugin.settings?.interfaceLanguage).pool;
     const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
     if (!(file instanceof TFile)) {
       this.toastService.show({
         status: "error",
-        message: "Open file failed. Please try again."
+        message: poolText.openFileFailed
       });
       return;
     }
@@ -2541,7 +2623,7 @@ export class GlitterPoolView extends ItemView {
     } catch (_error) {
       this.toastService.show({
         status: "error",
-        message: "Open file failed. Please try again."
+        message: poolText.openFileFailed
       });
     }
   }

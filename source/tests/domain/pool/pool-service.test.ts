@@ -128,7 +128,8 @@ describe("createPoolService", () => {
         version: 1,
         ideas: [],
         pools: [],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
 
@@ -150,7 +151,8 @@ describe("createPoolService", () => {
             version: 1,
             ideas: [],
             pools: [],
-            lastSelectedPoolId: null
+            lastSelectedPoolId: null,
+            managedCanvasPaths: []
           }
         };
       }
@@ -348,7 +350,8 @@ describe("createPoolService", () => {
             updatedAt: "2026-01-02T00:00:00.000Z"
           }
         ],
-        lastSelectedPoolId: "pool-writing"
+        lastSelectedPoolId: "pool-writing",
+        managedCanvasPaths: []
       }
     };
 
@@ -492,6 +495,7 @@ describe("createPoolService", () => {
             updatedAt: "2026-01-02T00:00:00.000Z"
           }
         ],
+        managedCanvasPaths: [],
         lastSelectedPoolId: DEFAULT_POOL_ID
       }
     });
@@ -572,6 +576,7 @@ describe("createPoolService", () => {
             updatedAt: legacyUpdatedAt
           }
         ],
+        managedCanvasPaths: [],
         lastSelectedPoolId: null
       }
     });

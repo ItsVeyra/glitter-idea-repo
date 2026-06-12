@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import type { PoolRoamBoardRecord } from "../../src/application/pool-workbench/pool-roam-workflow";
 import { PoolRoamBoardModal } from "../../src/views/pool-roam-board-modal";
 
 const stylesCss = readFileSync(resolve(process.cwd(), "styles.css"), "utf8");
@@ -274,8 +275,8 @@ describe("PoolRoamBoardModal", () => {
     expect(navButtons[1]?.disabled).toBe(true);
   });
 
-  it("renders floating download and share actions for the active historical board", async () => {
-    const boards = [
+  it("renders floating download, share, and add-idea-block actions for the active historical board", async () => {
+    const boards: PoolRoamBoardRecord[] = [
       {
         path: "Glitter/灵感漫游/board-a.canvas",
         name: "board-a",
@@ -291,18 +292,30 @@ describe("PoolRoamBoardModal", () => {
         thumbnailBoxes: []
       }
     ];
+    const updatedBoards: PoolRoamBoardRecord[] = [
+      boards[0],
+      {
+        ...boards[1],
+        updatedAt: 1716801000000,
+        relatedPools: [{ id: "pool-product", name: "产品池", color: "#6ab5ff" }]
+      }
+    ];
     const onDownloadBoard = vi.fn(async () => undefined);
     const onShareBoard = vi.fn();
+    const mountModalBoard = vi.fn(async () => undefined);
+    const onAddIdeaBlock = vi.fn((_board: unknown, callbacks: { onAttached: (nextBoards?: PoolRoamBoardRecord[]) => void }) => {
+      callbacks.onAttached(updatedBoards);
+    });
     const modal = new PoolRoamBoardModal(
       {} as any,
       boards,
       0,
-      { onDownloadBoard, onShareBoard },
+      { onDownloadBoard, onShareBoard, onAddIdeaBlock },
       {
         interfaceLanguage: "en",
         canvasHost: {
           mountInlineBoard: vi.fn(async () => undefined),
-          mountModalBoard: vi.fn(async () => undefined),
+          mountModalBoard,
           destroy: vi.fn()
         }
       }
@@ -315,15 +328,21 @@ describe("PoolRoamBoardModal", () => {
     const floatingActions = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__floating-actions");
     const downloadButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__floating-action--download");
     const shareButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__floating-action--share");
+    const addIdeaBlockButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__floating-action--idea-block");
     const closeButton = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__close");
+    const canvasHostEl = contentEl.querySelector<FakeElement>(".glitter-pool-roam-board-modal__canvas-host");
     expect(floatingActions).not.toBeNull();
     expect(downloadButton).not.toBeNull();
     expect(shareButton).not.toBeNull();
+    expect(addIdeaBlockButton).not.toBeNull();
     expect(closeButton).not.toBeNull();
+    expect(canvasHostEl).not.toBeNull();
     expect(downloadButton?.disabled).toBe(false);
     expect(shareButton?.disabled).toBe(false);
+    expect(addIdeaBlockButton?.disabled).toBe(false);
     expect(downloadButton?.getAttribute("aria-label")).toBe("Download current historical roam board");
     expect(shareButton?.getAttribute("aria-label")).toBe("Share current historical roam board");
+    expect(addIdeaBlockButton?.getAttribute("aria-label")).toBe("Add idea block to the current historical roam board");
     expect(closeButton?.getAttribute("aria-label")).toBe("Close roam board preview");
 
     downloadButton?.click();
@@ -336,6 +355,15 @@ describe("PoolRoamBoardModal", () => {
 
     shareButton?.click();
     expect(onShareBoard).toHaveBeenCalledWith(boards[1], shareButton);
+
+    addIdeaBlockButton?.click();
+    await flushMicrotasks();
+    expect(onAddIdeaBlock).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "Glitter/灵感漫游/board-b.canvas" }),
+      expect.objectContaining({ onAttached: expect.any(Function) })
+    );
+    expect(contentEl.textContent).toContain("产品池");
+    expect(mountModalBoard).toHaveBeenNthCalledWith(3, canvasHostEl, "Glitter/灵感漫游/board-b.canvas");
   });
 
   it("reports mount failures and closes only the board modal", async () => {

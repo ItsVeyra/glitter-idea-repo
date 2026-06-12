@@ -88,6 +88,11 @@ export interface PoolRoamAttachSourceInput extends PoolRoamAttachSourceContent {
   poolColor: string;
 }
 
+export type PoolRoamCanvasPosition = {
+  x: number;
+  y: number;
+};
+
 export interface PoolRoamCanvasNode {
   id: string;
   type: string;
@@ -642,7 +647,7 @@ export function createPoolRoamWorkflow(deps: {
     return { path, canvas };
   }
 
-  async function attachIdeaSourceToBoard(input: PoolRoamAttachSourceInput & { boardPath: string }): Promise<{
+  async function attachIdeaSourceToBoard(input: PoolRoamAttachSourceInput & { boardPath: string; position?: PoolRoamCanvasPosition }): Promise<{
     path: string;
     canvas: PoolRoamCanvasData;
   }> {
@@ -651,7 +656,7 @@ export function createPoolRoamWorkflow(deps: {
       ...board.canvas,
       nodes: [
         ...board.canvas.nodes.map((node) => ({ ...node })),
-        ...(await buildSourceNodes(input, resolveNextSourceNodePosition(board.canvas)))
+        ...(await buildSourceNodes(input, input.position ?? resolveNextSourceNodePosition(board.canvas)))
       ],
       edges: board.canvas.edges.map((edge) => ({ ...edge }))
     };

@@ -26,6 +26,7 @@ const {
   followupGuidanceOpenMock,
   toastShowMock,
   savePluginSettingsMock,
+  getLanguageMock,
   quickCaptureInstances,
   poolModalInstances,
   followupGuidanceInstances
@@ -46,6 +47,7 @@ const {
   followupGuidanceOpenMock: vi.fn(),
   toastShowMock: vi.fn(),
   savePluginSettingsMock: vi.fn(async () => undefined),
+  getLanguageMock: vi.fn(() => "fr"),
   quickCaptureInstances: [] as Array<{
     step: "capture" | "saved-feedback";
     handlers: {
@@ -90,7 +92,13 @@ vi.mock("../../src/ui/home/render-home", () => ({
   renderHomeView: renderHomeViewMock
 }));
 
-vi.mock("obsidian", async (importOriginal) => await importOriginal<typeof import("obsidian")>());
+vi.mock("obsidian", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("obsidian")>();
+  return {
+    ...actual,
+    getLanguage: getLanguageMock
+  };
+});
 
 vi.mock("../../src/ui/shared/theme-state", () => ({
   buildThemeState: buildThemeStateMock,
@@ -180,6 +188,8 @@ describe("GlitterMainView", () => {
     followupGuidanceOpenMock.mockReset();
     toastShowMock.mockReset();
     savePluginSettingsMock.mockReset();
+    getLanguageMock.mockReset();
+    getLanguageMock.mockReturnValue("fr");
     quickCaptureInstances.length = 0;
     poolModalInstances.length = 0;
     followupGuidanceInstances.length = 0;
@@ -1639,6 +1649,158 @@ describe("GlitterMainView", () => {
       );
     } finally {
       observer.restore();
+    }
+  });
+
+  it("uses host language before first-use persistence, then refreshes with the saved selection", async () => {
+    getLanguageMock.mockReturnValue("zh-Hans");
+
+    getHomeRuntimeStateMock.mockResolvedValue({
+      mode: "empty",
+      pools: []
+    });
+    buildHomeViewStateFromRuntimeMock.mockImplementation((_runtime, options) => ({ mode: "empty", options }));
+
+    let actions!: {
+      onFirstUseLanguageSelect?: (language: "zh-CN" | "en") => void | Promise<void>;
+    } & Record<string, unknown>;
+    renderHomeViewMock.mockImplementation((_container, _state, nextActions) => {
+      actions = nextActions;
+      return { ownerDocument: { body: {} } };
+    });
+
+    const themeObserver = installMutationObserverStub();
+    let view!: GlitterMainView;
+    let plugin: any;
+    const refreshOpenGlitterViewsMock = vi.fn(() => {
+      view.refreshInterfaceText();
+    });
+    const savePluginSettingsForLanguageMock = vi.fn(async () => {
+      plugin.hasPersistedInterfaceLanguageSetting = true;
+    });
+    plugin = {
+      settings: {
+        ...DEFAULT_SETTINGS,
+        enableDesignReviewMode: false,
+        reviewScenario: "home-empty"
+      },
+      hasPersistedInterfaceLanguageSetting: false,
+      activatePoolView: activatePoolViewMock,
+      savePluginSettings: savePluginSettingsForLanguageMock,
+      refreshOpenGlitterViews: refreshOpenGlitterViewsMock,
+      firstUseWorkflow: {
+        getHomeRuntimeState: getHomeRuntimeStateMock,
+        commitDraftToExistingPool: commitDraftToExistingPoolMock,
+        commitDraftToNewPool: commitDraftToNewPoolMock
+      }
+    };
+
+    view = new GlitterMainView({} as any, plugin);
+    (view as any).contentEl = {
+      ownerDocument: { body: {} },
+      empty: vi.fn()
+    };
+
+    try {
+      await view.onOpen();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(buildHomeViewStateFromRuntimeMock).toHaveBeenNthCalledWith(
+        1,
+        { mode: "empty", pools: [] },
+        expect.objectContaining({
+          interfaceLanguage: "zh-CN"
+        })
+      );
+      expect(getLanguageMock).toHaveBeenCalledTimes(1);
+
+      await actions.onFirstUseLanguageSelect?.("en");
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(plugin.settings.interfaceLanguage).toBe("en");
+      expect(plugin.hasPersistedInterfaceLanguageSetting).toBe(true);
+      expect(savePluginSettingsForLanguageMock).toHaveBeenCalledTimes(1);
+      expect(refreshOpenGlitterViewsMock).toHaveBeenCalledTimes(1);
+      expect(buildHomeViewStateFromRuntimeMock).toHaveBeenNthCalledWith(
+        2,
+        { mode: "empty", pools: [] },
+        expect.objectContaining({
+          interfaceLanguage: "en"
+        })
+      );
+      expect(getLanguageMock).toHaveBeenCalledTimes(1);
+    } finally {
+      themeObserver.restore();
+    }
+  });
+
+  it("rolls back first-use language selection and shows an error toast when saving fails", async () => {
+    getLanguageMock.mockReturnValue("zh-Hans");
+
+    getHomeRuntimeStateMock.mockResolvedValue({
+      mode: "empty",
+      pools: []
+    });
+    buildHomeViewStateFromRuntimeMock.mockImplementation((_runtime, options) => ({ mode: "empty", options }));
+
+    let actions!: {
+      onFirstUseLanguageSelect?: (language: "zh-CN" | "en") => void | Promise<void>;
+    } & Record<string, unknown>;
+    renderHomeViewMock.mockImplementation((_container, _state, nextActions) => {
+      actions = nextActions;
+      return { ownerDocument: { body: {} } };
+    });
+
+    const themeObserver = installMutationObserverStub();
+    const saveError = new Error("save failed");
+    const refreshOpenGlitterViewsMock = vi.fn();
+    const plugin = {
+      settings: {
+        ...DEFAULT_SETTINGS,
+        enableDesignReviewMode: false,
+        reviewScenario: "home-empty",
+        interfaceLanguage: "zh-CN" as const
+      },
+      hasPersistedInterfaceLanguageSetting: false,
+      activatePoolView: activatePoolViewMock,
+      savePluginSettings: vi.fn(async () => {
+        throw saveError;
+      }),
+      refreshOpenGlitterViews: refreshOpenGlitterViewsMock,
+      firstUseWorkflow: {
+        getHomeRuntimeState: getHomeRuntimeStateMock,
+        commitDraftToExistingPool: commitDraftToExistingPoolMock,
+        commitDraftToNewPool: commitDraftToNewPoolMock
+      }
+    };
+
+    const view = new GlitterMainView({} as any, plugin as any);
+    (view as any).contentEl = {
+      ownerDocument: { body: {} },
+      empty: vi.fn()
+    };
+
+    try {
+      await view.onOpen();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      await actions.onFirstUseLanguageSelect?.("en");
+
+      expect(plugin.settings.interfaceLanguage).toBe("zh-CN");
+      expect(plugin.hasPersistedInterfaceLanguageSetting).toBe(false);
+      expect(plugin.savePluginSettings).toHaveBeenCalledTimes(1);
+      expect(refreshOpenGlitterViewsMock).not.toHaveBeenCalled();
+      expect(toastShowMock).toHaveBeenCalledWith({
+        status: "error",
+        message: "界面语言保存失败，请稍后重试。"
+      });
+      expect(buildHomeViewStateFromRuntimeMock).toHaveBeenCalledTimes(1);
+      expect(getLanguageMock).toHaveBeenCalledTimes(1);
+    } finally {
+      themeObserver.restore();
     }
   });
 

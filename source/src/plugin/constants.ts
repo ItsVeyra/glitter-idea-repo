@@ -2,6 +2,9 @@
  * 插件常量中心。
  * 负责集中维护插件标识、视图类型、默认池常量与共享文案回退规则。
  */
+import { getInterfaceText } from "../i18n/interface-language";
+import type { PluginInterfaceLanguage } from "../settings/settings";
+
 // 插件标识与视图类型。
 export const PLUGIN_ID = "glitter-idea";
 export const GLITTER_ICON_ID = "glitter-idea-plugin-sparkles";
@@ -18,10 +21,31 @@ export const CREATE_NEW_POOL_LABEL = "新建池";
 export const NEW_POOL_CREATED_ID = "new-pool-created";
 export const NEW_POOL_CREATED_LABEL = "新建池";
 
+export function resolveDefaultPoolName(interfaceLanguage?: PluginInterfaceLanguage): string {
+  return getInterfaceText(interfaceLanguage).pool.defaultPoolName;
+}
+
+export function resolvePoolDisplayName(
+  pool: { name?: string | null; isDefault?: boolean } | null | undefined,
+  interfaceLanguage?: PluginInterfaceLanguage
+): string {
+  if (pool?.isDefault) {
+    return resolveDefaultPoolName(interfaceLanguage);
+  }
+
+  const normalizedName = pool?.name?.trim();
+  return normalizedName && normalizedName.length > 0
+    ? normalizedName
+    : resolveDefaultPoolName(interfaceLanguage);
+}
+
 // 文案回退辅助。
-export function resolvePoolDescription(description?: string | null): string {
+export function resolvePoolDescription(
+  description?: string | null,
+  interfaceLanguage?: PluginInterfaceLanguage
+): string {
   const normalizedDescription = description?.trim();
   return normalizedDescription && normalizedDescription.length > 0
     ? normalizedDescription
-    : DEFAULT_POOL_DESCRIPTION;
+    : getInterfaceText(interfaceLanguage).pool.defaultPoolDescription;
 }

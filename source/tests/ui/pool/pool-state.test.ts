@@ -453,7 +453,7 @@ describe("buildPoolViewState", () => {
         open: true,
         mode: "empty",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: []
       }
     });
@@ -465,9 +465,11 @@ describe("buildPoolViewState", () => {
       toggleOpen: "Open roam mode",
       toggleClose: "Close roam mode",
       modeLabel: "Roam mode",
+      moreActionsLabel: "More actions",
       downloadCurrentBoard: "Download current roam board",
       shareCurrentBoard: "Share current roam board",
       openHistory: "Open roam board history",
+      addIdeaBlock: "Add idea block",
       errorTitle: "Roam board is temporarily unavailable",
       errorDescription: "Please try again later.",
       emptyTitle: "New blank roam area",
@@ -1599,7 +1601,7 @@ describe("buildPoolViewState", () => {
         open: true,
         mode: "empty",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-1",
@@ -1618,7 +1620,7 @@ describe("buildPoolViewState", () => {
       open: true,
       mode: "empty",
       historyEnabled: true,
-      floatingActions: ["download", "share", "history"],
+      floatingActions: ["download", "share", "history", "idea-block"],
       boundaryAnchors: [
         {
           anchorId: "anchor-1",
@@ -1643,7 +1645,7 @@ describe("buildPoolViewState", () => {
       mode: "board",
       boardPath: "Boards/product.canvas",
       historyEnabled: false,
-      floatingActions: ["download", "share", "history"],
+      floatingActions: ["download", "share", "history", "idea-block"],
       boundaryAnchors: [
         {
           anchorId: "anchor-1",
@@ -1761,7 +1763,7 @@ describe("buildPoolViewState", () => {
         open: true,
         mode: "error",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-3",
@@ -1780,7 +1782,7 @@ describe("buildPoolViewState", () => {
       open: true,
       mode: "error",
       historyEnabled: true,
-      floatingActions: ["download", "share", "history"],
+      floatingActions: ["download", "share", "history", "idea-block"],
       boundaryAnchors: [
         {
           anchorId: "anchor-3",

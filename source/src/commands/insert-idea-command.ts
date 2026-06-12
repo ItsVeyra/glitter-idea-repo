@@ -5,6 +5,7 @@
 import { Notice, type Hotkey, type Menu, type MenuItem, type Modifier } from "obsidian";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import { getActiveEditor } from "../editor/editor-integration";
+import { getInterfaceText } from "../i18n/interface-language";
 import { DEFAULT_SETTINGS } from "../settings/defaults";
 import { IdeaPickerModal } from "../views/idea-picker-modal";
 
@@ -86,9 +87,12 @@ function parseConfiguredHotkey(value: string | null | undefined): Hotkey[] | und
   return [{ modifiers, key }];
 }
 
-function buildInsertIdeaReferenceMenuTitle(hotkey: string | null | undefined): string {
+function buildInsertIdeaReferenceMenuTitle(
+  interfaceLanguage: unknown,
+  hotkey: string | null | undefined
+): string {
   const hint = hotkey?.trim() || DEFAULT_SETTINGS.hotkeys.insertIdeaReference || "";
-  return hint ? `插入灵感片段（${hint}）` : "插入灵感片段";
+  return getInterfaceText(interfaceLanguage).picker.snippetMenuTitle(hint);
 }
 
 type UndocumentedSubmenuMenuItem = MenuItem & {
@@ -102,9 +106,11 @@ function addInsertIdeaReferenceMenuAction(
   notePath: string | null,
   hotkey: string | null | undefined
 ): void {
-  item.setTitle(buildInsertIdeaReferenceMenuTitle(hotkey)).onClick(() => {
-    void openInsertIdeaReferencePicker(plugin, editor, notePath);
-  });
+  item
+    .setTitle(buildInsertIdeaReferenceMenuTitle(plugin.settings?.interfaceLanguage, hotkey))
+    .onClick(() => {
+      void openInsertIdeaReferencePicker(plugin, editor, notePath);
+    });
 }
 
 // 片段选择器打开逻辑。
@@ -117,16 +123,21 @@ async function openInsertIdeaReferencePicker(
     return;
   }
 
-  const picker = new IdeaPickerModal(plugin, async (ideaId) => {
-    await plugin.editorWorkflow.insertIdeaReference({
-      ideaId,
-      editor,
-      notePath,
-      emoji: plugin.settings.referencedIdeaEmoji
-    });
-    editor.focus();
-    new Notice("已插入灵感片段");
-  });
+  const pickerText = getInterfaceText(plugin.settings?.interfaceLanguage).picker;
+  const picker = new IdeaPickerModal(
+    plugin,
+    async (ideaId) => {
+      await plugin.editorWorkflow.insertIdeaReference({
+        ideaId,
+        editor,
+        notePath,
+        emoji: plugin.settings.referencedIdeaEmoji
+      });
+      editor.focus();
+      new Notice(pickerText.snippetInsertedNotice);
+    },
+    { mode: "snippet" }
+  );
 
   picker.open();
 }
@@ -137,7 +148,7 @@ export function registerInsertIdeaReferenceCommand(plugin: GlitterPlugin): void 
 
   plugin.addCommand({
     id: "insert-idea-reference",
-    name: "Insert Glitter snippet",
+    name: getInterfaceText(plugin.settings?.interfaceLanguage).picker.snippetMenuTitle(""),
     hotkeys: parseConfiguredHotkey(configuredHotkey),
     callback: async () => {
       await openInsertIdeaReferencePicker(plugin);

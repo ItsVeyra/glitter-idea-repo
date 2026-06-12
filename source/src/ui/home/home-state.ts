@@ -3,7 +3,7 @@
  * 负责把首页运行时池数据整理成首页舞台、顶部控件与提示区可直接渲染的视图模型。
  */
 
-import { getInterfaceText } from "../../i18n/interface-language";
+import { getInterfaceText, normalizeInterfaceLanguage } from "../../i18n/interface-language";
 import type { HomeFieldView, PluginInterfaceLanguage, PoolColorSettings } from "../../settings/settings";
 import type { ReviewScenario } from "../../review/scenarios";
 import {
@@ -12,6 +12,7 @@ import {
   type HomeStageOrb
 } from "./home-demo-data";
 import { comparePoolOverviewEntries } from "../../domain/pool/pool-overview-sort";
+import { resolvePoolDisplayName } from "../../plugin/constants";
 import { resolveHomeOrbTone } from "./home-orb-tone";
 
 // 首页主舞台的视图模型与运行时输入。
@@ -48,6 +49,21 @@ interface HomeEmptyGuide {
   prompt: string;
 }
 
+export interface HomeFirstUseLanguageOption {
+  value: PluginInterfaceLanguage;
+  label: string;
+  selected: boolean;
+}
+
+export interface HomeFirstUseEntry {
+  badge: string;
+  orbTitle: string;
+  orbSubtitle: string;
+  languageLabel: string;
+  currentLanguageLabel: string;
+  options: HomeFirstUseLanguageOption[];
+}
+
 interface HomeBanner {
   title: string;
   description: string;
@@ -82,6 +98,7 @@ export interface HomeViewState {
   hero: HomeHero;
   topbar: HomeTopbar;
   emptyGuide?: HomeEmptyGuide;
+  firstUseEntry?: HomeFirstUseEntry;
   primaryAction: HomeAction;
   secondaryAction?: HomeAction;
   primaryOrb: HomeStageOrb | null;
@@ -227,11 +244,12 @@ function buildPoolOrb(
   pool: HomeRuntimePoolSummary,
   layout: { x: number; y: number },
   poolColors: PoolColorSettings | undefined,
-  orbSizeByCount: ReadonlyMap<number, HomeStageOrb["size"]>
+  orbSizeByCount: ReadonlyMap<number, HomeStageOrb["size"]>,
+  interfaceLanguage?: PluginInterfaceLanguage
 ): HomeStageOrb {
   return {
     id: pool.id,
-    label: pool.name,
+    label: resolvePoolDisplayName(pool, interfaceLanguage),
     count: pool.ideaCount,
     tone: resolveHomeOrbTone(pool.color, poolColors),
     color: pool.color,
@@ -263,6 +281,26 @@ function buildHomePoolActionLabels(text: ReturnType<typeof getInterfaceText>): H
   };
 }
 
+function buildHomeFirstUseEntry(
+  text: ReturnType<typeof getInterfaceText>,
+  interfaceLanguage: PluginInterfaceLanguage
+): HomeFirstUseEntry {
+  const options = text.home.firstUseLanguageOptions.map((option) => ({
+    value: option.value,
+    label: option.label,
+    selected: option.value === interfaceLanguage
+  }));
+
+  return {
+    badge: text.home.firstUseBadge,
+    orbTitle: text.home.firstUseOrbTitle,
+    orbSubtitle: text.home.firstUseOrbSubtitle,
+    languageLabel: text.home.firstUseLanguageLabel,
+    currentLanguageLabel: options.find((option) => option.selected)?.label ?? "",
+    options
+  };
+}
+
 // 运行时首页状态适配。
 export function buildHomeViewStateFromRuntime(
   runtime: HomeRuntimeState,
@@ -280,12 +318,20 @@ export function buildHomeViewStateFromRuntime(
   const orbSizeByCount = buildHomeOrbSizeByCount(sortedPools);
 
   const poolOrbs = supportingPools.map((pool, index) =>
-    buildPoolOrb(pool, resolveSupportingLayout(index, supportingPools.length), options.poolColors, orbSizeByCount)
+    buildPoolOrb(
+      pool,
+      resolveSupportingLayout(index, supportingPools.length),
+      options.poolColors,
+      orbSizeByCount,
+      options.interfaceLanguage
+    )
   );
 
   return {
     ...base,
-    primaryOrb: primaryPool ? buildPoolOrb(primaryPool, HOME_PRIMARY_LAYOUT, options.poolColors, orbSizeByCount) : null,
+    primaryOrb: primaryPool
+      ? buildPoolOrb(primaryPool, HOME_PRIMARY_LAYOUT, options.poolColors, orbSizeByCount, options.interfaceLanguage)
+      : null,
     poolOrbs,
     searchFeedback: options.searchFeedbackMessage
       ? {
@@ -302,25 +348,22 @@ export function buildHomeViewState(
 ): HomeViewState {
   const mode = scenario === "home-empty" ? "empty" : "populated";
   const fieldView = resolveHomeFieldView(mode, options.homeFieldView);
-  const text = getInterfaceText(options.interfaceLanguage);
+  const interfaceLanguage = normalizeInterfaceLanguage(options.interfaceLanguage);
+  const text = getInterfaceText(interfaceLanguage);
 
   if (scenario === "home-empty") {
     return {
       mode: "empty",
       fieldView,
       hero: {
-        title: "Glitter · 灵感池",
+        title: text.home.heroTitle,
         subtitle: "",
         emphasis: "single-center"
       },
       topbar: {
         controls: []
       },
-      emptyGuide: {
-        badge: "首次引导",
-        helper: "点击中央灵感球，打开首次记录窗口",
-        prompt: "点击空灵感球开始流程"
-      },
+      firstUseEntry: buildHomeFirstUseEntry(text, interfaceLanguage),
       primaryAction: {
         label: text.home.quickCapture,
         tone: "primary"
@@ -336,8 +379,8 @@ export function buildHomeViewState(
       mode: "populated",
       fieldView,
       hero: {
-        title: "Glitter · 灵感池",
-        subtitle: "先校准主舞台、池球层级和关键操作位。",
+        title: text.home.heroTitle,
+        subtitle: text.home.populatedHeroSubtitle,
         emphasis: "stage-top"
       },
       topbar: {

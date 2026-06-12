@@ -1,11 +1,13 @@
-import { formatIdeaTimestamp } from "../../domain/idea/idea-model";
+import { buildIdeaStatusLabels, formatIdeaTimestamp } from "../../domain/idea/idea-model";
 import { getInterfaceText } from "../../i18n/interface-language";
 import {
   CREATE_NEW_POOL_ID,
   DEFAULT_POOL_DESCRIPTION,
+  DEFAULT_POOL_ID,
   NEW_POOL_CREATED_ID,
   NEW_POOL_CREATED_LABEL,
-  resolvePoolDescription
+  resolvePoolDescription,
+  resolvePoolDisplayName
 } from "../../plugin/constants";
 import type { PluginInterfaceLanguage, PoolColorSettings } from "../../settings/settings";
 
@@ -176,7 +178,7 @@ export interface PoolMarkdownPreviewState {
   saveLabel: string;
 }
 
-export type PoolRoamFloatingAction = "download" | "share" | "history";
+export type PoolRoamFloatingAction = "download" | "share" | "history" | "idea-block";
 
 export const MIN_POOL_ROAM_PANEL_WIDTH_RATIO = 0.2;
 export const MAX_POOL_ROAM_PANEL_WIDTH_RATIO = 0.8;
@@ -196,9 +198,11 @@ export interface PoolRoamPanelLabels {
   toggleOpen: string;
   toggleClose: string;
   modeLabel: string;
+  moreActionsLabel: string;
   downloadCurrentBoard: string;
   shareCurrentBoard: string;
   openHistory: string;
+  addIdeaBlock: string;
   errorTitle: string;
   errorDescription: string;
   emptyTitle: string;
@@ -292,8 +296,14 @@ export function buildFirstUseChoosePoolState(options: {
 }): PoolViewState {
   const text = getInterfaceText(options.interfaceLanguage).pool;
   const defaultPool = options.pools[0];
-  const defaultPoolId = defaultPool?.id ?? "pool-default";
-  const defaultPoolName = defaultPool?.name ?? text.firstUseChooseDefaultPoolName;
+  const defaultPoolId = defaultPool?.id ?? DEFAULT_POOL_ID;
+  const defaultPoolName = resolvePoolDisplayName(
+    {
+      name: defaultPool?.name,
+      isDefault: defaultPoolId === DEFAULT_POOL_ID
+    },
+    options.interfaceLanguage
+  );
 
   return {
     mode: "first-use-choose",
@@ -543,21 +553,6 @@ function buildBrowseResultSummary(visible: number, total: number, interfaceLangu
   return getInterfaceText(interfaceLanguage).pool.browseResultSummary(visible, total);
 }
 
-function buildLocalizedIdeaStatusLabels(input: { fileCreated: boolean; snippetCount: number; interfaceLanguage?: PluginInterfaceLanguage }): string[] {
-  const text = getInterfaceText(input.interfaceLanguage).pool;
-  const labels: string[] = [];
-
-  if (input.fileCreated) {
-    labels.push(text.cardFileCreatedStatus);
-  }
-
-  if (input.snippetCount > 0) {
-    labels.push(text.cardSnippetStatus(input.snippetCount));
-  }
-
-  return labels;
-}
-
 function buildPoolBrowseLabels(interfaceLanguage?: PluginInterfaceLanguage): PoolBrowseLabels {
   const text = getInterfaceText(interfaceLanguage).pool;
   return {
@@ -632,9 +627,11 @@ function buildPoolRoamPanelLabels(interfaceLanguage?: PluginInterfaceLanguage): 
     toggleOpen: text.roamToggleOpen,
     toggleClose: text.roamToggleClose,
     modeLabel: text.roamModeLabel,
+    moreActionsLabel: text.moreActionsLabel,
     downloadCurrentBoard: text.roamDownloadCurrentBoard,
     shareCurrentBoard: text.roamShareCurrentBoard,
     openHistory: text.roamOpenHistory,
+    addIdeaBlock: text.roamAddIdeaBlock,
     errorTitle: text.roamErrorTitle,
     errorDescription: text.roamErrorDescription,
     emptyTitle: text.roamEmptyTitle,
@@ -723,7 +720,7 @@ export function buildPoolViewStateFromRuntime(input: {
   const selectedPoolOption = input.poolOptions.find((pool) => pool.selected);
   const poolSwitcherExpanded = input.activeOverlay === "pool-switcher";
   const browse: PoolBrowseState = {
-    description: resolvePoolDescription(input.pool.description),
+    description: resolvePoolDescription(input.pool.description, input.interfaceLanguage),
     descriptionValue: input.pool.description,
     activeOverlay: input.activeOverlay ?? null,
     poolSwitcherExpanded,
@@ -776,11 +773,16 @@ export function buildPoolViewStateFromRuntime(input: {
         linkDisplayText: undefined,
         updatedLabel: buildUpdatedLabel(card.createdAt, card.updatedAt, card.editedAt, input.interfaceLanguage),
         fileCreated: card.fileCreated,
-        statusLabels: buildLocalizedIdeaStatusLabels({
-          fileCreated: card.fileCreated,
-          snippetCount: snippetNoteCount,
-          interfaceLanguage: input.interfaceLanguage
-        }),
+        statusLabels: buildIdeaStatusLabels(
+          {
+            fileCreated: card.fileCreated,
+            snippetCount: snippetNoteCount
+          },
+          {
+            fileCreatedStatus: interfaceText.cardFileCreatedStatus,
+            snippetStatus: interfaceText.cardSnippetStatus
+          }
+        ),
         menuActions: buildBrowseMenuActions({
           fileCreated: card.fileCreated,
           filePath: card.filePath,

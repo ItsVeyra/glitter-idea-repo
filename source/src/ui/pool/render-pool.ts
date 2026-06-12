@@ -32,6 +32,7 @@ export interface PoolViewActions {
   onOpenPoolRoamHistory?: () => void;
   onDownloadPoolRoamImage?: () => void;
   onSharePoolRoamBoard?: (anchorEl: HTMLElement) => void;
+  onAddPoolRoamIdeaBlock?: () => void;
   onMoveSelectionToPool?: (poolId: string) => void;
   onDeleteSelection?: () => void;
   onCreateFile?: (ideaId: string) => void;
@@ -1918,11 +1919,26 @@ function bindRoamBridgeLaneLayoutSync(workbench: HTMLElement): void {
   const cardStack = workbench.querySelector(".glitter-pool-stage__card-stack") as HTMLElement | null;
   const roamPane = workbench.querySelector(".glitter-pool-stage__workbench-pane--roam") as HTMLElement | null;
   const sourceHandles = Array.from(workbench.querySelectorAll("[data-glitter-pool-roam-source-handle]")) as HTMLElement[];
+  let pendingFrameId: number | null = null;
   const syncLayout = (): void => {
     syncRoamBridgeLaneLayout(workbench);
   };
+  const scheduleLayout = (): void => {
+    if (pendingFrameId !== null) {
+      return;
+    }
+    if (typeof globalThis.requestAnimationFrame !== "function") {
+      syncLayout();
+      return;
+    }
 
-  cardGrid?.addEventListener("scroll", syncLayout);
+    pendingFrameId = globalThis.requestAnimationFrame(() => {
+      pendingFrameId = null;
+      syncLayout();
+    });
+  };
+
+  cardGrid?.addEventListener("scroll", scheduleLayout);
 
   const ResizeObserverCtor = (globalThis as typeof globalThis & {
     ResizeObserver?: new (callback: ResizeObserverCallback) => ResizeObserver;
@@ -1943,7 +1959,11 @@ function bindRoamBridgeLaneLayoutSync(workbench: HTMLElement): void {
     [POOL_ROAM_BRIDGE_LAYOUT_CLEANUP_KEY]?: () => void;
   };
   withCleanup[POOL_ROAM_BRIDGE_LAYOUT_CLEANUP_KEY] = () => {
-    cardGrid?.removeEventListener?.("scroll", syncLayout);
+    cardGrid?.removeEventListener?.("scroll", scheduleLayout);
+    if (pendingFrameId !== null && typeof globalThis.cancelAnimationFrame === "function") {
+      globalThis.cancelAnimationFrame(pendingFrameId);
+    }
+    pendingFrameId = null;
     observer?.disconnect?.();
     withCleanup[POOL_ROAM_BRIDGE_LAYOUT_CLEANUP_KEY] = undefined;
   };
@@ -2285,21 +2305,22 @@ function renderRoamPanel(parent: HTMLElement, stage: HTMLElement, state: PoolVie
     attachDraggedSource(event);
   });
 
-  const floatingActions = createNode(roamCanvasStage, "div", "glitter-pool-stage__roam-floating-actions");
   const floatingActionHandlers: Record<
     NonNullable<PoolViewState["roam"]>["floatingActions"][number],
     ((anchorEl: HTMLElement) => void) | undefined
   > = {
     download: actions.onDownloadPoolRoamImage ? () => actions.onDownloadPoolRoamImage?.() : undefined,
     share: actions.onSharePoolRoamBoard,
-    history: actions.onOpenPoolRoamHistory ? () => actions.onOpenPoolRoamHistory?.() : undefined
+    history: actions.onOpenPoolRoamHistory ? () => actions.onOpenPoolRoamHistory?.() : undefined,
+    "idea-block": actions.onAddPoolRoamIdeaBlock ? () => actions.onAddPoolRoamIdeaBlock?.() : undefined
   };
   const floatingActionLabels: Record<NonNullable<PoolViewState["roam"]>["floatingActions"][number], string> = {
     download: roamLabels?.downloadCurrentBoard ?? "下载当前漫游白板",
     share: roamLabels?.shareCurrentBoard ?? "分享当前漫游白板",
-    history: roamLabels?.openHistory ?? "打开漫游白板历史"
+    history: roamLabels?.openHistory ?? "打开漫游白板历史",
+    "idea-block": roamLabels?.addIdeaBlock ?? "增加灵感块"
   };
-
+  const floatingActions = createNode(roamCanvasStage, "div", "glitter-pool-stage__roam-floating-actions");
   (roamState?.floatingActions ?? []).forEach((action) => {
     const actionHandler = floatingActionHandlers[action];
     const button = createButton(

@@ -3,8 +3,11 @@
  * 负责首次入池后提示文案的状态构建，以及引导弹窗主体内容的渲染。
  */
 
+import { getInterfaceText } from "../../i18n/interface-language";
+import type { PluginInterfaceLanguage } from "../../settings/settings";
+
 // 首次入池引导使用的数据约定。
-export type FollowupGuidanceItemIcon = "quote" | "file-text" | "link-2" | "keyboard";
+export type FollowupGuidanceItemIcon = "quote" | "file-text" | "link-2" | "keyboard" | "roam";
 
 export interface FollowupGuidanceItem {
   title: string;
@@ -17,6 +20,7 @@ export interface FollowupGuidanceState {
   items: FollowupGuidanceItem[];
   footnote: string;
   continueLabel: string;
+  closeLabel: string;
 }
 
 export interface FollowupGuidanceActions {
@@ -38,33 +42,41 @@ function createNode(parent: HTMLElement, tag: string, className?: string, text?:
 }
 
 // 引导弹窗的静态文案。
-export function buildFollowupGuidanceState(): FollowupGuidanceState {
+export function buildFollowupGuidanceState(interfaceLanguage?: PluginInterfaceLanguage): FollowupGuidanceState {
+  const text = getInterfaceText(interfaceLanguage).home;
+
   return {
-    title: "后续使用指引",
+    title: text.followupGuidanceTitle,
     items: [
       {
-        title: "全局快捷记录",
-        description: "任意场景快速记录，不打断当前工作流。",
+        title: text.followupGuidanceGlobalShortcutTitle,
+        description: text.followupGuidanceGlobalShortcutDescription,
         icon: "keyboard"
       },
       {
-        title: "自动识别链接",
-        description: "粘贴链接，自动识别并添入内容。",
+        title: text.followupGuidanceAutoLinkTitle,
+        description: text.followupGuidanceAutoLinkDescription,
         icon: "link-2"
       },
       {
-        title: "多类型内容速记",
-        description: "灵感速记窗口内粘贴链接/图片/视频，快速切换布局。",
+        title: text.followupGuidanceMultiContentTitle,
+        description: text.followupGuidanceMultiContentDescription,
         icon: "file-text"
       },
       {
-        title: "正文内嵌入灵感片段",
-        description: "正文内右键 或 自定义快捷键，快速嵌入灵感片段。",
+        title: text.followupGuidanceSnippetTitle,
+        description: text.followupGuidanceSnippetDescription,
         icon: "quote"
+      },
+      {
+        title: text.followupGuidanceRoamModeTitle,
+        description: text.followupGuidanceRoamModeDescription,
+        icon: "roam"
       }
     ],
-    footnote: "本引导仅首次弹出；关闭后可在设置页重新打开。",
-    continueLabel: "灵感入池"
+    footnote: text.followupGuidanceFootnote,
+    continueLabel: text.followupGuidanceContinueLabel,
+    closeLabel: text.followupGuidanceCloseLabel
   };
 }
 
@@ -85,7 +97,7 @@ export function renderFollowupGuidanceView(
     "glitter-followup-guidance-view__close glitter-write-stage__close-button"
   ) as HTMLButtonElement;
   closeButton.type = "button";
-  closeButton.setAttribute?.("aria-label", "关闭后续使用指引窗口");
+  closeButton.setAttribute?.("aria-label", state.closeLabel);
   createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
   closeButton.addEventListener("click", () => actions.onDismiss());
 

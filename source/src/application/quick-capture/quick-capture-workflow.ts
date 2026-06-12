@@ -3,7 +3,12 @@
  * 同时维护跨弹窗复用的当前选池状态，供全局快速记录流程回填与切换。
  */
 import type { Vault } from "obsidian";
-import { DEFAULT_POOL_ID, DEFAULT_POOL_LABEL } from "../../plugin/constants";
+import {
+  DEFAULT_POOL_ID,
+  resolveDefaultPoolName,
+  resolvePoolDisplayName
+} from "../../plugin/constants";
+import type { PluginInterfaceLanguage } from "../../settings/settings";
 import type { IdeaContentType } from "../../domain/idea/idea-model";
 import type { createIdeaService } from "../../domain/idea/idea-service";
 import type { createPoolService } from "../../domain/pool/pool-service";
@@ -44,18 +49,20 @@ export function createQuickCaptureWorkflow({
   poolService,
   vaultFileStore,
   vault,
-  resolveFileStorageDirectory = () => "Glitter"
+  resolveFileStorageDirectory = () => "Glitter",
+  resolveInterfaceLanguage = () => undefined
 }: {
   ideaService: ReturnType<typeof createIdeaService>;
   poolService: ReturnType<typeof createPoolService>;
   vaultFileStore: ReturnType<typeof createVaultFileStore>;
   vault: Vault;
   resolveFileStorageDirectory?: () => string;
+  resolveInterfaceLanguage?: () => PluginInterfaceLanguage | undefined;
 }): QuickCaptureWorkflow {
   // 全局选池状态。
   let globalSelectedPoolState: GlobalSelectedPoolState = {
     id: DEFAULT_POOL_ID,
-    label: DEFAULT_POOL_LABEL
+    label: resolveDefaultPoolName(resolveInterfaceLanguage())
   };
 
   // 快速记录工作流对外接口。
@@ -86,20 +93,28 @@ export function createQuickCaptureWorkflow({
 
     async listGlobalPoolOptions() {
       const pools = await poolService.listPools();
+      const interfaceLanguage = resolveInterfaceLanguage();
       return pools.map((pool) => ({
         id: pool.id,
-        label: pool.name
+        label: resolvePoolDisplayName(pool, interfaceLanguage)
       }));
     },
 
     getGlobalSelectedPoolState() {
+      if (globalSelectedPoolState.id === DEFAULT_POOL_ID) {
+        return {
+          id: DEFAULT_POOL_ID,
+          label: resolveDefaultPoolName(resolveInterfaceLanguage())
+        };
+      }
+
       return {
         ...globalSelectedPoolState
       };
     },
 
     async setGlobalSelectedPoolState(poolId) {
-      const fallbackLabel = globalSelectedPoolState.label;
+      const fallbackLabel = this.getGlobalSelectedPoolState().label;
 
       try {
         const options = await this.listGlobalPoolOptions();

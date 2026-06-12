@@ -552,6 +552,7 @@ describe("GlitterSettingTab", () => {
         ...DEFAULT_SETTINGS,
         interfaceLanguage: "zh-CN" as const
       },
+      hasPersistedInterfaceLanguageSetting: false,
       activateMainView: vi.fn(async () => undefined),
       savePluginSettings: vi.fn(async () => undefined),
       refreshOpenGlitterViews: vi.fn()
@@ -568,11 +569,42 @@ describe("GlitterSettingTab", () => {
     const headingSettings = obsidianMockState.settings.filter((setting) => setting.isHeading);
 
     expect(plugin.settings.interfaceLanguage).toBe("en");
+    expect(plugin.hasPersistedInterfaceLanguageSetting).toBe(true);
     expect(plugin.savePluginSettings).toHaveBeenCalledTimes(1);
     expect(plugin.refreshOpenGlitterViews).toHaveBeenCalledTimes(1);
     expect(headingSettings[0]).toMatchObject({
       name: "Glitter 设置"
     });
+  });
+
+  it("rolls back Glitter interface language changes when settings save fails", async () => {
+    const plugin = {
+      settings: {
+        ...DEFAULT_SETTINGS,
+        interfaceLanguage: "zh-CN" as const
+      },
+      hasPersistedInterfaceLanguageSetting: false,
+      activateMainView: vi.fn(async () => undefined),
+      savePluginSettings: vi.fn(async () => {
+        throw new Error("save failed");
+      }),
+      refreshOpenGlitterViews: vi.fn()
+    };
+
+    const tab = new GlitterSettingTab({} as never, plugin as never);
+    tab.display();
+
+    const interfaceLanguageSetting = obsidianMockState.settings.find(
+      (setting) => setting.name === "Glitter 界面语言"
+    );
+
+    expect(interfaceLanguageSetting?.dropdownOnChange).toBeDefined();
+    await expect(interfaceLanguageSetting!.dropdownOnChange!("en")).rejects.toThrow("save failed");
+
+    expect(plugin.settings.interfaceLanguage).toBe("zh-CN");
+    expect(plugin.hasPersistedInterfaceLanguageSetting).toBe(false);
+    expect(plugin.savePluginSettings).toHaveBeenCalledTimes(1);
+    expect(plugin.refreshOpenGlitterViews).not.toHaveBeenCalled();
   });
 
   it("uses native setting heading rows, a larger page title, and dividers between groups", () => {

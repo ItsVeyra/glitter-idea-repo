@@ -52,13 +52,61 @@ describe("buildHomeViewState", () => {
     expect(state.fieldView).toBe("spring-rain");
   });
 
+  it("localizes populated runtime home hero title when English is requested", () => {
+    const state = buildHomeViewStateFromRuntime(
+      {
+        mode: "populated",
+        pools: [
+          {
+            id: "pool-alpha",
+            name: "Default Pool",
+            ideaCount: 30,
+            isDefault: true,
+            color: DEFAULT_SETTINGS.poolColors.unsorted
+          }
+        ]
+      },
+      {
+        poolColors: DEFAULT_SETTINGS.poolColors,
+        interfaceLanguage: "en"
+      }
+    );
+
+    expect(state.hero.title).toBe("Glitter · Idea Pools");
+    expect(state.hero.subtitle).toBe("Calibrate the main stage, pool hierarchy, and key actions first.");
+    expect(state.firstUseEntry).toBeUndefined();
+  });
+
+  it("localizes default-pool orb labels from runtime data when English is requested", () => {
+    const state = buildHomeViewStateFromRuntime(
+      {
+        mode: "populated",
+        pools: [
+          {
+            id: "pool-alpha",
+            name: "默认池",
+            ideaCount: 30,
+            isDefault: true,
+            color: DEFAULT_SETTINGS.poolColors.unsorted
+          }
+        ]
+      },
+      {
+        poolColors: DEFAULT_SETTINGS.poolColors,
+        interfaceLanguage: "en"
+      }
+    );
+
+    expect(state.primaryOrb?.label).toBe("Default pool");
+  });
+
   it("defaults populated review/demo states to water", () => {
     expect(buildHomeViewState("home-populated").fieldView).toBe("water");
     expect(buildHomeViewState("settings-conflict").fieldView).toBe("water");
   });
 
-  it("builds the empty state with orb-adjacent guide copy and no bottom action CTAs", () => {
-    const state = buildHomeViewState("home-empty");
+  it("builds the zh first-use entry with localized copy and no bottom action CTAs", () => {
+    const state = buildHomeViewState("home-empty", { interfaceLanguage: "zh-CN" });
 
     expect(state.mode).toBe("empty");
     expect(state.hero).toMatchObject({
@@ -67,12 +115,45 @@ describe("buildHomeViewState", () => {
     });
     expect(state.topbar).toEqual({ controls: [] });
     expect(state.topbar.search).toBeUndefined();
-    expect(state.emptyGuide).toEqual({
+    expect(state.firstUseEntry).toEqual({
       badge: "首次引导",
-      helper: "点击中央灵感球，打开首次记录窗口",
-      prompt: "点击空灵感球开始流程"
+      orbTitle: "灵感待录入",
+      orbSubtitle: "点击开始首次记录",
+      languageLabel: "界面语言",
+      currentLanguageLabel: "简体中文",
+      options: [
+        { value: "zh-CN", label: "简体中文", selected: true },
+        { value: "en", label: "English", selected: false }
+      ]
     });
+    expect(state.emptyGuide).toBeUndefined();
     expect(state.primaryAction).toEqual({ label: "快速记录", tone: "primary" });
+    expect(state.secondaryAction).toBeUndefined();
+    expect(state.primaryOrb).toBeNull();
+    expect(state.poolOrbs).toEqual([]);
+  });
+
+  it("builds the en first-use entry with localized hero title and language state", () => {
+    const state = buildHomeViewState("home-empty", { interfaceLanguage: "en" });
+
+    expect(state.mode).toBe("empty");
+    expect(state.hero).toMatchObject({
+      title: "Glitter · Idea Pools",
+      emphasis: "single-center"
+    });
+    expect(state.firstUseEntry).toEqual({
+      badge: "First-use",
+      orbTitle: "Idea waiting to be captured",
+      orbSubtitle: "Click to start your first capture",
+      languageLabel: "Interface language",
+      currentLanguageLabel: "English",
+      options: [
+        { value: "zh-CN", label: "简体中文", selected: false },
+        { value: "en", label: "English", selected: true }
+      ]
+    });
+    expect(state.emptyGuide).toBeUndefined();
+    expect(state.primaryAction).toEqual({ label: "Quick capture", tone: "primary" });
     expect(state.secondaryAction).toBeUndefined();
     expect(state.primaryOrb).toBeNull();
     expect(state.poolOrbs).toEqual([]);
@@ -81,6 +162,8 @@ describe("buildHomeViewState", () => {
   it("builds English fixed home interface text when requested", () => {
     const state = buildHomeViewState("home-populated", { interfaceLanguage: "en" });
 
+    expect(state.hero.title).toBe("Glitter · Idea Pools");
+    expect(state.hero.subtitle).toBe("Calibrate the main stage, pool hierarchy, and key actions first.");
     expect(state.topbar.search?.placeholder).toBe("Search ideas, snippets, or pools");
     expect(state.topbar.controls).toEqual([
       { id: "view-switch", label: "Switch view", kind: "text" },
@@ -132,10 +215,10 @@ describe("buildHomeViewState", () => {
     expect(state.topbar.controls).toEqual(POPULATED_TOPBAR_CONTROLS);
   });
 
-  it("keeps populated home state free of embedded first-use guidance payloads", () => {
+  it("keeps populated home state free of a first-use entry payload", () => {
     const state = buildHomeViewState("home-populated");
 
-    expect(state).not.toHaveProperty("guidance");
+    expect(state.firstUseEntry).toBeUndefined();
   });
 
   it("exposes read-only demo orb exports while returning mutable copies in view state", () => {
@@ -299,7 +382,7 @@ describe("buildHomeViewState", () => {
 
     expect(state.primaryOrb).toEqual({
       id: "pool-alpha",
-      label: "测试甲",
+      label: "默认池",
       count: 30,
       size: "xxxl",
       x: 50,
@@ -469,6 +552,7 @@ describe("buildHomeViewState", () => {
     expect(state.mode).toBe("populated");
     expect(state.primaryOrb).toBeNull();
     expect(state.poolOrbs).toEqual([]);
+    expect(state.firstUseEntry).toBeUndefined();
     expect(state.emptyGuide).toBeUndefined();
   });
 

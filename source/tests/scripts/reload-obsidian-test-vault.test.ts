@@ -11,6 +11,12 @@ import { buildPluginAutomationData, createSyncStamp, describeSyncSource, ensureA
 
 const sandboxesToCleanup: string[] = [];
 
+function resolveCanonicalProjectRoot(projectRoot = resolve(process.cwd())): string {
+  return projectRoot.includes("/.worktrees/") || projectRoot.includes("/worktrees/")
+    ? resolve(projectRoot, "..", "..")
+    : projectRoot;
+}
+
 // 提供测试夹具与辅助查询函数，减少重复的宿主搭建。
 async function createSandboxRoot() {
   const sandboxRoot = await mkdtemp(resolve(tmpdir(), "glitter-reload-script-"));
@@ -103,7 +109,7 @@ describe("reload-obsidian-test-vault script helpers", () => {
   });
 
   it("accepts the canonical glitter-plugin root when no sync source is provided", () => {
-    expect(ensureAllowedSyncSource()).toBe(resolve(process.cwd()));
+    expect(ensureAllowedSyncSource()).toBe(resolveCanonicalProjectRoot(resolve(process.cwd())));
   });
 
   it("normalizes enabled community plugins by replacing legacy Glitter ids and keeping current id", () => {

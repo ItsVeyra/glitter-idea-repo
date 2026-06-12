@@ -12,11 +12,25 @@ import { DEFAULT_POOL_ID, DEFAULT_POOL_LABEL } from "../../src/plugin/constants"
 import { DEFAULT_SETTINGS } from "../../src/settings/defaults";
 
 // 预先收口可重置的依赖替身，方便验证对外协作。
-const { registerCommandsMock, getActiveEditorMock, enhanceGlitterSnippetsMock, addIconMock } = vi.hoisted(() => ({
+const {
+  registerCommandsMock,
+  getActiveEditorMock,
+  enhanceGlitterSnippetsMock,
+  addIconMock,
+  noticeMock,
+  ideaPickerOpenMock,
+  capturedIdeaPicker
+} = vi.hoisted(() => ({
   registerCommandsMock: vi.fn(),
   getActiveEditorMock: vi.fn(),
   enhanceGlitterSnippetsMock: vi.fn(),
-  addIconMock: vi.fn()
+  addIconMock: vi.fn(),
+  noticeMock: vi.fn(),
+  ideaPickerOpenMock: vi.fn(),
+  capturedIdeaPicker: {
+    onPick: undefined as undefined | ((ideaId: string) => Promise<void>),
+    options: undefined as undefined | { mode?: string }
+  }
 }));
 
 // 用模块桩固定外部依赖，让断言聚焦当前单元的编排结果。
@@ -42,9 +56,25 @@ vi.mock("obsidian", async () => {
   const actual = await vi.importActual<typeof import("obsidian")>("obsidian");
   return {
     ...actual,
+    Notice: vi.fn(function (this: unknown, message: string) {
+      noticeMock(message);
+    }),
     addIcon: addIconMock
   };
 });
+
+vi.mock("../../src/views/idea-picker-modal", () => ({
+  IdeaPickerModal: class {
+    constructor(_plugin: unknown, onPick: (ideaId: string) => Promise<void>, options?: { mode?: string }) {
+      capturedIdeaPicker.onPick = onPick;
+      capturedIdeaPicker.options = options;
+    }
+
+    open(): void {
+      ideaPickerOpenMock();
+    }
+  }
+}));
 
 // 校验视图相关命令与实际打开动作之间的注册连线。
 describe("view command registration", () => {
@@ -53,6 +83,10 @@ describe("view command registration", () => {
     getActiveEditorMock.mockReset();
     enhanceGlitterSnippetsMock.mockReset();
     addIconMock.mockReset();
+    noticeMock.mockReset();
+    ideaPickerOpenMock.mockReset();
+    capturedIdeaPicker.onPick = undefined;
+    capturedIdeaPicker.options = undefined;
   });
 
   it("onunload does not detach Glitter leaves", () => {
@@ -76,6 +110,186 @@ describe("view command registration", () => {
     expect(detachLeavesOfType).not.toHaveBeenCalled();
   });
 
+  it("savePluginSettings omits interface language before explicit persistence", async () => {
+    const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
+    let savedSettings: Record<string, unknown> | null = null;
+    const updateSettings = vi.fn(async (mutator: (settings: Record<string, unknown>) => Record<string, unknown>) => {
+      savedSettings = mutator({ showHomeRibbonIcon: true });
+      return savedSettings ?? {};
+    });
+
+    plugin.settings = {
+      ...DEFAULT_SETTINGS,
+      showHomeRibbonIcon: false,
+      interfaceLanguage: "zh-CN"
+    };
+    plugin.hasPersistedInterfaceLanguageSetting = false;
+    plugin.dataStore = {
+      updateSettings
+    } as unknown as GlitterPlugin["dataStore"];
+
+    await plugin.savePluginSettings();
+
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(savedSettings).not.toHaveProperty("interfaceLanguage");
+    expect(savedSettings).toMatchObject({
+      showHomeRibbonIcon: false
+    });
+    expect(plugin.hasPersistedInterfaceLanguageSetting).toBe(false);
+    expect(plugin.settings.interfaceLanguage).toBe("zh-CN");
+  });
+
+  it("savePluginSettings keeps interface language after explicit persistence", async () => {
+    const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
+    let savedSettings: Record<string, unknown> | null = null;
+    const updateSettings = vi.fn(async (mutator: (settings: Record<string, unknown>) => Record<string, unknown>) => {
+      savedSettings = mutator({ showHomeRibbonIcon: true });
+      return savedSettings ?? {};
+    });
+
+    plugin.settings = {
+      ...DEFAULT_SETTINGS,
+      interfaceLanguage: "en"
+    };
+    plugin.hasPersistedInterfaceLanguageSetting = true;
+    plugin.dataStore = {
+      updateSettings
+    } as unknown as GlitterPlugin["dataStore"];
+
+    await plugin.savePluginSettings();
+
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(savedSettings).toMatchObject({
+      interfaceLanguage: "en"
+    });
+    expect(plugin.hasPersistedInterfaceLanguageSetting).toBe(true);
+    expect(plugin.settings.interfaceLanguage).toBe("en");
+  });
+
+  it("openNativeCanvasIdeaPicker keeps the picker open when the selected idea is gone", async () => {
+    const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
+    const getIdea = vi.fn(async () => null);
+    const getPool = vi.fn(async () => null);
+    const attachIdeaSourceToCanvas = vi.fn(async () => undefined);
+
+    plugin.settings = {
+      ...DEFAULT_SETTINGS,
+      interfaceLanguage: "zh-CN"
+    };
+    plugin.ideaService = {
+      getIdea
+    } as unknown as GlitterPlugin["ideaService"];
+    plugin.poolService = {
+      getPool
+    } as unknown as GlitterPlugin["poolService"];
+    plugin.poolWorkbenchWorkflow = {
+      attachIdeaSourceToCanvas
+    } as unknown as GlitterPlugin["poolWorkbenchWorkflow"];
+
+    await (plugin as any).openNativeCanvasIdeaPicker({
+      boardPath: "Boards/demo.canvas",
+      position: { x: 120, y: 96 }
+    });
+
+    expect(ideaPickerOpenMock).toHaveBeenCalledTimes(1);
+    expect(capturedIdeaPicker.options).toEqual({ mode: "canvas-block" });
+    await expect(capturedIdeaPicker.onPick?.("idea-1") ?? Promise.resolve()).rejects.toThrow(
+      "所选灵感已不可用，请重新选择"
+    );
+    expect(getPool).not.toHaveBeenCalled();
+    expect(attachIdeaSourceToCanvas).not.toHaveBeenCalled();
+    expect(noticeMock).toHaveBeenCalledWith("所选灵感已不可用，请重新选择");
+  });
+
+  it("openNativeCanvasIdeaPicker keeps the picker open when the selected idea pool is gone", async () => {
+    const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
+    const getIdea = vi.fn(async () => ({
+      id: "idea-1",
+      poolId: "pool-missing"
+    }));
+    const getPool = vi.fn(async () => null);
+    const attachIdeaSourceToCanvas = vi.fn(async () => undefined);
+
+    plugin.settings = {
+      ...DEFAULT_SETTINGS,
+      interfaceLanguage: "zh-CN"
+    };
+    plugin.ideaService = {
+      getIdea
+    } as unknown as GlitterPlugin["ideaService"];
+    plugin.poolService = {
+      getPool
+    } as unknown as GlitterPlugin["poolService"];
+    plugin.poolWorkbenchWorkflow = {
+      attachIdeaSourceToCanvas
+    } as unknown as GlitterPlugin["poolWorkbenchWorkflow"];
+
+    await (plugin as any).openNativeCanvasIdeaPicker({
+      boardPath: "Boards/demo.canvas",
+      position: { x: 120, y: 96 }
+    });
+
+    await expect(capturedIdeaPicker.onPick?.("idea-1") ?? Promise.resolve()).rejects.toThrow(
+      "所选灵感所属灵感池已不可用，请重新选择"
+    );
+    expect(attachIdeaSourceToCanvas).not.toHaveBeenCalled();
+    expect(noticeMock).toHaveBeenCalledWith("所选灵感所属灵感池已不可用，请重新选择");
+  });
+
+  it("openNativeCanvasIdeaPicker forwards the selected idea into canvas insertion", async () => {
+    const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
+    const getIdea = vi.fn(async () => ({
+      id: "idea-1",
+      title: "灵感标题",
+      body: "灵感正文",
+      poolId: "pool-1",
+      contentType: "text",
+      sourceUrl: "https://example.com/idea",
+      attachmentPaths: ["Attachments/idea.png"]
+    }));
+    const getPool = vi.fn(async () => ({
+      id: "pool-1",
+      name: "写作池",
+      color: "#7e9bda"
+    }));
+    const attachIdeaSourceToCanvas = vi.fn(async () => undefined);
+
+    plugin.settings = {
+      ...DEFAULT_SETTINGS,
+      interfaceLanguage: "zh-CN"
+    };
+    plugin.ideaService = {
+      getIdea
+    } as unknown as GlitterPlugin["ideaService"];
+    plugin.poolService = {
+      getPool
+    } as unknown as GlitterPlugin["poolService"];
+    plugin.poolWorkbenchWorkflow = {
+      attachIdeaSourceToCanvas
+    } as unknown as GlitterPlugin["poolWorkbenchWorkflow"];
+
+    await (plugin as any).openNativeCanvasIdeaPicker({
+      boardPath: "Boards/demo.canvas",
+      position: { x: 120, y: 96 }
+    });
+
+    await expect(capturedIdeaPicker.onPick?.("idea-1") ?? Promise.resolve()).resolves.toBeUndefined();
+    expect(attachIdeaSourceToCanvas).toHaveBeenCalledWith({
+      boardPath: "Boards/demo.canvas",
+      position: { x: 120, y: 96 },
+      ideaId: "idea-1",
+      poolId: "pool-1",
+      poolName: "写作池",
+      poolColor: "#7e9bda",
+      title: "灵感标题",
+      body: "灵感正文",
+      contentType: "text",
+      sourceUrl: "https://example.com/idea",
+      attachmentPaths: ["Attachments/idea.png"]
+    });
+    expect(noticeMock).toHaveBeenCalledWith("已将灵感设为 Canvas 块标题");
+  });
+
   it("onload auto-opens main view once when automation flag is enabled", async () => {
     const plugin = Object.create(GlitterPlugin.prototype) as GlitterPlugin;
     const activateMainView = vi.fn(async () => undefined);
@@ -89,7 +303,8 @@ describe("view command registration", () => {
         version: 1,
         ideas: [],
         pools: [],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
     const loadData = vi.fn(async () => persistedData);
@@ -103,6 +318,7 @@ describe("view command registration", () => {
     plugin.registerView = vi.fn();
     plugin.addSettingTab = vi.fn();
     plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.registerEvent = vi.fn();
     plugin.activateMainView = activateMainView;
     plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
 
@@ -116,6 +332,7 @@ describe("view command registration", () => {
     }).app = {
       workspace: {
         layoutReady: true,
+          on: vi.fn(() => ({})),
         onLayoutReady: vi.fn((callback: () => void) => callback()),
         getMostRecentLeaf: vi.fn(() => null),
         getLeavesOfType: vi.fn(() => []),
@@ -163,7 +380,8 @@ describe("view command registration", () => {
             isDefault: true
           })
         ],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     });
     expect(plugin.settings.openMainViewOnNextLoad).toBe(false);
@@ -189,7 +407,8 @@ describe("view command registration", () => {
             updatedAt: "2026-06-04T00:00:00.000Z"
           }
         ],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
     const legacyData = {
@@ -226,7 +445,8 @@ describe("view command registration", () => {
             updatedAt: "2026-06-04T00:00:00.000Z"
           }
         ],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
     const loadData = vi.fn(async () => currentData);
@@ -240,6 +460,7 @@ describe("view command registration", () => {
     plugin.registerView = vi.fn();
     plugin.addSettingTab = vi.fn();
     plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.registerEvent = vi.fn();
     plugin.activateMainView = vi.fn(async () => undefined);
     plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
     (plugin as unknown as { manifest: GlitterPlugin["manifest"] }).manifest = {
@@ -260,6 +481,7 @@ describe("view command registration", () => {
     }).app = {
       workspace: {
         layoutReady: true,
+          on: vi.fn(() => ({})),
         onLayoutReady: vi.fn((callback: () => void) => callback()),
         getMostRecentLeaf: vi.fn(() => null),
         getLeavesOfType: vi.fn(() => []),
@@ -316,7 +538,8 @@ describe("view command registration", () => {
           }
         ],
         pools: [],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
     const loadData = vi.fn(async () => persistedData);
@@ -330,6 +553,7 @@ describe("view command registration", () => {
     plugin.registerView = vi.fn();
     plugin.addSettingTab = vi.fn();
     plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.registerEvent = vi.fn();
     plugin.activateMainView = vi.fn(async () => undefined);
     plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
 
@@ -341,6 +565,7 @@ describe("view command registration", () => {
     }).app = {
       workspace: {
         layoutReady: true,
+          on: vi.fn(() => ({})),
         onLayoutReady: vi.fn((callback: () => void) => callback()),
         getMostRecentLeaf: vi.fn(() => null),
         getLeavesOfType: vi.fn(() => []),
@@ -408,7 +633,8 @@ describe("view command registration", () => {
           }
         ],
         pools: [],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
     const loadData = vi.fn(async () => persistedData);
@@ -422,6 +648,7 @@ describe("view command registration", () => {
     plugin.registerView = vi.fn();
     plugin.addSettingTab = vi.fn();
     plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.registerEvent = vi.fn();
     plugin.activateMainView = vi.fn(async () => undefined);
     plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
 
@@ -433,6 +660,7 @@ describe("view command registration", () => {
     }).app = {
       workspace: {
         layoutReady: true,
+          on: vi.fn(() => ({})),
         onLayoutReady: vi.fn((callback: () => void) => callback()),
         getMostRecentLeaf: vi.fn(() => null),
         getLeavesOfType: vi.fn(() => []),
@@ -478,7 +706,8 @@ describe("view command registration", () => {
             updatedAt: "2026-04-18T00:00:00.000Z"
           }
         ],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
     const loadData = vi.fn(async () => persistedData);
@@ -492,6 +721,7 @@ describe("view command registration", () => {
     plugin.registerView = vi.fn();
     plugin.addSettingTab = vi.fn();
     plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.registerEvent = vi.fn();
     plugin.activateMainView = vi.fn(async () => undefined);
     plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
 
@@ -503,6 +733,7 @@ describe("view command registration", () => {
     }).app = {
       workspace: {
         layoutReady: true,
+          on: vi.fn(() => ({})),
         onLayoutReady: vi.fn((callback: () => void) => callback()),
         getMostRecentLeaf: vi.fn(() => null),
         getLeavesOfType: vi.fn(() => []),
@@ -540,7 +771,8 @@ describe("view command registration", () => {
             updatedAt: "2026-04-18T00:00:00.000Z"
           }
         ],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     };
     const loadData = vi.fn(async () => persistedData);
@@ -557,6 +789,7 @@ describe("view command registration", () => {
     plugin.registerView = vi.fn();
     plugin.addSettingTab = vi.fn();
     plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.registerEvent = vi.fn();
     plugin.activateMainView = vi.fn(async () => undefined);
     plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
 
@@ -568,6 +801,7 @@ describe("view command registration", () => {
     }).app = {
       workspace: {
         layoutReady: true,
+          on: vi.fn(() => ({})),
         onLayoutReady: vi.fn((callback: () => void) => callback()),
         getMostRecentLeaf: vi.fn(() => null),
         getLeavesOfType: vi.fn(() => []),
@@ -598,13 +832,15 @@ describe("view command registration", () => {
         version: 1,
         ideas: [],
         pools: [],
-        lastSelectedPoolId: null
+        lastSelectedPoolId: null,
+        managedCanvasPaths: []
       }
     }));
     plugin.saveData = vi.fn(async () => undefined);
     plugin.registerView = vi.fn();
     plugin.addSettingTab = vi.fn();
     plugin.registerMarkdownPostProcessor = vi.fn();
+    plugin.registerEvent = vi.fn();
     plugin.activateMainView = vi.fn(async () => undefined);
     plugin.addRibbonIcon = addRibbonIcon as unknown as GlitterPlugin["addRibbonIcon"];
 
@@ -616,6 +852,7 @@ describe("view command registration", () => {
     }).app = {
       workspace: {
         layoutReady: true,
+          on: vi.fn(() => ({})),
         onLayoutReady: vi.fn((callback: () => void) => callback()),
         getMostRecentLeaf: vi.fn(() => null),
         getLeavesOfType: vi.fn(() => []),
@@ -652,6 +889,7 @@ describe("view command registration", () => {
       app: {
         workspace: {
           layoutReady: true,
+          on: vi.fn(() => ({})),
           onLayoutReady: vi.fn(),
           getMostRecentLeaf: vi.fn(() => null),
           getLeavesOfType: vi.fn(() => []),
@@ -681,6 +919,7 @@ describe("view command registration", () => {
       app: {
         workspace: {
           layoutReady: true,
+          on: vi.fn(() => ({})),
           onLayoutReady: vi.fn(),
           getMostRecentLeaf: vi.fn(() => null),
           getLeavesOfType: vi.fn(() => []),
@@ -710,6 +949,7 @@ describe("view command registration", () => {
       app: {
         workspace: {
           layoutReady: true,
+          on: vi.fn(() => ({})),
           onLayoutReady: vi.fn(),
           getMostRecentLeaf: vi.fn(() => null),
           getLeavesOfType: vi.fn(() => []),
@@ -740,6 +980,7 @@ describe("view command registration", () => {
       app: {
         workspace: {
           layoutReady: true,
+          on: vi.fn(() => ({})),
           onLayoutReady: vi.fn(),
           getMostRecentLeaf: vi.fn(() => null),
           getLeavesOfType: vi.fn(() => []),

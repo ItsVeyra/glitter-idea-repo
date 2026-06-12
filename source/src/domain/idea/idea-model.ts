@@ -39,19 +39,24 @@ export function hasIdeaSnippetRefs(idea: Pick<Idea, "snippetRefs">): boolean {
 
 export function countDistinctSnippetNotes(idea: Pick<Idea, "snippetRefs">): number {
   return new Set(
-    idea.snippetRefs.map((snippetRef) => snippetRef.notePath).filter((notePath): notePath is string => Boolean(notePath))
+    idea.snippetRefs
+      .map((snippetRef) => snippetRef.notePath.trim())
+      .filter((notePath): notePath is string => notePath.length > 0)
   ).size;
 }
 
-export function buildIdeaStatusLabels(input: { fileCreated: boolean; snippetCount: number }): string[] {
+export function buildIdeaStatusLabels(
+  input: { fileCreated: boolean; snippetCount: number },
+  text: { fileCreatedStatus: string; snippetStatus: (count: number) => string }
+): string[] {
   const labels: string[] = [];
 
   if (input.fileCreated) {
-    labels.push("已创建文件");
+    labels.push(text.fileCreatedStatus);
   }
 
   if (input.snippetCount > 0) {
-    labels.push(`已引用为 ${input.snippetCount} 个片段`);
+    labels.push(text.snippetStatus(input.snippetCount));
   }
 
   return labels;

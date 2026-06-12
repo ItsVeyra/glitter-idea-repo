@@ -4,7 +4,16 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { runtimeReconcileMock } = vi.hoisted(() => ({
+  runtimeReconcileMock: vi.fn()
+}));
+
+vi.mock("../../src/application/idea-query/idea-runtime-source", () => ({
+  reconcileIdeaRuntimeState: runtimeReconcileMock
+}));
+
 import { IdeaPickerModal } from "../../src/views/idea-picker-modal";
 
 type FakeEvent = {
@@ -33,6 +42,7 @@ class FakeElement {
   textContent = "";
   isFocused = false;
   dataset: Record<string, string> = {};
+  attributes: Record<string, string> = {};
   children: FakeElement[] = [];
 
   private readonly listeners = new Map<string, FakeListener[]>();
@@ -66,6 +76,14 @@ class FakeElement {
 
   createDiv(options?: { cls?: string; text?: string }): FakeElement {
     return this.createEl("div", options);
+  }
+
+  setAttribute(name: string, value: string): void {
+    this.attributes[name] = value;
+  }
+
+  getAttribute(name: string): string | null {
+    return this.attributes[name] ?? null;
   }
 
   addEventListener(type: string, listener: FakeListener): void {
@@ -124,6 +142,11 @@ class FakeElement {
 
 // 覆盖视图宿主在生命周期、渲染与回调桥接上的核心契约。
 describe("IdeaPickerModal", () => {
+  beforeEach(() => {
+    runtimeReconcileMock.mockReset();
+    runtimeReconcileMock.mockImplementation(async (_ideaService, _vault, ideas) => ideas);
+  });
+
   function createDeferred<T>() {
     let resolve!: (value: T) => void;
     let reject!: (reason?: unknown) => void;
@@ -151,7 +174,12 @@ describe("IdeaPickerModal", () => {
     for (let index = 0; index < times; index += 1) {
       chain = chain.then(() => Promise.resolve());
     }
-    return chain;
+    return chain.then(
+      () =>
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, 0);
+        })
+    );
   }
 
   function attachModalHost(modal: IdeaPickerModal) {
@@ -225,6 +253,36 @@ describe("IdeaPickerModal", () => {
     expect(empty).toHaveBeenCalled();
   });
 
+  it("keeps the picker open when the pick callback rejects", async () => {
+    const onPick = vi.fn(async () => {
+      throw new Error("pick failed");
+    });
+    const queryIdeas = vi.fn(async () => [buildIdea()]);
+
+    const plugin = {
+      app: {},
+      ideaService: {
+        queryIdeas
+      },
+      poolService: {
+        listPools: vi.fn(async () => [])
+      }
+    };
+
+    const modal = new IdeaPickerModal(plugin as any, onPick);
+    const { contentEl } = attachModalHost(modal);
+    const closeSpy = vi.spyOn(modal as unknown as { close: () => void }, "close");
+
+    modal.onOpen();
+    await flushMicrotasks();
+
+    contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-action")?.click();
+    await flushMicrotasks();
+
+    expect(onPick).toHaveBeenCalledWith("idea-1");
+    expect(closeSpy).not.toHaveBeenCalled();
+  });
+
   it("renders a plugin-standard close button and closes when clicked", async () => {
     const queryIdeas = vi.fn(async () => [buildIdea()]);
     const plugin = {
@@ -250,6 +308,130 @@ describe("IdeaPickerModal", () => {
 
     closeButton?.click();
     expect(closeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders shared English picker copy in snippet mode", async () => {
+    const queryIdeas = vi.fn(async ({ text }: { text: string }) => {
+      if (text === "third") {
+        return [
+          buildIdea({
+            id: "idea-3",
+            title: "Third idea",
+            body: "Idea body",
+            fileCreated: true,
+            snippetRefs: [{ notePath: "A.md" }, { notePath: "B.md" }]
+          })
+        ];
+      }
+
+      return [
+        buildIdea({
+          id: "idea-3",
+          title: "Third idea",
+          body: "Idea body",
+          fileCreated: true,
+          snippetRefs: [{ notePath: "A.md" }, { notePath: "B.md" }]
+        }),
+        buildIdea({ id: "idea-2", title: "Second idea", body: "" }),
+        buildIdea({ id: "idea-1", title: "First idea", body: "First body" })
+      ];
+    });
+
+    const plugin = {
+      app: {},
+      settings: {
+        interfaceLanguage: "en"
+      },
+      ideaService: {
+        queryIdeas
+      },
+      poolService: {
+        listPools: vi.fn(async () => [])
+      }
+    };
+
+    const modal = new IdeaPickerModal(plugin as any, vi.fn(async () => undefined));
+    const { contentEl } = attachModalHost(modal);
+
+    modal.onOpen();
+    await flushMicrotasks();
+
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
+    const closeButton = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__close");
+    const actionButton = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-action");
+
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__title")?.textContent).toBe(
+      "Insert Glitter snippet"
+    );
+    expect(closeButton?.getAttribute("aria-label")).toBe("Close idea picker");
+    expect(queryInput?.placeholder).toBe("Search idea title or body");
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__section-title")?.textContent).toBe("Recent");
+    expect(
+      contentEl
+        .querySelectorAll<FakeElement>(".GlitterIdea-picker-modal__result-body")
+        .map((body) => body.textContent)
+    ).toEqual(["Idea body", "No body"]);
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-pool")?.textContent).toBe(
+      "Untitled pool"
+    );
+    expect(
+      contentEl
+        .querySelectorAll<FakeElement>(".GlitterIdea-picker-modal__result-status")
+        .map((marker) => marker.textContent)
+    ).toEqual(["File created", "Referenced in 2 snippets"]);
+    expect(actionButton?.getAttribute("aria-label")).toBe("Insert idea Third idea");
+
+    queryInput!.value = "third";
+    queryInput!.dispatchEvent("input");
+    await flushMicrotasks();
+
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__section-title")?.textContent).toBe("Results");
+  });
+
+  it("renders status chips from the reconciled runtime idea snapshot", async () => {
+    const queryIdeas = vi.fn(async () => [
+      buildIdea({
+        id: "idea-1",
+        title: "Third idea",
+        body: "Idea body",
+        fileCreated: true,
+        snippetRefs: [{ notePath: "A.md" }, { notePath: "B.md" }]
+      })
+    ]);
+    runtimeReconcileMock.mockImplementation(async (_ideaService, _vault, _ideas) => [
+      buildIdea({
+        id: "idea-1",
+        title: "Third idea",
+        body: "Idea body",
+        fileCreated: false,
+        snippetRefs: [{ notePath: "A.md" }]
+      })
+    ]);
+
+    const plugin = {
+      app: {},
+      settings: {
+        interfaceLanguage: "en"
+      },
+      ideaService: {
+        queryIdeas
+      },
+      poolService: {
+        listPools: vi.fn(async () => [])
+      }
+    };
+
+    const modal = new IdeaPickerModal(plugin as any, vi.fn(async () => undefined));
+    const { contentEl } = attachModalHost(modal);
+
+    modal.onOpen();
+    await flushMicrotasks();
+
+    expect(
+      contentEl
+        .querySelectorAll<FakeElement>(".GlitterIdea-picker-modal__result-status")
+        .map((marker) => marker.textContent)
+    ).toEqual(["Referenced in 1 snippet"]);
   });
 
   it("renders the sketch-style shell with a recent section and two ideas before searching", async () => {
@@ -292,6 +474,40 @@ describe("IdeaPickerModal", () => {
         .querySelectorAll<FakeElement>(".GlitterIdea-picker-modal__result-body")
         .map((body) => body.textContent)
     ).toEqual(["灵感正文", "无正文"]);
+    expect(runtimeReconcileMock).toHaveBeenCalledTimes(1);
+    expect(runtimeReconcileMock.mock.calls[0]?.[2].map((idea: QueryIdea) => idea.id)).toEqual(["idea-3", "idea-2"]);
+  });
+
+  it("uses the canvas-block title override without changing the shared picker body", async () => {
+    const plugin = {
+      app: {},
+      settings: {
+        interfaceLanguage: "en"
+      },
+      ideaService: {
+        queryIdeas: vi.fn(async () => [buildIdea({ id: "idea-1", title: "Canvas idea", body: "Canvas body" })])
+      },
+      poolService: {
+        listPools: vi.fn(async () => [])
+      }
+    };
+
+    const modal = new IdeaPickerModal(plugin as any, vi.fn(async () => undefined), { mode: "canvas-block" });
+    const { contentEl } = attachModalHost(modal);
+
+    modal.onOpen();
+    await flushMicrotasks();
+
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__title")?.textContent).toBe(
+      "Use idea for canvas block title"
+    );
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query")?.placeholder).toBe(
+      "Search idea title or body"
+    );
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe("idea-1");
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result-action")?.getAttribute("aria-label")).toBe(
+      "Use idea Canvas idea for canvas block title"
+    );
   });
 
   it("defines non-overflow layout rules for recent idea rows", () => {
@@ -348,11 +564,11 @@ describe("IdeaPickerModal", () => {
     );
   });
 
-  it("renders pool labels, status markers, and explicit insert actions", async () => {
+  it("renders pool labels, normalizes snippet note paths for status markers, and keeps explicit insert actions", async () => {
     const queryIdeas = vi.fn(async () => [
       buildIdea({
         fileCreated: true,
-        snippetRefs: [{ notePath: "A.md" }, { notePath: "A.md" }, { notePath: "B.md" }]
+        snippetRefs: [{ notePath: "A.md" }, { notePath: "A.md " }, { notePath: "   " }, { notePath: "B.md" }]
       })
     ]);
     const listPools = vi.fn(async () => [{ id: "pool-1", name: "产品池" }]);
@@ -531,9 +747,12 @@ describe("IdeaPickerModal", () => {
     expect((modal as any).isQueryPending).toBe(false);
   });
 
-  it("shows empty-state copy when there are no matching ideas", async () => {
+  it("shows localized English empty-state copy when there are no matching ideas", async () => {
     const plugin = {
       app: {},
+      settings: {
+        interfaceLanguage: "en"
+      },
       ideaService: {
         queryIdeas: vi.fn(async () => [])
       },
@@ -549,7 +768,7 @@ describe("IdeaPickerModal", () => {
     await flushMicrotasks();
 
     expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__empty")?.textContent).toBe(
-      "没有找到匹配的灵感"
+      "No matching ideas found"
     );
   });
 
@@ -753,6 +972,49 @@ describe("IdeaPickerModal", () => {
     );
   });
 
+  it("skips runtime reconciliation for fast query results that are superseded immediately", async () => {
+    const queryIdeas = vi.fn(async ({ text }: { text: string }) => {
+      if (text === "first") {
+        return [buildIdea({ id: "idea-first", title: "First", body: "First body" })];
+      }
+
+      if (text === "second") {
+        return [buildIdea({ id: "idea-second", title: "Second", body: "Second body" })];
+      }
+
+      return [];
+    });
+
+    const plugin = {
+      app: {},
+      ideaService: {
+        queryIdeas
+      },
+      poolService: {
+        listPools: vi.fn(async () => [])
+      }
+    };
+
+    const modal = new IdeaPickerModal(plugin as any, vi.fn(async () => undefined));
+    const { contentEl } = attachModalHost(modal);
+
+    modal.onOpen();
+    await flushMicrotasks();
+
+    const queryInput = contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__query");
+    expect(queryInput).not.toBeNull();
+
+    queryInput!.value = "first";
+    queryInput!.dispatchEvent("input");
+    queryInput!.value = "second";
+    queryInput!.dispatchEvent("input");
+    await flushMicrotasks(4);
+
+    expect(runtimeReconcileMock).toHaveBeenCalledTimes(1);
+    expect(runtimeReconcileMock.mock.calls[0]?.[2].map((idea: QueryIdea) => idea.id)).toEqual(["idea-second"]);
+    expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe("idea-second");
+  });
+
   it("keeps the latest query results when responses resolve out of order", async () => {
     const initialQuery = createDeferred<QueryIdea[]>();
     const olderQuery = createDeferred<QueryIdea[]>();
@@ -798,11 +1060,14 @@ describe("IdeaPickerModal", () => {
     expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe(
       "idea-second"
     );
+    expect(runtimeReconcileMock).toHaveBeenCalledTimes(1);
+    expect(runtimeReconcileMock.mock.calls[0]?.[2].map((idea: QueryIdea) => idea.id)).toEqual(["idea-second"]);
 
     olderQuery.resolve([buildIdea({ id: "idea-first", title: "First", body: "Stale" })]);
     await flushMicrotasks(3);
     expect(contentEl.querySelector<FakeElement>(".GlitterIdea-picker-modal__result")?.dataset.ideaId).toBe(
       "idea-second"
     );
+    expect(runtimeReconcileMock).toHaveBeenCalledTimes(1);
   });
 });

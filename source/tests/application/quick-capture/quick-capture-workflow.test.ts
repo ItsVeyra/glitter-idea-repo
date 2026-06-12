@@ -224,6 +224,48 @@ describe("createQuickCaptureWorkflow", () => {
     ]);
   });
 
+  it("localizes default-pool labels for English quick capture state", async () => {
+    let interfaceLanguage: "zh-CN" | "en" | undefined = "en";
+    const workflow = createQuickCaptureWorkflow({
+      ideaService: {
+        createIdea: vi.fn(async () => undefined),
+        markFileCreated: vi.fn(async () => undefined)
+      } as any,
+      poolService: {
+        listPools: vi.fn(async () => [
+          { id: "pool-default", name: "默认池", isDefault: true },
+          { id: "pool-lab", name: "实验池", isDefault: false }
+        ]),
+        ensureDefaultPool: vi.fn(async () => ({ id: "pool-default", name: "默认池" })),
+        getPool: vi.fn(async () => null)
+      } as any,
+      vaultFileStore: {
+        ensureFolder: vi.fn(async () => undefined),
+        createUniquePath: vi.fn(async () => "Glitter/x.md"),
+        buildIdeaFileContent: vi.fn(() => "")
+      } as any,
+      vault: {
+        create: vi.fn(async () => undefined)
+      } as any,
+      resolveInterfaceLanguage: () => interfaceLanguage
+    });
+
+    expect(workflow.getGlobalSelectedPoolState()).toEqual({
+      id: "pool-default",
+      label: "Default pool"
+    });
+    await expect(workflow.listGlobalPoolOptions()).resolves.toEqual([
+      { id: "pool-default", label: "Default pool" },
+      { id: "pool-lab", label: "实验池" }
+    ]);
+
+    interfaceLanguage = "zh-CN";
+    expect(workflow.getGlobalSelectedPoolState()).toEqual({
+      id: "pool-default",
+      label: "默认池"
+    });
+  });
+
   it("falls back to the default pool when given poolId does not exist", async () => {
     const createIdea = vi.fn(async () => ({
       id: "idea-1",

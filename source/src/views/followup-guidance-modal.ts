@@ -9,7 +9,7 @@ import { buildFollowupGuidanceState, renderFollowupGuidanceView } from "../ui/sh
 
 // 引导弹窗的打开与清理生命周期。
 export class FollowupGuidanceModal extends Modal {
-  constructor(plugin: GlitterPlugin) {
+  constructor(private readonly plugin: GlitterPlugin) {
     super(plugin.app);
   }
 
@@ -19,7 +19,7 @@ export class FollowupGuidanceModal extends Modal {
     this.modalEl?.addClass?.("glitter-followup-guidance-modal");
     this.contentEl?.addClass?.("glitter-followup-guidance-modal__content");
 
-    renderFollowupGuidanceView(this.contentEl, buildFollowupGuidanceState(), {
+    renderFollowupGuidanceView(this.contentEl, buildFollowupGuidanceState(this.plugin.settings?.interfaceLanguage), {
       onDismiss: () => {
         this.close();
       },

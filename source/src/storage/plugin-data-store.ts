@@ -14,6 +14,7 @@ export interface PluginDataSnapshot<TIdea = unknown, TPool = unknown> {
   ideas: TIdea[];
   pools: TPool[];
   lastSelectedPoolId: string | null;
+  managedCanvasPaths: string[];
 }
 
 export interface PluginDataShape<TIdea = unknown, TPool = unknown> {
@@ -104,7 +105,8 @@ function emptySnapshot<TIdea, TPool>(): PluginDataSnapshot<TIdea, TPool> {
     version: SNAPSHOT_VERSION,
     ideas: [],
     pools: [],
-    lastSelectedPoolId: null
+    lastSelectedPoolId: null,
+    managedCanvasPaths: []
   };
 }
 
@@ -116,12 +118,23 @@ function normalizeSnapshot<TIdea, TPool>(value: unknown): PluginDataSnapshot<TId
   const ideas = Array.isArray(value.ideas) ? deepClone(value.ideas as TIdea[]) : [];
   const pools = Array.isArray(value.pools) ? deepClone(value.pools as TPool[]) : [];
   const lastSelectedPoolId = typeof value.lastSelectedPoolId === "string" ? value.lastSelectedPoolId : null;
+  const managedCanvasPaths = Array.isArray(value.managedCanvasPaths)
+    ? Array.from(
+        new Set(
+          value.managedCanvasPaths
+            .filter((entry): entry is string => typeof entry === "string")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0)
+        )
+      )
+    : [];
 
   return {
     version: SNAPSHOT_VERSION,
     ideas,
     pools,
-    lastSelectedPoolId
+    lastSelectedPoolId,
+    managedCanvasPaths
   };
 }
 

@@ -732,15 +732,17 @@ describe("renderPoolView", () => {
         open: true,
         mode: "empty",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [],
         labels: {
           toggleOpen: "Open roam mode",
           toggleClose: "Close roam mode",
           modeLabel: "Roam mode",
+          moreActionsLabel: "More actions",
           downloadCurrentBoard: "Download current roam board",
           shareCurrentBoard: "Share current roam board",
           openHistory: "Open roam board history",
+          addIdeaBlock: "Add idea block",
           errorTitle: "Roam board is temporarily unavailable",
           errorDescription: "Please try again later.",
           emptyTitle: "New blank roam area",
@@ -761,11 +763,18 @@ describe("renderPoolView", () => {
       onCreateIdea() {}
     });
 
+    const roamActionHost = container.querySelector(".glitter-pool-stage__roam-floating-actions") as unknown as FakeElement | null;
+
     expect(container.querySelector("[data-glitter-pool-roam-toggle]")?.getAttribute("aria-label")).toBe("Close roam mode");
     expect(container.querySelector(".glitter-pool-stage__results-entry-label")?.textContent).toBe("Roam mode");
+    expect(roamActionHost).not.toBeNull();
+    expect(container.querySelector("[data-glitter-pool-roam-action-trigger=\"true\"]")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__roam-floating-action-menu")).toBeNull();
     expect(container.querySelector("[data-glitter-pool-roam-action=\"download\"]")?.getAttribute("aria-label")).toBe("Download current roam board");
+    expect(container.querySelector("[data-glitter-pool-roam-action=\"download\"]")?.getAttribute("role")).toBeNull();
     expect(container.querySelector("[data-glitter-pool-roam-action=\"share\"]")?.getAttribute("aria-label")).toBe("Share current roam board");
     expect(container.querySelector("[data-glitter-pool-roam-action=\"history\"]")?.getAttribute("aria-label")).toBe("Open roam board history");
+    expect(container.querySelector("[data-glitter-pool-roam-action=\"idea-block\"]")?.getAttribute("aria-label")).toBe("Add idea block");
     expect(container.querySelector(".glitter-pool-stage__roam-empty-title")?.textContent).toBe("New blank roam area");
     expect(container.querySelector(".glitter-pool-stage__roam-empty-description")?.textContent).toBe(
       "Drag a dot from the top-right of a left card into this area to create the first roam board block."
@@ -775,6 +784,100 @@ describe("renderPoolView", () => {
     );
     expect(container.querySelector("[data-glitter-pool-roam-source-handle=\"idea-product-1\"]")?.getAttribute("title")).toBe(
       "Drag a connection line to the roam board on the right"
+    );
+  });
+
+  it("renders direct roam floating action buttons and invokes the selected action", () => {
+    const container = createContainer();
+    const calls = {
+      downloads: 0,
+      ideaBlocks: 0
+    };
+    const state = createBrowseState({
+      roam: {
+        open: true,
+        mode: "board",
+        boardPath: "Glitter/灵感漫游/demo.canvas",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history", "idea-block"],
+        boundaryAnchors: []
+      }
+    });
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onDownloadPoolRoamImage() {
+        calls.downloads += 1;
+      },
+      onAddPoolRoamIdeaBlock() {
+        calls.ideaBlocks += 1;
+      }
+    });
+
+    const roamActionHost = container.querySelector(".glitter-pool-stage__roam-floating-actions") as unknown as FakeElement | null;
+    const downloadAction = container.querySelector("[data-glitter-pool-roam-action=\"download\"]") as unknown as FakeElement | null;
+    const addIdeaBlockAction = container.querySelector("[data-glitter-pool-roam-action=\"idea-block\"]") as unknown as FakeElement | null;
+
+    expect(roamActionHost).not.toBeNull();
+    expect(container.querySelector("[data-glitter-pool-roam-action-trigger=\"true\"]")).toBeNull();
+
+    downloadAction?.click();
+    addIdeaBlockAction?.click();
+
+    expect(calls.downloads).toBe(1);
+    expect(calls.ideaBlocks).toBe(1);
+  });
+
+  it("keeps roam action buttons directly visible even when roam labels omit the menu title", () => {
+    const container = createContainer();
+    const state = createBrowseState({
+      browse: {
+        labels: {
+          ...buildPoolViewState("pool-browse").browse!.labels!,
+          moreActionsLabel: "More actions"
+        }
+      },
+      roam: {
+        open: true,
+        mode: "board",
+        boardPath: "Glitter/灵感漫游/demo.canvas",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history", "idea-block"],
+        boundaryAnchors: []
+      }
+    });
+    state.roam!.labels = {
+      toggleOpen: "Open roam mode",
+      toggleClose: "Close roam mode",
+      modeLabel: "Roam mode",
+      downloadCurrentBoard: "Download current roam board",
+      shareCurrentBoard: "Share current roam board",
+      openHistory: "Open roam board history",
+      addIdeaBlock: "Add idea block",
+      errorTitle: "Roam board is temporarily unavailable",
+      errorDescription: "Please try again later.",
+      emptyTitle: "New blank roam area",
+      emptyDescription: "Drag a dot from the top-right of a left card into this area to create the first roam board block.",
+      sourceHandleTitle: "Drag a connection line to the roam board on the right",
+      sourceHandleLabel: (ideaTitle) => `Connect \"${ideaTitle}\" to the roam board`,
+      bridgeMarkerLabel: (ideaTitle) => `View roam link for \"${ideaTitle}\"`,
+      bridgeMeta: (poolName) => `From ${poolName}`,
+      locateSource: "Locate source card",
+      deleteLink: "Delete link"
+    } as NonNullable<PoolViewState["roam"]>["labels"];
+    delete (state.roam!.labels as { moreActionsLabel?: string }).moreActionsLabel;
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {}
+    });
+
+    expect(container.querySelector("[data-glitter-pool-roam-action-trigger=\"true\"]")).toBeNull();
+    expect(container.querySelector("[data-glitter-pool-roam-action=\"download\"]")?.getAttribute("aria-label")).toBe(
+      "Download current roam board"
     );
   });
 
@@ -792,7 +895,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-visible",
@@ -867,7 +970,7 @@ describe("renderPoolView", () => {
     expect(roamPanel).not.toBeNull();
     expect(roamCanvasStage?.getAttribute("data-glitter-pool-roam-dropzone")).toBe("true");
     expect(roamCanvasHost?.dataset.boardPath).toBe("Glitter/灵感漫游/demo.canvas");
-    expect(container.querySelectorAll("[data-glitter-pool-roam-action]")).toHaveLength(3);
+    expect(container.querySelectorAll("[data-glitter-pool-roam-action]")).toHaveLength(4);
     expect(container.querySelectorAll("[data-glitter-pool-roam-source-handle]")).toHaveLength(3);
     expect(container.querySelectorAll(".glitter-pool-stage__roam-boundary-anchor")).toHaveLength(0);
     expect(container.querySelectorAll(".glitter-pool-stage__roam-bridge-trace")).toHaveLength(2);
@@ -910,7 +1013,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: []
       }
     });
@@ -962,7 +1065,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [],
         panelWidthRatio: 0.6
       }
@@ -1021,7 +1124,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-visible",
@@ -1119,6 +1222,139 @@ describe("renderPoolView", () => {
     expect(bridgePopover?.style.top).toBe("12px");
   });
 
+  it("coalesces roam bridge relayout into one animation frame while the card grid keeps scrolling", () => {
+    const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const previousCancelAnimationFrame = globalThis.cancelAnimationFrame;
+    const pendingFrames = new Map<number, FrameRequestCallback>();
+    let nextFrameId = 1;
+    globalThis.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+      const frameId = nextFrameId++;
+      pendingFrames.set(frameId, callback);
+      return frameId;
+    }) as typeof globalThis.requestAnimationFrame;
+    globalThis.cancelAnimationFrame = ((frameId: number) => {
+      pendingFrames.delete(frameId);
+    }) as typeof globalThis.cancelAnimationFrame;
+
+    try {
+      const container = createContainer();
+      const state = createBrowseState({
+        roam: {
+          open: true,
+          mode: "board",
+          boardPath: "Glitter/灵感漫游/demo.canvas",
+          historyEnabled: true,
+          floatingActions: ["download", "share", "history", "idea-block"],
+          boundaryAnchors: [
+            {
+              anchorId: "anchor-visible",
+              ideaId: "idea-product-1",
+              poolId: "pool-product",
+              poolName: "产品池",
+              poolColor: "#6ab5ff",
+              ideaTitle: "Design weekly notes",
+              visibleBridge: true
+            }
+          ]
+        }
+      });
+
+      renderPoolView(container, state, {
+        onBack() {},
+        onItemSelect() {},
+        onCreateIdea() {}
+      });
+
+      const workbench = container.querySelector(".glitter-pool-stage__workbench") as unknown as FakeElement | null;
+      const cardGrid = container.querySelector(".glitter-pool-stage__card-grid") as unknown as FakeElement | null;
+      const roamPane = container.querySelector(".glitter-pool-stage__workbench-pane--roam") as unknown as FakeElement | null;
+      const sourceHandle = container.querySelector(
+        "[data-glitter-pool-roam-source-handle=\"idea-product-1\"]"
+      ) as unknown as FakeElement | null;
+      const bridgeTrace = container.querySelector("[data-glitter-pool-roam-bridge-trace=\"anchor-visible\"]") as unknown as FakeElement | null;
+
+      expect(workbench).not.toBeNull();
+      expect(cardGrid).not.toBeNull();
+      expect(roamPane).not.toBeNull();
+      expect(sourceHandle).not.toBeNull();
+      expect(bridgeTrace).not.toBeNull();
+
+      (workbench as FakeElement & { getBoundingClientRect: () => DOMRect }).getBoundingClientRect = () => ({
+        left: 20,
+        top: 40,
+        right: 820,
+        bottom: 640,
+        width: 800,
+        height: 600,
+        x: 20,
+        y: 40,
+        toJSON: () => ({})
+      } as DOMRect);
+      (sourceHandle as FakeElement & { getBoundingClientRect: () => DOMRect }).getBoundingClientRect = () => ({
+        left: 120,
+        top: 240,
+        right: 130,
+        bottom: 250,
+        width: 10,
+        height: 10,
+        x: 120,
+        y: 240,
+        toJSON: () => ({})
+      } as DOMRect);
+      (roamPane as FakeElement & { getBoundingClientRect: () => DOMRect }).getBoundingClientRect = () => ({
+        left: 420,
+        top: 40,
+        right: 820,
+        bottom: 640,
+        width: 400,
+        height: 600,
+        x: 420,
+        y: 40,
+        toJSON: () => ({})
+      } as DOMRect);
+
+      cardGrid?.trigger("scroll");
+      cardGrid?.trigger("scroll");
+
+      expect(pendingFrames.size).toBe(1);
+
+      const [frameId, callback] = Array.from(pendingFrames.entries())[0] ?? [];
+      expect(typeof frameId).toBe("number");
+      expect(typeof callback).toBe("function");
+      pendingFrames.delete(frameId as number);
+      (callback as FrameRequestCallback)?.(16);
+
+      const bridgeLine = container.querySelector(".glitter-pool-stage__roam-bridge-line") as unknown as FakeElement | null;
+      const bridgeHoverZone = container.querySelector(".glitter-pool-stage__roam-bridge-hover-zone") as unknown as FakeElement | null;
+      const bridgeMarker = container.querySelector(".glitter-pool-stage__roam-bridge-marker") as unknown as FakeElement | null;
+      const bridgePopover = container.querySelector(".glitter-pool-stage__roam-bridge-popover") as unknown as FakeElement | null;
+
+      expect(bridgeLine).not.toBeNull();
+      expect(bridgeHoverZone).not.toBeNull();
+      expect(bridgeMarker).not.toBeNull();
+      expect(bridgePopover).not.toBeNull();
+      expect(bridgeTrace?.style.left).toBe("93px");
+      expect(bridgeTrace?.style.top).toBe("193px");
+      expect(bridgeTrace?.style.width).toBe("319px");
+      expect(bridgeTrace?.style.height).toBe("24px");
+      expect(bridgeLine?.style.left).toBe("12px");
+      expect(bridgeLine?.style.top).toBe("11px");
+      expect(bridgeLine?.style.width).toBe("295px");
+      expect(bridgeLine?.style.height).toBe("2px");
+      expect(bridgeHoverZone?.style.left).toBe("277px");
+      expect(bridgeHoverZone?.style.top).toBe("-12px");
+      expect(bridgeHoverZone?.style.width).toBe("48px");
+      expect(bridgeHoverZone?.style.height).toBe("48px");
+      expect(bridgeMarker?.style.left).toBe("307px");
+      expect(bridgeMarker?.style.top).toBe("12px");
+      expect(bridgePopover?.style.left).toBe("289px");
+      expect(bridgePopover?.style.top).toBe("12px");
+    } finally {
+      globalThis.requestAnimationFrame = previousRequestAnimationFrame;
+      globalThis.cancelAnimationFrame = previousCancelAnimationFrame;
+    }
+  });
+
   it("keeps only the boundary marker visible when the source handle scrolls out of the card grid and restores the line when it returns", () => {
     const container = createContainer();
     const state = createBrowseState({
@@ -1127,7 +1363,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-visible",
@@ -1255,7 +1491,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-visible",
@@ -1309,6 +1545,88 @@ describe("renderPoolView", () => {
     expect(oldWorkbenchSyncCalls).toBe(0);
   });
 
+  it("cancels a pending roam bridge relayout frame when the workbench rerenders", () => {
+    const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const previousCancelAnimationFrame = globalThis.cancelAnimationFrame;
+    const pendingFrames = new Map<number, FrameRequestCallback>();
+    let nextFrameId = 1;
+    globalThis.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+      const frameId = nextFrameId++;
+      pendingFrames.set(frameId, callback);
+      return frameId;
+    }) as typeof globalThis.requestAnimationFrame;
+    globalThis.cancelAnimationFrame = ((frameId: number) => {
+      pendingFrames.delete(frameId);
+    }) as typeof globalThis.cancelAnimationFrame;
+
+    try {
+      const container = createContainer();
+      const state = createBrowseState({
+        roam: {
+          open: true,
+          mode: "board",
+          boardPath: "Glitter/灵感漫游/demo.canvas",
+          historyEnabled: true,
+          floatingActions: ["download", "share", "history", "idea-block"],
+          boundaryAnchors: [
+            {
+              anchorId: "anchor-visible",
+              ideaId: "idea-product-1",
+              poolId: "pool-product",
+              poolName: "产品池",
+              poolColor: "#6ab5ff",
+              ideaTitle: "Design weekly notes",
+              visibleBridge: true
+            }
+          ]
+        }
+      });
+
+      renderPoolView(container, state, {
+        onBack() {},
+        onItemSelect() {},
+        onCreateIdea() {}
+      });
+
+      const oldWorkbench = container.querySelector(".glitter-pool-stage__workbench") as unknown as FakeElement | null;
+      const oldCardGrid = container.querySelector(".glitter-pool-stage__card-grid") as unknown as FakeElement | null;
+
+      expect(oldWorkbench).not.toBeNull();
+      expect(oldCardGrid).not.toBeNull();
+
+      let oldWorkbenchSyncCalls = 0;
+      (oldWorkbench as FakeElement & { getBoundingClientRect: () => DOMRect }).getBoundingClientRect = () => {
+        oldWorkbenchSyncCalls += 1;
+        return {
+          left: 20,
+          top: 40,
+          right: 820,
+          bottom: 640,
+          width: 800,
+          height: 600,
+          x: 20,
+          y: 40,
+          toJSON: () => ({})
+        } as DOMRect;
+      };
+
+      oldCardGrid?.trigger("scroll");
+      expect(pendingFrames.size).toBe(1);
+
+      renderPoolView(container, createBrowseState({ mode: "first-use-choose" }), {
+        onBack() {},
+        onItemSelect() {},
+        onCreateIdea() {}
+      });
+
+      expect(pendingFrames.size).toBe(0);
+      expect(oldWorkbenchSyncCalls).toBe(0);
+    } finally {
+      globalThis.requestAnimationFrame = previousRequestAnimationFrame;
+      globalThis.cancelAnimationFrame = previousCancelAnimationFrame;
+    }
+  });
+
   it("routes attached seam traces around other cards before reaching the roam boundary", () => {
     const container = createContainer();
     const state = createBrowseState({
@@ -1317,7 +1635,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-visible",
@@ -1706,7 +2024,7 @@ describe("renderPoolView", () => {
         open: false,
         mode: "empty",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-residual",
@@ -1771,7 +2089,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/duplicate.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: [
           {
             anchorId: "anchor-dup",
@@ -1869,7 +2187,7 @@ describe("renderPoolView", () => {
         mode: "board",
         boardPath: "Glitter/灵感漫游/demo.canvas",
         historyEnabled: true,
-        floatingActions: ["download", "share", "history"],
+        floatingActions: ["download", "share", "history", "idea-block"],
         boundaryAnchors: []
       }
     });

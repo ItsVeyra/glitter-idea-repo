@@ -15,7 +15,7 @@ describe("createPoolViewRoamController", () => {
       open: true,
       mode: "empty",
       historyEnabled: true,
-      floatingActions: ["download", "share", "history"],
+      floatingActions: ["download", "share", "history", "idea-block"],
       boundaryAnchors: []
     });
   });

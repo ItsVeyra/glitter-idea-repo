@@ -9,6 +9,7 @@ export interface PoolRoamBoardModalHandlers {
   onClose?: () => void;
   onDownloadBoard?: (board: PoolRoamBoardRecord) => void | Promise<void>;
   onShareBoard?: (board: PoolRoamBoardRecord, anchorEl: HTMLElement) => void;
+  onAddIdeaBlock?: (board: PoolRoamBoardRecord, callbacks: { onAttached: (boards?: PoolRoamBoardRecord[]) => void }) => void;
 }
 
 function canCreatePoolRoamCanvasHost(app: unknown): app is App {
@@ -80,6 +81,8 @@ export class PoolRoamBoardModal extends Modal {
   private downloadButtonEl: HTMLButtonElement | null = null;
 
   private shareButtonEl: HTMLButtonElement | null = null;
+
+  private addIdeaBlockButtonEl: HTMLButtonElement | null = null;
 
   private openVersion = 0;
 
@@ -206,6 +209,30 @@ export class PoolRoamBoardModal extends Modal {
       this.handlers.onShareBoard(board, this.shareButtonEl as HTMLButtonElement);
     });
 
+    this.addIdeaBlockButtonEl = floatingActions.createEl("button", {
+      cls: "glitter-pool-roam-board-modal__floating-action glitter-pool-roam-board-modal__floating-action--idea-block"
+    }) as HTMLButtonElement;
+    this.addIdeaBlockButtonEl.type = "button";
+    this.addIdeaBlockButtonEl.setAttribute?.("aria-label", text.addCurrentBoardIdeaBlock);
+    this.addIdeaBlockButtonEl.createEl("span", {
+      cls: "glitter-pool-stage__roam-floating-action-icon glitter-pool-stage__roam-floating-action-icon--idea-block"
+    });
+    this.addIdeaBlockButtonEl.addEventListener("click", () => {
+      const board = this.getActiveBoard();
+      if (!board || !this.handlers.onAddIdeaBlock) {
+        return;
+      }
+      this.handlers.onAddIdeaBlock(board, {
+        onAttached: (boards) => {
+          if (boards) {
+            this.replaceBoards(boards, board.path);
+          }
+          const currentOpenVersion = ++this.openVersion;
+          void this.renderActiveBoard(currentOpenVersion);
+        }
+      });
+    });
+
     const canvasHostEl = canvasMountEl.createDiv({
       cls: "glitter-pool-roam-board-modal__canvas-host"
     });
@@ -232,6 +259,7 @@ export class PoolRoamBoardModal extends Modal {
     this.nextButtonEl = null;
     this.downloadButtonEl = null;
     this.shareButtonEl = null;
+    this.addIdeaBlockButtonEl = null;
     this.canvasHost?.destroy();
     this.containerEl?.removeClass?.("glitter-pool-roam-board-modal-host");
     this.modalEl?.removeClass?.("glitter-pool-roam-board-modal");
@@ -253,6 +281,12 @@ export class PoolRoamBoardModal extends Modal {
     this.activeBoardIndex = nextIndex;
     const currentOpenVersion = ++this.openVersion;
     void this.renderActiveBoard(currentOpenVersion);
+  }
+
+  private replaceBoards(boards: PoolRoamBoardRecord[], activeBoardPath: string): void {
+    this.boards.splice(0, this.boards.length, ...boards);
+    const nextIndex = boards.findIndex((candidate) => candidate.path === activeBoardPath);
+    this.activeBoardIndex = clampBoardIndex(nextIndex >= 0 ? nextIndex : this.activeBoardIndex, boards.length);
   }
 
   private syncBoardMeta(board: PoolRoamBoardRecord): void {
@@ -306,6 +340,10 @@ export class PoolRoamBoardModal extends Modal {
 
     if (this.shareButtonEl) {
       this.shareButtonEl.disabled = !this.getActiveBoard() || !this.handlers.onShareBoard;
+    }
+
+    if (this.addIdeaBlockButtonEl) {
+      this.addIdeaBlockButtonEl.disabled = !this.getActiveBoard() || !this.handlers.onAddIdeaBlock;
     }
   }
 

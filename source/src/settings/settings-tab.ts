@@ -487,12 +487,25 @@ export default class GlitterSettingTab extends PluginSettingTab {
             return;
           }
 
+          const previousLanguage = this.plugin.settings.interfaceLanguage;
+          const previousPersistedLanguageSetting = Boolean(this.plugin.hasPersistedInterfaceLanguageSetting);
           this.plugin.settings = {
             ...this.plugin.settings,
             interfaceLanguage: value as PluginInterfaceLanguage
           };
-          await this.plugin.savePluginSettings();
-          this.plugin.refreshOpenGlitterViews?.();
+          this.plugin.hasPersistedInterfaceLanguageSetting = true;
+
+          try {
+            await this.plugin.savePluginSettings();
+            this.plugin.refreshOpenGlitterViews?.();
+          } catch (error) {
+            this.plugin.settings = {
+              ...this.plugin.settings,
+              interfaceLanguage: previousLanguage
+            };
+            this.plugin.hasPersistedInterfaceLanguageSetting = previousPersistedLanguageSetting;
+            throw error;
+          }
         });
       });
     new Setting(appearanceSection.advancedContentEl!)

@@ -2353,6 +2353,13 @@ export function renderHomeView(
         menu: HTMLElement;
       }
     | null = null;
+  let openLanguageMenuRecord:
+    | {
+        selector: HTMLElement;
+        control: HTMLButtonElement;
+        menu: HTMLElement;
+      }
+    | null = null;
 
   const setFieldViewMenuOpenState = (
     slot: HTMLElement,
@@ -2388,8 +2395,52 @@ export function renderHomeView(
     openFieldViewMenuRecord = null;
   };
 
+  const setLanguageMenuOpenState = (
+    selector: HTMLElement,
+    control: HTMLButtonElement,
+    menu: HTMLElement,
+    options: HTMLButtonElement[],
+    isOpen: boolean
+  ): void => {
+    options.forEach((option) => {
+      option.disabled = !isOpen;
+    });
+
+    if (isOpen) {
+      addClassName(selector, "glitter-home-stage__language-selector--open");
+      addClassName(menu, "glitter-home-stage__language-menu--open");
+      control.setAttribute("aria-expanded", "true");
+      menu.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    removeClassName(selector, "glitter-home-stage__language-selector--open");
+    removeClassName(menu, "glitter-home-stage__language-menu--open");
+    control.setAttribute("aria-expanded", "false");
+    menu.setAttribute("aria-hidden", "true");
+  };
+
+  const closeLanguageMenu = (): void => {
+    if (!openLanguageMenuRecord) {
+      return;
+    }
+
+    const options = Array.from(
+      openLanguageMenuRecord.menu.querySelectorAll(".glitter-home-stage__language-option")
+    ) as HTMLButtonElement[];
+    setLanguageMenuOpenState(
+      openLanguageMenuRecord.selector,
+      openLanguageMenuRecord.control,
+      openLanguageMenuRecord.menu,
+      options,
+      false
+    );
+    openLanguageMenuRecord = null;
+  };
+
   stage.addEventListener("click", () => {
     closeFieldViewMenu();
+    closeLanguageMenu();
   });
 
   state.topbar.controls.forEach((controlState) => {
@@ -2493,14 +2544,14 @@ export function renderHomeView(
     );
     createNode(control, "span", "glitter-home-stage__visually-hidden", controlState.label);
   });
-  if (state.mode === "empty" && state.emptyGuide) {
+  if (state.mode === "empty" && state.firstUseEntry) {
     const guideBadge = createNode(
       topbarActions,
       "span",
       "glitter-home-stage__guide-badge glitter-home-stage__guide-badge--topbar"
     );
     createNode(guideBadge, "span", "glitter-home-stage__guide-badge-icon");
-    createNode(guideBadge, "span", "glitter-home-stage__guide-badge-text", state.emptyGuide.badge);
+    createNode(guideBadge, "span", "glitter-home-stage__guide-badge-text", state.firstUseEntry.badge);
   }
 
   const fieldClass =
@@ -2554,17 +2605,85 @@ export function renderHomeView(
     emptyContent.id = emptyOrbLabelId;
     emptyOrbButton.setAttribute("aria-labelledby", emptyOrbLabelId);
     createNode(emptyContent, "span", "glitter-home-stage__empty-orb-content-icon");
-    createNode(emptyContent, "span", "glitter-home-stage__empty-orb-content-title", "灵感待录入");
-    createNode(emptyContent, "span", "glitter-home-stage__empty-orb-content-subtitle", "点击开始首次记录");
+    createNode(
+      emptyContent,
+      "span",
+      "glitter-home-stage__empty-orb-content-title",
+      state.firstUseEntry?.orbTitle ?? ""
+    );
+    createNode(
+      emptyContent,
+      "span",
+      "glitter-home-stage__empty-orb-content-subtitle",
+      state.firstUseEntry?.orbSubtitle ?? ""
+    );
 
-    if (state.emptyGuide) {
-      const promptPill = createNode(
-        emptyLayout,
+    if (state.firstUseEntry) {
+      const languageSelector = createNode(emptyLayout, "div", "glitter-home-stage__language-selector");
+      const languageTrigger = createNode(
+        languageSelector,
+        "button",
+        "glitter-home-stage__language-trigger"
+      ) as HTMLButtonElement;
+      languageTrigger.type = "button";
+      languageTrigger.setAttribute("aria-haspopup", "menu");
+      languageTrigger.setAttribute("aria-expanded", "false");
+      createNode(
+        languageTrigger,
         "span",
-        "glitter-home-stage__empty-prompt-pill glitter-home-stage__empty-prompt-pill--attached"
+        "glitter-home-stage__language-trigger-label",
+        state.firstUseEntry.languageLabel
       );
-      createNode(promptPill, "span", "glitter-home-stage__empty-prompt-icon");
-      createNode(promptPill, "span", "glitter-home-stage__empty-prompt-text", state.emptyGuide.prompt);
+      createNode(
+        languageTrigger,
+        "span",
+        "glitter-home-stage__language-trigger-value",
+        state.firstUseEntry.currentLanguageLabel
+      );
+      createNode(languageTrigger, "span", "glitter-home-stage__language-trigger-chevron");
+
+      const languageMenu = createNode(languageSelector, "div", "glitter-home-stage__language-menu");
+      languageMenu.setAttribute("aria-hidden", "true");
+      languageMenu.setAttribute("role", "menu");
+      languageMenu.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+
+      const languageOptions: HTMLButtonElement[] = [];
+      state.firstUseEntry.options.forEach((option) => {
+        const optionClass = option.selected
+          ? "glitter-home-stage__language-option glitter-home-stage__language-option--selected"
+          : "glitter-home-stage__language-option";
+        const languageOption = createNode(languageMenu, "button", optionClass, option.label) as HTMLButtonElement;
+        languageOption.type = "button";
+        languageOption.disabled = true;
+        languageOption.setAttribute("role", "menuitemradio");
+        languageOption.setAttribute("aria-checked", option.selected ? "true" : "false");
+        languageOption.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          closeLanguageMenu();
+          void actions.onFirstUseLanguageSelect?.(option.value);
+        });
+        languageOptions.push(languageOption);
+      });
+
+      languageTrigger.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const shouldOpen = openLanguageMenuRecord?.menu !== languageMenu;
+        closeLanguageMenu();
+        if (!shouldOpen) {
+          return;
+        }
+
+        setLanguageMenuOpenState(languageSelector, languageTrigger, languageMenu, languageOptions, true);
+        openLanguageMenuRecord = {
+          selector: languageSelector,
+          control: languageTrigger,
+          menu: languageMenu
+        };
+      });
     }
 
   } else {

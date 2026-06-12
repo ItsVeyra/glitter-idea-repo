@@ -49,7 +49,7 @@ export function createPoolViewRoamController(deps: { canvasHost?: PoolRoamCanvas
         mode,
         ...(input.boardPath ? { boardPath: input.boardPath } : {}),
         historyEnabled: input.historyEnabled,
-        floatingActions: [...(input.floatingActions ?? ["download", "share", "history"])],
+        floatingActions: [...(input.floatingActions ?? ["download", "share", "history", "idea-block"])],
         boundaryAnchors: (input.boundaryAnchors ?? []).map((anchor) => ({ ...anchor })),
         ...(input.panelWidthRatio !== undefined ? { panelWidthRatio: input.panelWidthRatio } : {}),
         ...(input.errorMessage ? { errorMessage: input.errorMessage } : {})

@@ -43,6 +43,7 @@ export type PoolViewActionFactoryDeps = {
   openPoolRoamHistory: () => Promise<void>;
   downloadPoolRoamBoard: () => Promise<void>;
   openPoolRoamShareMenu: (anchorEl: HTMLElement) => void;
+  addIdeaBlockToPoolRoam: () => void;
   togglePoolMarkdownPreview: () => void;
   savePoolMarkdownFile: () => Promise<void>;
   toggleBatchMode: () => void;
@@ -206,6 +207,12 @@ export function createPoolViewActions(deps: PoolViewActionFactoryDeps): PoolView
     onSharePoolRoamBoard: deps.poolRoamBoardPath
       ? (anchorEl) => {
           deps.openPoolRoamShareMenu(anchorEl);
+        }
+      : undefined,
+    onAddPoolRoamIdeaBlock: deps.poolRoamBoardPath
+      ? () => {
+          deps.preserveResultScrollOnNextRender();
+          deps.addIdeaBlockToPoolRoam();
         }
       : undefined,
     onTogglePoolMarkdownPreview: () => {

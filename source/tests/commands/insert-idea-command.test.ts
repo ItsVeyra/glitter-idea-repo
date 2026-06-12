@@ -15,6 +15,7 @@ const {
   ideaPickerOpenMock: vi.fn(),
   ideaPickerInstances: [] as Array<{
     onPick: (ideaId: string) => Promise<void>;
+    options?: { mode?: string };
   }>,
   noticeConstructorMock: vi.fn()
 }));
@@ -31,8 +32,8 @@ vi.mock("../../src/editor/editor-integration", () => ({
 }));
 
 vi.mock("../../src/views/idea-picker-modal", () => ({
-  IdeaPickerModal: vi.fn().mockImplementation((_plugin, onPick) => {
-    ideaPickerInstances.push({ onPick });
+  IdeaPickerModal: vi.fn().mockImplementation((_plugin, onPick, options) => {
+    ideaPickerInstances.push({ onPick, options });
     return {
       open: ideaPickerOpenMock
     };
@@ -50,7 +51,7 @@ describe("registerInsertIdeaReferenceCommand", () => {
     noticeConstructorMock.mockReset();
   });
 
-  it("registers the editor snippet insertion command with a configured hotkey", () => {
+  it("registers the editor snippet insertion command with a localized name and configured hotkey", () => {
     let registeredCommand:
       | {
           id: string;
@@ -69,6 +70,7 @@ describe("registerInsertIdeaReferenceCommand", () => {
       },
       registerEvent: vi.fn(),
       settings: {
+        interfaceLanguage: "zh-CN",
         referencedIdeaEmoji: "⭐",
         hotkeys: {
           insertIdeaReference: "Ctrl+Alt+K"
@@ -91,7 +93,7 @@ describe("registerInsertIdeaReferenceCommand", () => {
 
     expect(registeredCommand).toMatchObject({
       id: "insert-idea-reference",
-      name: "Insert Glitter snippet",
+      name: "插入灵感片段",
       hotkeys: [
         {
           modifiers: ["Ctrl", "Alt"],
@@ -264,6 +266,7 @@ describe("registerInsertIdeaReferenceCommand", () => {
       },
       registerEvent: vi.fn(),
       settings: {
+        interfaceLanguage: "en",
         referencedIdeaEmoji: "⭐",
         hotkeys: {
           insertIdeaReference: null
@@ -284,11 +287,12 @@ describe("registerInsertIdeaReferenceCommand", () => {
 
     editorMenuHandler?.(menu as any, { focus } as any, { file: { path: "Clicked.md" } } as any);
     expect(menuItemTitle).toBe("Glitter");
-    expect(submenuItemTitle).toBe("插入灵感片段（Mod+Shift+I）");
+    expect(submenuItemTitle).toBe("Insert Glitter snippet (Mod+Shift+I)");
 
     await submenuItemClick?.();
 
     expect(ideaPickerOpenMock).toHaveBeenCalledTimes(1);
+    expect(ideaPickerInstances[0]?.options).toEqual({ mode: "snippet" });
     await ideaPickerInstances[0]?.onPick("idea-1");
     expect(insertIdeaReference).toHaveBeenCalledWith({
       ideaId: "idea-1",
@@ -297,7 +301,7 @@ describe("registerInsertIdeaReferenceCommand", () => {
       emoji: "⭐"
     });
     expect(focus).toHaveBeenCalledTimes(1);
-    expect(noticeConstructorMock).toHaveBeenCalledWith("已插入灵感片段");
+    expect(noticeConstructorMock).toHaveBeenCalledWith("Glitter snippet inserted");
     await registeredCommand?.callback();
   });
 
@@ -341,6 +345,7 @@ describe("registerInsertIdeaReferenceCommand", () => {
     await registeredCommand?.callback();
 
     expect(ideaPickerOpenMock).toHaveBeenCalledTimes(1);
+    expect(ideaPickerInstances[0]?.options).toEqual({ mode: "snippet" });
     await ideaPickerInstances[0]?.onPick("idea-1");
 
     expect(insertIdeaReference).toHaveBeenCalledWith({
