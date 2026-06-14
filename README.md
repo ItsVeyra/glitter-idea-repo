@@ -20,11 +20,10 @@ Glitter provides a global quick capture entry for quickly holding onto text, lin
 The roam board is as important as quick capture. It is not just a simple whiteboard add-on page, but a visual space that brings saved ideas back for further organization: you can drag source ideas onto the roam board, continue arranging, connecting, comparing, and grouping them on the canvas, and keep expanding around a theme.
 
 Source blocks on the roam board display the real content directly, instead of collapsing into plain text descriptions:
-- ![alt text](assets/images/roam.png)
+
 - Text and link ideas show their corresponding titles, descriptions, and source information;
 - Image and video ideas display the media content directly;
 - Multi-image ideas are grouped into the same source block while preserving the ability to keep connecting and organizing them;
-- ![alt text](assets/gifs/Roam-used.gif)
 - Roam history keeps previously created boards so you can continue revisiting, batch-organizing, and extending the workflow;
 - When an original idea is edited or deleted, the corresponding source block on the roam board stays in sync as much as possible.
 
@@ -72,6 +71,7 @@ When you need to continue organizing, branching, or comparing existing ideas aro
 - Supports placing saved ideas onto the board and continuing to drag, arrange, and connect them;
 - Source blocks directly present text, links, images, and videos, so you do not need to keep returning to the card page to review them;
 - Multi-image ideas are grouped inside the same source block for easier observation as a set;
+- ![alt text](assets/gifs/Roam-used.gif)
 - Roam history records created boards so you can continue organizing, revisiting, and batch-managing them;
 - ![alt text](assets/images/Roam-history.png)
 - When the original idea content is updated, the source block refreshes with it, preventing the canvas content from drifting out of date over time.
