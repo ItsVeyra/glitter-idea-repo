@@ -306,41 +306,6 @@ export default class GlitterSettingTab extends PluginSettingTab {
             await this.plugin.savePluginSettings();
           })
       );
-    new Setting(snippetsSection.commonContentEl)
-      .setName(text.labels.enableCreateFromSelection)
-      .setDesc(withActivation(text.descriptions.enableCreateFromSelection, text.activation.reload))
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.enableCreateFromSelection).onChange(async (value) => {
-          this.plugin.settings = {
-            ...this.plugin.settings,
-            enableCreateFromSelection: value
-          };
-          await this.plugin.savePluginSettings();
-        })
-      );
-    new Setting(snippetsSection.commonContentEl)
-      .setName(text.labels.createFromSelectionHotkey)
-      .setDesc(withActivation(text.descriptions.createFromSelectionHotkey, text.activation.reload))
-      .addText((value) =>
-        value
-          .setPlaceholder(
-            resolveHotkeyPlaceholder(
-              DEFAULT_SETTINGS.hotkeys.createFromSelection,
-              text.placeholders.createFromSelectionHotkey
-            )
-          )
-          .setValue(resolveHotkeyValue(this.plugin.settings.hotkeys.createFromSelection))
-          .onChange(async (nextValue) => {
-            this.plugin.settings = {
-              ...this.plugin.settings,
-              hotkeys: {
-                ...this.plugin.settings.hotkeys,
-                createFromSelection: normalizeHotkeyValue(nextValue)
-              }
-            };
-            await this.plugin.savePluginSettings();
-          })
-      );
     new Setting(snippetsSection.advancedContentEl!)
       .setName(text.labels.createdIdeaEmoji)
       .setDesc(withActivation(text.descriptions.createdIdeaEmoji, text.activation.newContent))
@@ -401,6 +366,27 @@ export default class GlitterSettingTab extends PluginSettingTab {
                 boardStorageDirectory: normalizeStorageDirectoryValue(
                   nextValue,
                   DEFAULT_SETTINGS.roam.boardStorageDirectory
+                )
+              }
+            };
+            await this.plugin.savePluginSettings();
+          })
+      );
+    new Setting(roamSection.commonContentEl)
+      .setName(text.labels.roamBoardSvgStorageDirectory)
+      .setDesc(withActivation(text.descriptions.roamBoardSvgStorageDirectory, text.activation.newContent))
+      .addText((value) =>
+        value
+          .setPlaceholder(text.placeholders.roamBoardSvgStorageDirectory)
+          .setValue(this.plugin.settings.roam.svgStorageDirectory)
+          .onChange(async (nextValue) => {
+            this.plugin.settings = {
+              ...this.plugin.settings,
+              roam: {
+                ...this.plugin.settings.roam,
+                svgStorageDirectory: normalizeStorageDirectoryValue(
+                  nextValue,
+                  DEFAULT_SETTINGS.roam.svgStorageDirectory
                 )
               }
             };

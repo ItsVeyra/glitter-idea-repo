@@ -94,7 +94,7 @@ export function renderFollowupGuidanceView(
   const closeButton = createNode(
     header,
     "button",
-    "glitter-followup-guidance-view__close glitter-write-stage__close-button"
+    "glitter-followup-guidance-view__close glitter-write-stage__close-button GlitterIdea-edit-modal__close-button"
   ) as HTMLButtonElement;
   closeButton.type = "button";
   closeButton.setAttribute?.("aria-label", state.closeLabel);

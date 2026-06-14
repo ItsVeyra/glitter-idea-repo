@@ -1292,18 +1292,35 @@ describe("IdeaEditModal", () => {
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action",
+      ".glitter-write-stage__media-surface-nav-button,\n.glitter-write-stage__media-surface-action",
       [
-        "color: var(--glitter-media-surface-action-icon-color);",
-        "border-color: color-mix(in srgb, white 16%, var(--glitter-ui-border-strong) 14%);",
-        "-webkit-backdrop-filter: blur(22px) saturate(164%);",
-        "backdrop-filter: blur(22px) saturate(164%);"
+        "border-radius: 999px;",
+        "border: 1px solid color-mix(in srgb, var(--glitter-ui-border-strong) 42%, white 16%);",
+        "background: color-mix(in srgb, var(--glitter-ui-bg) 62%, transparent);",
+        "pointer-events: auto;",
+        "appearance: none;",
+        "-webkit-appearance: none;",
+        "cursor: pointer;",
+        "-webkit-backdrop-filter: blur(18px) saturate(148%);",
+        "backdrop-filter: blur(18px) saturate(148%);"
       ]
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
-      ".glitter-write-stage button.glitter-write-stage__media-surface-action .glitter-write-stage__icon,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action .glitter-write-stage__icon",
-      ["position: relative;", "z-index: 1;"]
+      ".glitter-write-stage button.glitter-write-stage__media-surface-action,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action",
+      [
+        "position: relative;",
+        "width: 30px;",
+        "height: 30px;",
+        "overflow: hidden;",
+        "isolation: isolate;",
+        "color: var(--glitter-media-surface-action-icon-color);"
+      ]
+    );
+    expectDeclarationsInSelectorBlock(
+      stylesCss,
+      ".glitter-write-stage__media-surface-action .glitter-write-stage__icon",
+      ["color: inherit;", "pointer-events: none;"]
     );
   });
 

@@ -2054,20 +2054,21 @@ describe("renderWriteView", () => {
       stylesCss,
       ".glitter-write-stage button.glitter-write-stage__media-surface-action,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action",
       [
-      "position: relative;",
-      "width: 30px;",
-      "height: 30px;",
-      "overflow: hidden;",
-      "isolation: isolate;",
-      "color: var(--glitter-media-surface-action-icon-color);",
-      "border-color: color-mix(in srgb, white 16%, var(--glitter-ui-border-strong) 14%);",
-      "background:\n    radial-gradient(circle at 32% 24%, color-mix(in srgb, white 16%, transparent), transparent 54%),\n    linear-gradient(180deg, color-mix(in srgb, white 10%, transparent), color-mix(in srgb, black 8%, transparent)),\n    color-mix(in srgb, var(--glitter-ui-bg) 18%, transparent);",
-      "box-shadow:\n    0 0 0 1px color-mix(in srgb, white 3%, transparent),\n    inset 0 1px 0 color-mix(in srgb, white 16%, transparent),\n    inset 0 -1px 0 color-mix(in srgb, black 12%, transparent),\n    0 10px 20px color-mix(in srgb, black 14%, transparent);",
-      "-webkit-backdrop-filter: blur(22px) saturate(164%);",
-      "backdrop-filter: blur(22px) saturate(164%);",
-      "transform: translateY(0);",
-      "transition:\n    opacity 140ms ease,\n    color 160ms ease,\n    border-color 160ms ease,\n    background 180ms ease,\n    box-shadow 180ms ease,\n    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);"
-    ]);
+        "position: relative;",
+        "width: 30px;",
+        "height: 30px;",
+        "overflow: hidden;",
+        "isolation: isolate;",
+        "color: var(--glitter-media-surface-action-icon-color);",
+        "border-color: color-mix(in srgb, white 16%, var(--glitter-ui-border-strong) 14%);",
+        "background:\n    radial-gradient(circle at 32% 24%, color-mix(in srgb, white 16%, transparent), transparent 54%),\n    linear-gradient(180deg, color-mix(in srgb, white 10%, transparent), color-mix(in srgb, black 8%, transparent)),\n    color-mix(in srgb, var(--glitter-ui-bg) 18%, transparent);",
+        "box-shadow:\n    0 0 0 1px color-mix(in srgb, white 3%, transparent),\n    inset 0 1px 0 color-mix(in srgb, white 16%, transparent),\n    inset 0 -1px 0 color-mix(in srgb, black 12%, transparent),\n    0 10px 20px color-mix(in srgb, black 14%, transparent);",
+        "-webkit-backdrop-filter: blur(22px) saturate(164%);",
+        "backdrop-filter: blur(22px) saturate(164%);",
+        "transform: translateY(0);",
+        "transition:\n    opacity 140ms ease,\n    color 160ms ease,\n    border-color 160ms ease,\n    background 180ms ease,\n    box-shadow 180ms ease,\n    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);"
+      ]
+    );
     expect(stylesCss).not.toContain(
       ".glitter-write-stage__media-surface-action {\n  min-height: 30px;"
     );
@@ -2132,9 +2133,8 @@ describe("renderWriteView", () => {
     expectDeclarationsInSelectorBlock(
       stylesCss,
       ".glitter-write-stage button.glitter-write-stage__media-surface-action:not(:disabled):hover,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:not(:disabled):hover",
-      [
-      "transform: translateY(-1px);"
-    ]);
+      ["transform: translateY(-1px);"]
+    );
     expect(stylesCss).not.toContain(
       ".glitter-write-stage__media-surface-action:not(:disabled):focus-visible {\n  transform:"
     );
@@ -2145,41 +2145,75 @@ describe("renderWriteView", () => {
     expect(stylesCss).not.toContain(
       ".glitter-write-stage__media-surface-action:not(:disabled):focus-visible::after"
     );
-    expect(stylesCss).not.toContain(
-      ".glitter-write-stage__media-surface-action:hover,\n.glitter-write-stage__media-surface-action:focus-visible {"
-    );
     expectDeclarationsInSelectorBlock(
       stylesCss,
       ".glitter-write-stage button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action--remove:not(:disabled):hover",
       [
-      "color: var(--text-error, #ff6b6b);",
-      "border-color: color-mix(in srgb, var(--text-error, #ff6b6b) 68%, white 20%);",
-      "background:\n    radial-gradient(circle at 32% 22%, color-mix(in srgb, white 50%, transparent), transparent 48%),\n    linear-gradient(180deg, color-mix(in srgb, white 42%, transparent), color-mix(in srgb, var(--text-error, #ff6b6b) 24%, transparent)),\n    color-mix(in srgb, var(--glitter-ui-bg) 58%, transparent);",
-      "box-shadow:\n    0 0 0 1px color-mix(in srgb, var(--text-error, #ff6b6b) 18%, white 14%),\n    inset 0 1px 0 color-mix(in srgb, white 46%, transparent),\n    inset 0 -1px 0 color-mix(in srgb, var(--text-error, #ff6b6b) 30%, transparent),\n    0 18px 34px color-mix(in srgb, black 28%, transparent);"
-    ]);
-    expect(stylesCss).not.toContain(
-      ".glitter-write-stage__media-surface-action--remove:not(:disabled):hover::after"
+        "color: var(--text-error, #ff6b6b);",
+        "border-color: color-mix(in srgb, var(--text-error, #ff6b6b) 68%, white 20%);",
+        "background:\n    radial-gradient(circle at 32% 22%, color-mix(in srgb, white 50%, transparent), transparent 48%),\n    linear-gradient(180deg, color-mix(in srgb, white 42%, transparent), color-mix(in srgb, var(--text-error, #ff6b6b) 24%, transparent)),\n    color-mix(in srgb, var(--glitter-ui-bg) 58%, transparent);"
+      ]
     );
     expectDeclarationsInSelectorBlock(
       stylesCss,
       ".glitter-write-stage button.glitter-write-stage__media-surface-action:disabled::before,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:disabled::before",
-      [
-      "opacity: 0;"
-    ]);
+      ["opacity: 0;"]
+    );
     expect(stylesCss).toContain(
       ".glitter-write-stage__media-surface-nav-button:disabled,\n.glitter-write-stage__media-surface-action:disabled {\n  opacity: 0.52;\n  color: color-mix(in srgb, var(--glitter-ui-text-muted) 84%, transparent);\n  cursor: default;\n}"
     );
-    expectDeclarationsInLastSelectorBlock(
+    expectDeclarationsInSelectorBlock(
       stylesCss,
       ".glitter-write-stage button.glitter-write-stage__media-surface-action:disabled,\n.GlitterIdea-edit-modal button.glitter-write-stage__media-surface-action:disabled",
       [
-      "border-color: color-mix(in srgb, var(--glitter-ui-border-strong) 28%, transparent);",
-      "background: color-mix(in srgb, var(--glitter-ui-bg) 42%, transparent);",
-      "box-shadow: none;"
+        "border-color: color-mix(in srgb, var(--glitter-ui-border-strong) 28%, transparent);",
+        "background: color-mix(in srgb, var(--glitter-ui-bg) 42%, transparent);",
+        "box-shadow: none;"
+      ]
+    );
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-write-stage__media-preview-close", [
+      "position: absolute;",
+      "top: 0;",
+      "right: 0;",
+      "width: 34px;",
+      "height: 34px;",
+      "border-radius: 999px;"
     ]);
-    expect(stylesCss).not.toContain(".glitter-write-stage__media-surface-action--remove:hover {");
-    expect(stylesCss).not.toContain(".glitter-write-stage__media-surface-action--remove:focus-visible");
-    expect(stylesCss).not.toContain(".glitter-write-stage__media-surface-action--remove:not(:disabled):focus-visible");
+    expectDeclarationsInSelectorBlock(stylesCss, "button.glitter-write-stage__media-preview-close", [
+      "all: unset;",
+      "position: absolute;",
+      "top: 0;",
+      "right: 0;",
+      "box-sizing: border-box;",
+      "width: 34px;",
+      "height: 34px;",
+      "border: 0 !important;",
+      "border-radius: 999px;",
+      "display: grid;",
+      "place-items: center;",
+      "padding: 0;",
+      "appearance: none !important;",
+      "-webkit-appearance: none !important;",
+      "background: color-mix(in srgb, var(--glitter-ui-surface) 76%, transparent);",
+      "background-image: none !important;",
+      "box-shadow: none !important;",
+      "color: var(--glitter-ui-text);",
+      "filter: none !important;",
+      "text-shadow: none !important;",
+      "cursor: pointer;"
+    ]);
+    expectDeclarationsInSelectorBlock(
+      stylesCss,
+      ".glitter-write-stage__media-preview-close:hover:not(:disabled),\n.glitter-write-stage__media-preview-close:focus-visible",
+      [
+        "background: color-mix(in srgb, var(--glitter-ui-surface) 72%, var(--glitter-ui-accent) 24%);",
+        "color: var(--glitter-ui-accent);"
+      ]
+    );
+    expectDeclarationsInLastSelectorBlock(stylesCss, ".glitter-write-stage__media-preview-close:focus-visible", [
+      "outline: 2px solid color-mix(in srgb, var(--glitter-ui-accent) 68%, white 32%);",
+      "outline-offset: 2px;"
+    ]);
     expect(stylesCss).toContain(".glitter-write-stage__icon--chevron-left {");
     expect(stylesCss).toContain(".glitter-write-stage__icon--chevron-right {");
     expect(stylesCss).toContain(".glitter-write-stage__icon--plus {");

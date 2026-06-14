@@ -18,7 +18,8 @@ describe("DEFAULT_SETTINGS", () => {
     expect(DEFAULT_SETTINGS.mediaStorageDirectory).toBe("Glitter");
     expect(DEFAULT_SETTINGS.fileStorageDirectory).toBe("Glitter");
     expect(DEFAULT_SETTINGS.roam).toEqual({
-      boardStorageDirectory: "Glitter/灵感漫游"
+      boardStorageDirectory: "Glitter/灵感漫游",
+      svgStorageDirectory: "Glitter/池导出"
     });
     expect(DEFAULT_SETTINGS.enableReducedMotion).toBe(false);
     expect(DEFAULT_SETTINGS.enableQuickCapture).toBe(true);
@@ -57,7 +58,8 @@ describe("mergePluginSettings", () => {
       mediaStorageDirectory: "Assets/Glitter",
       fileStorageDirectory: "Notes/Glitter",
       roam: {
-        boardStorageDirectory: "Boards/Glitter"
+        boardStorageDirectory: "Boards/Glitter",
+        svgStorageDirectory: "Exports/Roam"
       },
       hotkeys: {
         createFromSelection: "Mod+Shift+I"
@@ -69,8 +71,21 @@ describe("mergePluginSettings", () => {
     expect(merged.mediaStorageDirectory).toBe("Assets/Glitter");
     expect(merged.fileStorageDirectory).toBe("Notes/Glitter");
     expect(merged.roam.boardStorageDirectory).toBe("Boards/Glitter");
+    expect(merged.roam.svgStorageDirectory).toBe("Exports/Roam");
     expect(merged.hotkeys.createFromSelection).toBe("Mod+Shift+I");
     expect(merged.hotkeys.globalQuickCapture).toBe(DEFAULT_SETTINGS.hotkeys.globalQuickCapture);
+  });
+
+  it("restores create-from-selection when older saved settings disabled it", () => {
+    const merged = mergePluginSettings({
+      enableCreateFromSelection: false,
+      hotkeys: {
+        createFromSelection: "Mod+Shift+I"
+      }
+    });
+
+    expect(merged.enableCreateFromSelection).toBe(true);
+    expect(merged.hotkeys.createFromSelection).toBe("Mod+Shift+I");
   });
 
   it("keeps a full hotkeys object when loaded hotkeys are missing", () => {
@@ -272,13 +287,15 @@ describe("mergePluginSettings", () => {
       mediaStorageDirectory: "   ",
       fileStorageDirectory: "   ",
       roam: {
-        boardStorageDirectory: "   "
+        boardStorageDirectory: "   ",
+        svgStorageDirectory: "   "
       }
     });
 
     expect(merged.mediaStorageDirectory).toBe(DEFAULT_SETTINGS.mediaStorageDirectory);
     expect(merged.fileStorageDirectory).toBe(DEFAULT_SETTINGS.fileStorageDirectory);
     expect(merged.roam.boardStorageDirectory).toBe(DEFAULT_SETTINGS.roam.boardStorageDirectory);
+    expect(merged.roam.svgStorageDirectory).toBe(DEFAULT_SETTINGS.roam.svgStorageDirectory);
   });
 
   it("normalizes storage directory slashes to vault-relative canonical paths", () => {
@@ -286,13 +303,15 @@ describe("mergePluginSettings", () => {
       mediaStorageDirectory: "\\Assets\\Glitter//images/",
       fileStorageDirectory: "//Notes//Glitter\\drafts\\",
       roam: {
-        boardStorageDirectory: "//Boards//Glitter\\roam\\"
+        boardStorageDirectory: "//Boards//Glitter\\roam\\",
+        svgStorageDirectory: "//Exports//Roam\\svg\\"
       }
     });
 
     expect(merged.mediaStorageDirectory).toBe("Assets/Glitter/images");
     expect(merged.fileStorageDirectory).toBe("Notes/Glitter/drafts");
     expect(merged.roam.boardStorageDirectory).toBe("Boards/Glitter/roam");
+    expect(merged.roam.svgStorageDirectory).toBe("Exports/Roam/svg");
   });
 
   it("normalizes an invalid ui theme mode to follow-obsidian", () => {

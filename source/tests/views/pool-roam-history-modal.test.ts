@@ -627,6 +627,11 @@ describe("PoolRoamHistoryModal", () => {
       "justify-content: flex-end;",
       "align-items: flex-end;"
     ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-roam-history-modal__search-shell", [
+      "height: 40px;",
+      "box-sizing: border-box;",
+      "border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 68%, transparent);"
+    ]);
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-roam-history-modal__search", [
       "min-height: 38px;",
       "appearance: none;",
@@ -634,8 +639,23 @@ describe("PoolRoamHistoryModal", () => {
     ]);
     expectDeclarationsInSelectorBlock(
       stylesCss,
+      "button.glitter-pool-roam-history-modal__view-toggle,\nbutton.glitter-pool-roam-history-modal__toolbar-button",
+      [
+        "all: unset;",
+        "display: grid !important;",
+        "place-items: center;",
+        "flex: 0 0 40px;",
+        "appearance: none !important;",
+        "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 96%, var(--glitter-ui-bg) 4%) !important;",
+        "border: 1px solid color-mix(in srgb, var(--glitter-ui-border) 68%, transparent) !important;",
+        "border-radius: 999px;",
+        "color: var(--glitter-ui-text);"
+      ]
+    );
+    expectDeclarationsInSelectorBlock(
+      stylesCss,
       ".glitter-pool-roam-history-modal__view-toggle,\n.glitter-pool-roam-history-modal__toolbar-button",
-      ["appearance: none;", "background: transparent;", "border: 0;"]
+      ["flex: 0 0 40px;", "width: 40px;", "height: 40px;", "min-width: 40px;", "min-height: 40px;"]
     );
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-roam-history-modal__batch-footer", [
       "display: none;",

@@ -85,7 +85,7 @@ interface PoolBrowseCard {
   snippetLocations: PoolBrowseSnippetLocation[];
 }
 
-export type PoolBrowseOverlay = "pool-switcher" | "status" | "filter" | "sort" | "batch";
+export type PoolBrowseOverlay = "pool-switcher" | "browse-more" | "status" | "filter" | "sort" | "batch";
 
 export interface PoolBrowseLabels {
   browseSearchPlaceholder: string;

@@ -471,7 +471,7 @@ describe("GlitterSettingTab", () => {
       "Workspace & Entry",
       "Quick Capture",
       "AI & Quick Capture Polish",
-      "Snippets & Selection",
+      "Idea Snippets",
       "Pools & Organizing",
       "Roam Mode",
       "Files & Media",
@@ -642,7 +642,8 @@ describe("GlitterSettingTab", () => {
     expect(stylesCss).toContain(".glitter-settings-tab__section > .setting-item-heading {");
     expect(stylesCss).not.toContain("margin-left: 28px;");
     expect(stylesCss).toContain(".vertical-tab-content .glitter-settings-tab__page-title {");
-    expect(stylesCss).toContain("font-size: 2em;");
+    expect(stylesCss).toContain("font-size: 2.4em;");
+    expect(stylesCss).not.toContain("font-size: 2em;");
     expect(stylesCss).not.toContain("font-size: calc(var(--h1-size) * 1.5);");
     expect(stylesCss).toContain("line-height: var(--h1-line-height);");
     expect(stylesCss).toContain("font-weight: var(--h1-weight);");
@@ -717,7 +718,7 @@ describe("GlitterSettingTab", () => {
 
     const enableSnippetInsertionSetting = getSetting("Enable snippet insertion");
     expect(enableSnippetInsertionSetting).toMatchObject({
-      sectionTitle: "Snippets & Selection",
+      sectionTitle: "Idea Snippets",
       group: "common",
       toggleValue: true
     });
@@ -725,31 +726,19 @@ describe("GlitterSettingTab", () => {
 
     const insertSnippetHotkeySetting = getSetting("Insert Glitter snippet hotkey");
     expect(insertSnippetHotkeySetting).toMatchObject({
-      sectionTitle: "Snippets & Selection",
+      sectionTitle: "Idea Snippets",
       group: "common"
     });
     expect(insertSnippetHotkeySetting?.desc).toContain("Reload plugin to apply");
 
-    const enableCreateFromSelectionSetting = getSetting("Enable create from selection");
-    expect(enableCreateFromSelectionSetting).toMatchObject({
-      sectionTitle: "Snippets & Selection",
-      group: "common",
-      toggleValue: true
-    });
-    expect(enableCreateFromSelectionSetting?.desc).toContain("Reload plugin to apply");
-
-    const createFromSelectionHotkeySetting = getSetting("Create from selection hotkey");
-    expect(createFromSelectionHotkeySetting).toMatchObject({
-      sectionTitle: "Snippets & Selection",
-      group: "common"
-    });
-    expect(createFromSelectionHotkeySetting?.desc).toContain("Reload plugin to apply");
+    expect(getSetting("Enable create from selection")).toBeUndefined();
+    expect(getSetting("Create from selection hotkey")).toBeUndefined();
 
     expect(getSetting("Snippet inserted-state marker")).toBeUndefined();
 
     const createdIdeaEmojiSetting = getSetting("File-created marker");
     expect(createdIdeaEmojiSetting).toMatchObject({
-      sectionTitle: "Snippets & Selection",
+      sectionTitle: "Idea Snippets",
       group: "advanced"
     });
     expect(createdIdeaEmojiSetting?.desc).toContain("Applies to newly created content immediately");
@@ -829,9 +818,9 @@ describe("GlitterSettingTab", () => {
       .slice(1);
 
     expect(sectionHeadingNames).toEqual(
-      expect.arrayContaining(["Quick Capture", "AI & Quick Capture Polish", "Snippets & Selection"])
+      expect.arrayContaining(["Quick Capture", "AI & Quick Capture Polish", "Idea Snippets"])
     );
-    expect(sectionHeadingNames.slice(1, 4)).toEqual(["Quick Capture", "AI & Quick Capture Polish", "Snippets & Selection"]);
+    expect(sectionHeadingNames.slice(1, 4)).toEqual(["Quick Capture", "AI & Quick Capture Polish", "Idea Snippets"]);
 
     const enableAiSetting = getSetting("Enable AI");
     expect(enableAiSetting).toMatchObject({
@@ -1059,7 +1048,9 @@ describe("GlitterSettingTab", () => {
         mediaStorageDirectory: "Assets/Glitter",
         fileStorageDirectory: "Notes/Glitter",
         roam: {
-          boardStorageDirectory: "Boards/Glitter"
+          ...DEFAULT_SETTINGS.roam,
+          boardStorageDirectory: "Boards/Glitter",
+          svgStorageDirectory: "Exports/Roam"
         },
         enableReducedMotion: true,
         enableAmbientMotion: false,
@@ -1116,6 +1107,15 @@ describe("GlitterSettingTab", () => {
       textValue: "Boards/Glitter"
     });
     expect(roamBoardStorageDirectorySetting?.desc).toContain("Applies to newly created content immediately");
+
+    const roamBoardSvgStorageDirectorySetting = getSetting("Roam board SVG storage directory");
+    expect(roamBoardSvgStorageDirectorySetting).toMatchObject({
+      sectionTitle: "Roam Mode",
+      group: "common",
+      textPlaceholder: "Enter a vault-relative path",
+      textValue: "Exports/Roam"
+    });
+    expect(roamBoardSvgStorageDirectorySetting?.desc).toContain("Applies to newly created content immediately");
 
     const reduceMotionSetting = getSetting("Reduce motion");
     expect(reduceMotionSetting).toMatchObject({
@@ -1194,6 +1194,9 @@ describe("GlitterSettingTab", () => {
     await roamBoardStorageDirectorySetting?.textOnChange?.("  //Boards//Glitter\\nested\\  ");
     expect(plugin.settings.roam.boardStorageDirectory).toBe("Boards/Glitter/nested");
 
+    await roamBoardSvgStorageDirectorySetting?.textOnChange?.("  //Exports//Roam\\svg\\  ");
+    expect(plugin.settings.roam.svgStorageDirectory).toBe("Exports/Roam/svg");
+
     await mediaStorageDirectorySetting?.textOnChange?.("   ");
     expect(plugin.settings.mediaStorageDirectory).toBe(DEFAULT_SETTINGS.mediaStorageDirectory);
 
@@ -1203,13 +1206,16 @@ describe("GlitterSettingTab", () => {
     await roamBoardStorageDirectorySetting?.textOnChange?.("   ");
     expect(plugin.settings.roam.boardStorageDirectory).toBe(DEFAULT_SETTINGS.roam.boardStorageDirectory);
 
+    await roamBoardSvgStorageDirectorySetting?.textOnChange?.("   ");
+    expect(plugin.settings.roam.svgStorageDirectory).toBe(DEFAULT_SETTINGS.roam.svgStorageDirectory);
+
     await themeModeSetting?.dropdownOnChange?.("invalid-theme");
     expect(plugin.settings.uiThemeMode).toBe("obsidian-dark");
-    expect(plugin.savePluginSettings).toHaveBeenCalledTimes(7);
+    expect(plugin.savePluginSettings).toHaveBeenCalledTimes(9);
 
     await themeModeSetting?.dropdownOnChange?.("obsidian-light");
     expect(plugin.settings.uiThemeMode).toBe("obsidian-light");
-    expect(plugin.savePluginSettings).toHaveBeenCalledTimes(8);
+    expect(plugin.savePluginSettings).toHaveBeenCalledTimes(10);
   });
 
   it("renders About support actions without a developer row and wires both support buttons", async () => {
@@ -1275,9 +1281,13 @@ describe("GlitterSettingTab", () => {
 
     expect(stylesCss).toContain(".glitter-settings-support-card {");
     expect(stylesCss).toMatch(/\.glitter-settings-support-card \{[\s\S]*border: none;/);
+    expect(stylesCss).toContain(".glitter-settings-support-card__body {");
+    expect(stylesCss).toContain("font-size: var(--font-ui-small);");
     expect(stylesCss).toContain(".glitter-settings-support-card__actions {");
     expect(stylesCss).toMatch(/\.glitter-settings-support-card__actions \{[\s\S]*flex-wrap: nowrap;/);
     expect(stylesCss).toContain(".glitter-settings-support-card__button {");
+    expect(stylesCss).toContain("flex: 0 0 auto;");
+    expect(stylesCss).toContain("padding: 0 12px;");
     expect(stylesCss).toContain(".glitter-settings-support-card__button-icon {");
     expect(stylesCss).toContain(".glitter-support-modal__content {");
     expect(stylesCss).toContain(".glitter-support-modal__qr {");
@@ -1304,7 +1314,7 @@ describe("GlitterSettingTab", () => {
       "工作区与入口",
       "快速记录",
       "AI 与快速记录润色",
-      "片段与划词",
+      "灵感片段",
       "灵感池与整理",
       "漫游模式",
       "文件与媒体",

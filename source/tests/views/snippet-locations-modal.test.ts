@@ -349,6 +349,17 @@ describe("SnippetLocationsModal", () => {
       "filter: blur(18px);",
       "transform: translate3d(-36%, 0, 0);"
     ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-snippet-locations-modal__card:disabled", [
+      "cursor: default;"
+    ]);
+    expectDeclarationsInSelectorBlock(
+      stylesCss,
+      ".glitter-snippet-locations-modal__card:disabled:hover,\n.glitter-snippet-locations-modal__card:disabled:focus-within",
+      [
+        "background: color-mix(in srgb, var(--glitter-ui-bg-alt) 94%, black 6%);",
+        "transform: none;"
+      ]
+    );
     expectDeclarationsInSelectorBlock(
       stylesCss,
       ".glitter-snippet-locations-modal__card:hover::before,\n.glitter-snippet-locations-modal__card:focus-within::before",

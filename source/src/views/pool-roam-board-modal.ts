@@ -4,12 +4,18 @@ import { getInterfaceText } from "../i18n/interface-language";
 import type { PluginInterfaceLanguage } from "../settings/settings";
 import { createPoolRoamCanvasHost, type PoolRoamCanvasHost } from "./pool-roam-canvas-host";
 
+export type PoolRoamBoardModalOpenInRoamDecision =
+  | { type: "close" }
+  | { type: "keep-open" }
+  | { type: "confirm"; onConfirm: () => Promise<boolean> };
+
 export interface PoolRoamBoardModalHandlers {
   onOpenError?: (error: unknown) => void;
   onClose?: () => void;
   onDownloadBoard?: (board: PoolRoamBoardRecord) => void | Promise<void>;
   onShareBoard?: (board: PoolRoamBoardRecord, anchorEl: HTMLElement) => void;
   onAddIdeaBlock?: (board: PoolRoamBoardRecord, callbacks: { onAttached: (boards?: PoolRoamBoardRecord[]) => void }) => void;
+  onOpenInRoam?: (board: PoolRoamBoardRecord) => PoolRoamBoardModalOpenInRoamDecision | Promise<PoolRoamBoardModalOpenInRoamDecision>;
 }
 
 function canCreatePoolRoamCanvasHost(app: unknown): app is App {
@@ -84,6 +90,12 @@ export class PoolRoamBoardModal extends Modal {
 
   private addIdeaBlockButtonEl: HTMLButtonElement | null = null;
 
+  private openInRoamButtonEl: HTMLButtonElement | null = null;
+
+  private openInRoamConfirmMountEl: HTMLElement | null = null;
+
+  private openInRoamRequestVersion = 0;
+
   private openVersion = 0;
 
   private activeBoardIndex: number;
@@ -135,7 +147,9 @@ export class PoolRoamBoardModal extends Modal {
     this.prevButtonEl.type = "button";
     this.prevButtonEl.dataset.direction = "prev";
     this.prevButtonEl.setAttribute?.("aria-label", text.previousBoard);
-    this.prevButtonEl.textContent = "←";
+    this.prevButtonEl.createEl("span", {
+      cls: "glitter-write-stage__icon glitter-write-stage__icon--chevron-left"
+    });
     this.prevButtonEl.addEventListener("click", () => {
       this.navigate(-1);
     });
@@ -150,7 +164,9 @@ export class PoolRoamBoardModal extends Modal {
     this.nextButtonEl.type = "button";
     this.nextButtonEl.dataset.direction = "next";
     this.nextButtonEl.setAttribute?.("aria-label", text.nextBoard);
-    this.nextButtonEl.textContent = "→";
+    this.nextButtonEl.createEl("span", {
+      cls: "glitter-write-stage__icon glitter-write-stage__icon--chevron-right"
+    });
     this.nextButtonEl.addEventListener("click", () => {
       this.navigate(1);
     });
@@ -167,8 +183,27 @@ export class PoolRoamBoardModal extends Modal {
       this.close();
     });
 
-    this.metaEl = surface.createDiv({
+    const metaRow = surface.createDiv({
+      cls: "glitter-pool-roam-board-modal__meta-row"
+    });
+    this.metaEl = metaRow.createDiv({
       cls: "glitter-pool-roam-board-modal__meta"
+    });
+    this.openInRoamButtonEl = metaRow.createEl("button", {
+      cls: "glitter-pool-roam-board-modal__open-in-roam"
+    }) as HTMLButtonElement;
+    this.openInRoamButtonEl.type = "button";
+    this.openInRoamButtonEl.setAttribute?.("aria-label", text.openInRoam);
+    this.openInRoamButtonEl.setAttribute?.("title", text.openInRoam);
+    this.openInRoamButtonEl.createEl("span", {
+      cls: "glitter-pool-stage__results-tool-icon glitter-pool-stage__results-tool-icon--roam"
+    });
+    this.openInRoamButtonEl.createEl("span", {
+      cls: "glitter-pool-roam-board-modal__open-in-roam-label",
+      text: text.openInRoam
+    });
+    this.openInRoamButtonEl.addEventListener("click", () => {
+      void this.handleOpenInRoam();
     });
 
     const canvasMountEl = surface.createDiv({
@@ -237,6 +272,7 @@ export class PoolRoamBoardModal extends Modal {
       cls: "glitter-pool-roam-board-modal__canvas-host"
     });
     this.boardMountEl = canvasHostEl;
+    this.openInRoamConfirmMountEl = canvasMountEl.createDiv();
 
     if (!this.canvasHost || !this.getActiveBoard()) {
       this.handlers.onOpenError?.(new Error("ROAM_BOARD_HOST_UNAVAILABLE"));
@@ -250,6 +286,7 @@ export class PoolRoamBoardModal extends Modal {
 
   override onClose(): void {
     this.openVersion += 1;
+    this.invalidateOpenInRoamRequests();
     this.boardMountEl = null;
     this.boardTitleEl = null;
     this.pathEl = null;
@@ -260,12 +297,26 @@ export class PoolRoamBoardModal extends Modal {
     this.downloadButtonEl = null;
     this.shareButtonEl = null;
     this.addIdeaBlockButtonEl = null;
+    this.openInRoamButtonEl = null;
+    this.openInRoamConfirmMountEl = null;
     this.canvasHost?.destroy();
     this.containerEl?.removeClass?.("glitter-pool-roam-board-modal-host");
     this.modalEl?.removeClass?.("glitter-pool-roam-board-modal");
     this.contentEl?.removeClass?.("glitter-pool-roam-board-modal__content");
     this.contentEl?.empty?.();
     this.handlers.onClose?.();
+  }
+
+  getActiveBoardPath(): string | undefined {
+    return this.getActiveBoard()?.path;
+  }
+
+  getOpenInRoamRequestVersion(): number {
+    return this.openInRoamRequestVersion;
+  }
+
+  isOpenInRoamRequestCurrent(version: number): boolean {
+    return version === this.openInRoamRequestVersion;
   }
 
   private getActiveBoard(): PoolRoamBoardRecord | undefined {
@@ -278,12 +329,14 @@ export class PoolRoamBoardModal extends Modal {
       return;
     }
 
+    this.invalidateOpenInRoamRequests();
     this.activeBoardIndex = nextIndex;
     const currentOpenVersion = ++this.openVersion;
     void this.renderActiveBoard(currentOpenVersion);
   }
 
   private replaceBoards(boards: PoolRoamBoardRecord[], activeBoardPath: string): void {
+    this.invalidateOpenInRoamRequests();
     this.boards.splice(0, this.boards.length, ...boards);
     const nextIndex = boards.findIndex((candidate) => candidate.path === activeBoardPath);
     this.activeBoardIndex = clampBoardIndex(nextIndex >= 0 ? nextIndex : this.activeBoardIndex, boards.length);
@@ -299,6 +352,14 @@ export class PoolRoamBoardModal extends Modal {
     this.boardMountEl.dataset.boardPath = board.path;
     this.metaEl.empty();
 
+    board.relatedPools.forEach((pool) => {
+      const chip = this.metaEl?.createEl("span", {
+        cls: "glitter-pool-roam-board-modal__chip",
+        text: pool.name
+      });
+      chip?.setAttribute?.("data-pool-id", pool.id);
+    });
+
     this.metaEl.createEl("span", {
       cls: "glitter-pool-roam-board-modal__chip glitter-snippet-locations-modal__card-count",
       text: formatUpdatedAt(board.updatedAt, this.options.interfaceLanguage)
@@ -307,55 +368,171 @@ export class PoolRoamBoardModal extends Modal {
       cls: "glitter-pool-roam-board-modal__chip glitter-snippet-locations-modal__card-count",
       text: resolveBoardKindLabel(board, this.options.interfaceLanguage)
     });
-    this.metaEl.createEl("span", {
-      cls: "glitter-pool-roam-board-modal__chip glitter-pool-roam-board-modal__chip--muted",
-      text: `${this.activeBoardIndex + 1} / ${this.boards.length}`
-    });
-
-    board.relatedPools.forEach((pool) => {
-      const chip = this.metaEl?.createEl("span", {
-        cls: "glitter-pool-roam-board-modal__chip",
-        text: pool.name
-      });
-      chip?.setAttribute?.("data-pool-id", pool.id);
-    });
   }
 
   private syncNavigationState(): void {
+    const activeBoard = this.getActiveBoard();
+
     if (this.navCountEl) {
-      this.navCountEl.textContent = `${this.activeBoardIndex + 1} / ${this.boards.length}`;
+      this.navCountEl.textContent = `${activeBoard ? this.activeBoardIndex + 1 : 0} / ${this.boards.length}`;
     }
 
     if (this.prevButtonEl) {
-      this.prevButtonEl.disabled = this.activeBoardIndex <= 0;
+      this.prevButtonEl.disabled = !activeBoard || this.activeBoardIndex <= 0;
     }
 
     if (this.nextButtonEl) {
-      this.nextButtonEl.disabled = this.activeBoardIndex >= this.boards.length - 1;
+      this.nextButtonEl.disabled = !activeBoard || this.activeBoardIndex >= this.boards.length - 1;
     }
 
     if (this.downloadButtonEl) {
-      this.downloadButtonEl.disabled = !this.getActiveBoard() || !this.handlers.onDownloadBoard;
+      this.downloadButtonEl.disabled = !activeBoard || !this.handlers.onDownloadBoard;
     }
 
     if (this.shareButtonEl) {
-      this.shareButtonEl.disabled = !this.getActiveBoard() || !this.handlers.onShareBoard;
+      this.shareButtonEl.disabled = !activeBoard || !this.handlers.onShareBoard;
     }
 
     if (this.addIdeaBlockButtonEl) {
-      this.addIdeaBlockButtonEl.disabled = !this.getActiveBoard() || !this.handlers.onAddIdeaBlock;
+      this.addIdeaBlockButtonEl.disabled = !activeBoard || !this.handlers.onAddIdeaBlock;
+    }
+
+    if (this.openInRoamButtonEl) {
+      this.openInRoamButtonEl.disabled = !activeBoard || !this.handlers.onOpenInRoam;
+    }
+  }
+
+  private clearOpenInRoamConfirm(): void {
+    this.openInRoamConfirmMountEl?.empty();
+  }
+
+  private invalidateOpenInRoamRequests(): void {
+    this.openInRoamRequestVersion += 1;
+    this.clearOpenInRoamConfirm();
+  }
+
+  private clearActiveBoardContent(): void {
+    this.boardTitleEl?.empty?.();
+    this.pathEl?.empty?.();
+    this.metaEl?.empty?.();
+    if (this.boardMountEl) {
+      this.boardMountEl.empty();
+      this.boardMountEl.dataset.boardPath = "";
+    }
+  }
+
+  private async handleOpenInRoam(): Promise<void> {
+    const board = this.getActiveBoard();
+    if (!board || !this.handlers.onOpenInRoam) {
+      return;
+    }
+
+    const requestVersion = ++this.openInRoamRequestVersion;
+    this.clearOpenInRoamConfirm();
+
+    try {
+      const decision = await this.handlers.onOpenInRoam(board);
+      if (requestVersion !== this.openInRoamRequestVersion || board !== this.getActiveBoard()) {
+        return;
+      }
+
+      if (decision.type === "close") {
+        this.close();
+        return;
+      }
+
+      if (decision.type === "confirm") {
+        this.renderOpenInRoamConfirm(board, decision.onConfirm, requestVersion);
+      }
+    } catch (error) {
+      if (requestVersion !== this.openInRoamRequestVersion) {
+        return;
+      }
+      this.handlers.onOpenError?.(error);
+    }
+  }
+
+  private renderOpenInRoamConfirm(board: PoolRoamBoardRecord, onConfirm: () => Promise<boolean>, requestVersion: number): void {
+    const confirmMountEl = this.openInRoamConfirmMountEl;
+    if (!confirmMountEl || requestVersion !== this.openInRoamRequestVersion) {
+      return;
+    }
+
+    const text = getInterfaceText(this.options.interfaceLanguage).roamModal;
+    confirmMountEl.empty();
+    const confirmHost = confirmMountEl.createDiv({
+      cls: "glitter-write-stage__close-confirm glitter-pool-roam-board-modal__open-in-roam-confirm"
+    });
+    const dialog = confirmHost.createDiv({
+      cls: "glitter-pool-roam-board-modal__open-in-roam-confirm-dialog"
+    });
+    dialog.createEl("h3", {
+      cls: "glitter-write-stage__close-confirm-title",
+      text: text.openInRoamReplaceTitle
+    });
+    dialog.createEl("p", {
+      cls: "glitter-write-stage__close-confirm-description",
+      text: text.openInRoamReplaceDescription(board.name)
+    });
+    const actions = dialog.createDiv({
+      cls: "glitter-write-stage__close-confirm-actions"
+    });
+    const secondaryButton = actions.createEl("button", {
+      cls: "glitter-write-stage__close-confirm-secondary",
+      text: text.keepPreviewingHistory
+    }) as HTMLButtonElement;
+    secondaryButton.type = "button";
+    secondaryButton.addEventListener("click", () => {
+      this.invalidateOpenInRoamRequests();
+    });
+    const primaryButton = actions.createEl("button", {
+      cls: "glitter-write-stage__close-confirm-primary",
+      text: text.openInRoam
+    }) as HTMLButtonElement;
+    primaryButton.type = "button";
+    primaryButton.addEventListener("click", () => {
+      void this.confirmOpenInRoam(onConfirm, requestVersion);
+    });
+  }
+
+  private async confirmOpenInRoam(onConfirm: () => Promise<boolean>, requestVersion: number): Promise<void> {
+    try {
+      const confirmed = await onConfirm();
+      if (requestVersion !== this.openInRoamRequestVersion) {
+        return;
+      }
+
+      if (confirmed) {
+        this.close();
+        return;
+      }
+    } catch (error) {
+      if (requestVersion !== this.openInRoamRequestVersion) {
+        return;
+      }
+      this.handlers.onOpenError?.(error);
+    }
+
+    if (requestVersion === this.openInRoamRequestVersion) {
+      this.clearOpenInRoamConfirm();
     }
   }
 
   private async renderActiveBoard(openVersion: number): Promise<void> {
     const board = this.getActiveBoard();
     const mountEl = this.boardMountEl;
-    if (!board || !mountEl || !this.canvasHost) {
+
+    this.syncNavigationState();
+    if (!board) {
+      this.clearActiveBoardContent();
+      return;
+    }
+
+    if (!mountEl || !this.canvasHost) {
       return;
     }
 
     this.syncBoardMeta(board);
-    this.syncNavigationState();
 
     try {
       await this.canvasHost.mountModalBoard(mountEl, board.path);

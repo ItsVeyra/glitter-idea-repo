@@ -31,6 +31,7 @@ export interface AiSettings {
 
 export interface RoamSettings {
   boardStorageDirectory: string;
+  svgStorageDirectory: string;
 }
 
 export interface GlitterPluginSettings {

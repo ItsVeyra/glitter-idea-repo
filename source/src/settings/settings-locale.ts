@@ -37,12 +37,11 @@ type LabelMap = {
   globalQuickCaptureHotkey: string;
   enableInsertIdeaReference: string;
   insertIdeaReferenceHotkey: string;
-  enableCreateFromSelection: string;
-  createFromSelectionHotkey: string;
   createdIdeaEmoji: string;
   mediaStorageDirectory: string;
   fileStorageDirectory: string;
   roamBoardStorageDirectory: string;
+  roamBoardSvgStorageDirectory: string;
   enableReducedMotion: string;
   enableAmbientMotion: string;
   uiThemeMode: string;
@@ -71,12 +70,11 @@ type DescriptionMap = {
   globalQuickCaptureHotkey: string;
   enableInsertIdeaReference: string;
   insertIdeaReferenceHotkey: string;
-  enableCreateFromSelection: string;
-  createFromSelectionHotkey: string;
   createdIdeaEmoji: string;
   mediaStorageDirectory: string;
   fileStorageDirectory: string;
   roamBoardStorageDirectory: string;
+  roamBoardSvgStorageDirectory: string;
   enableReducedMotion: string;
   enableAmbientMotion: string;
   uiThemeMode: string;
@@ -101,10 +99,10 @@ type DescriptionMap = {
 type PlaceholderMap = {
   globalQuickCaptureHotkey: string;
   insertIdeaReferenceHotkey: string;
-  createFromSelectionHotkey: string;
   mediaStorageDirectory: string;
   fileStorageDirectory: string;
   roamBoardStorageDirectory: string;
+  roamBoardSvgStorageDirectory: string;
   aiBaseUrl: string;
   aiModel: string;
   aiApiKey: string;
@@ -156,8 +154,8 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
         description: "控制 Glitter 作为快速记录入口时的可用性与触发方式。"
       },
       snippets: {
-        title: "片段与划词",
-        description: "控制 Glitter 与编辑器的片段插入和划词创建集成。"
+        title: "灵感片段",
+        description: "控制 Glitter 与编辑器的灵感片段插入集成。"
       },
       pools: {
         title: "灵感池与整理",
@@ -165,7 +163,7 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
       },
       roam: {
         title: "漫游模式",
-        description: "控制原生漫游白板文件的保存位置。"
+        description: "控制原生漫游白板与导出 SVG 文件的保存位置。"
       },
       files: {
         title: "文件与媒体",
@@ -192,12 +190,11 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
       globalQuickCaptureHotkey: "快速记录全局快捷键",
       enableInsertIdeaReference: "启用片段插入",
       insertIdeaReferenceHotkey: "插入 Glitter 片段快捷键",
-      enableCreateFromSelection: "启用划词创建灵感",
-      createFromSelectionHotkey: "划词创建灵感快捷键",
       createdIdeaEmoji: "已创建文件标记",
       mediaStorageDirectory: "媒体存储目录",
       fileStorageDirectory: "文件存储目录",
       roamBoardStorageDirectory: "漫游白板存储目录",
+      roamBoardSvgStorageDirectory: "漫游白板SVG存储目录",
       enableReducedMotion: "减少动效",
       enableAmbientMotion: "环境动效",
       uiThemeMode: "主题模式",
@@ -225,12 +222,11 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
       globalQuickCaptureHotkey: "为全局快速记录命令设置快捷键，留空可恢复默认行为。",
       enableInsertIdeaReference: "允许在当前编辑器中插入 Glitter 片段。",
       insertIdeaReferenceHotkey: "为片段插入命令设置快捷键，留空可恢复默认行为。",
-      enableCreateFromSelection: "允许从当前选中文本直接创建灵感。",
-      createFromSelectionHotkey: "为划词创建命令设置快捷键，留空可恢复默认行为。",
       createdIdeaEmoji: "控制灵感生成文件后的标记符号。",
       mediaStorageDirectory: "填写库内相对路径，新的媒体文件会保存到这里。",
       fileStorageDirectory: "填写库内相对路径，由灵感创建的 Markdown 文件会保存到这里。",
       roamBoardStorageDirectory: "填写库内相对路径，新的漫游白板文件会保存到这里。",
+      roamBoardSvgStorageDirectory: "填写库内相对路径，导出的漫游白板 SVG 文件会保存到这里。",
       enableReducedMotion: "减少 Glitter 视图中的动效强度。",
       enableAmbientMotion: "在未开启减少动效时允许环境动效层存在。",
       uiThemeMode: "选择跟随 Obsidian、强制浅色或强制深色。",
@@ -254,10 +250,10 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
     placeholders: {
       globalQuickCaptureHotkey: "留空则恢复默认行为",
       insertIdeaReferenceHotkey: "留空则恢复默认行为",
-      createFromSelectionHotkey: "留空则恢复默认行为",
       mediaStorageDirectory: "输入库内相对路径",
       fileStorageDirectory: "输入库内相对路径",
       roamBoardStorageDirectory: "输入库内相对路径",
+      roamBoardSvgStorageDirectory: "输入库内相对路径",
       aiBaseUrl: "输入 OpenAI 兼容接口地址",
       aiModel: "输入模型名称",
       aiApiKey: "输入 API Key"
@@ -291,8 +287,8 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
         description: "Control whether Glitter is available as a fast capture entry point and how it is invoked."
       },
       snippets: {
-        title: "Snippets & Selection",
-        description: "Control Glitter snippet insertion and create-from-selection editor integrations."
+        title: "Idea Snippets",
+        description: "Control Glitter snippet insertion in the editor."
       },
       pools: {
         title: "Pools & Organizing",
@@ -300,7 +296,7 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
       },
       roam: {
         title: "Roam Mode",
-        description: "Control where native roam board files are created."
+        description: "Control where native roam board files and exported roam board SVG files are created."
       },
       files: {
         title: "Files & Media",
@@ -327,12 +323,11 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
       globalQuickCaptureHotkey: "Quick capture global hotkey",
       enableInsertIdeaReference: "Enable snippet insertion",
       insertIdeaReferenceHotkey: "Insert Glitter snippet hotkey",
-      enableCreateFromSelection: "Enable create from selection",
-      createFromSelectionHotkey: "Create from selection hotkey",
       createdIdeaEmoji: "File-created marker",
       mediaStorageDirectory: "Media storage directory",
       fileStorageDirectory: "File storage directory",
       roamBoardStorageDirectory: "Roam board storage directory",
+      roamBoardSvgStorageDirectory: "Roam board SVG storage directory",
       enableReducedMotion: "Reduce motion",
       enableAmbientMotion: "Ambient motion",
       uiThemeMode: "Theme mode",
@@ -360,12 +355,11 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
       globalQuickCaptureHotkey: "Set the hotkey for the global quick capture command. Leave empty to restore the default behavior.",
       enableInsertIdeaReference: "Allow Glitter snippets to be inserted into the active editor.",
       insertIdeaReferenceHotkey: "Set the hotkey for snippet insertion. Leave empty to restore the default behavior.",
-      enableCreateFromSelection: "Allow ideas to be created directly from the current text selection.",
-      createFromSelectionHotkey: "Set the hotkey for create-from-selection. Leave empty to restore the default behavior.",
       createdIdeaEmoji: "Control the marker used after an idea file is created.",
       mediaStorageDirectory: "Use a vault-relative path for newly created media files.",
       fileStorageDirectory: "Use a vault-relative path for Markdown files created from Glitter ideas.",
       roamBoardStorageDirectory: "Use a vault-relative path for newly created roam board files.",
+      roamBoardSvgStorageDirectory: "Use a vault-relative path for exported roam board SVG files.",
       enableReducedMotion: "Reduce motion intensity across Glitter views.",
       enableAmbientMotion: "Allow ambient motion layers when reduced motion is not enabled.",
       uiThemeMode: "Choose whether Glitter follows Obsidian or forces a light or dark theme.",
@@ -389,10 +383,10 @@ const SETTINGS_TEXT: Record<SettingsLocale, SettingsText> = {
     placeholders: {
       globalQuickCaptureHotkey: "Leave empty to restore the default behavior",
       insertIdeaReferenceHotkey: "Leave empty to restore the default behavior",
-      createFromSelectionHotkey: "Leave empty to restore the default behavior",
       mediaStorageDirectory: "Enter a vault-relative path",
       fileStorageDirectory: "Enter a vault-relative path",
       roamBoardStorageDirectory: "Enter a vault-relative path",
+      roamBoardSvgStorageDirectory: "Enter a vault-relative path",
       aiBaseUrl: "Enter an OpenAI-compatible base URL",
       aiModel: "Enter a model name",
       aiApiKey: "Enter an API key"

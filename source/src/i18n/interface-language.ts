@@ -340,6 +340,10 @@ export interface InterfaceText {
     downloadCurrentBoard: string;
     shareCurrentBoard: string;
     addCurrentBoardIdeaBlock: string;
+    openInRoam: string;
+    openInRoamReplaceTitle: string;
+    openInRoamReplaceDescription: (boardName: string) => string;
+    keepPreviewingHistory: string;
     previousBoard: string;
     nextBoard: string;
     title: string;
@@ -732,6 +736,10 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       downloadCurrentBoard: "下载当前历史漫游白板",
       shareCurrentBoard: "分享当前历史漫游白板",
       addCurrentBoardIdeaBlock: "向当前历史漫游白板增加灵感块",
+      openInRoam: "在漫游区打开",
+      openInRoamReplaceTitle: "当前漫游区正在编辑其他漫游板",
+      openInRoamReplaceDescription: (boardName) => `是否关闭当前漫游区正在编辑的漫游板，并打开《${boardName}》？`,
+      keepPreviewingHistory: "继续查看历史",
       previousBoard: "上一张历史漫游白板",
       nextBoard: "下一张历史漫游白板",
       title: "漫游白板历史",
@@ -1122,6 +1130,10 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       downloadCurrentBoard: "Download current historical roam board",
       shareCurrentBoard: "Share current historical roam board",
       addCurrentBoardIdeaBlock: "Add idea block to the current historical roam board",
+      openInRoam: "Open in Roam",
+      openInRoamReplaceTitle: "Another roam board is open",
+      openInRoamReplaceDescription: (boardName) => `Close the board currently open in Roam and open “${boardName}” instead?`,
+      keepPreviewingHistory: "Keep previewing history",
       previousBoard: "Previous historical roam board",
       nextBoard: "Next historical roam board",
       title: "Roam board history",

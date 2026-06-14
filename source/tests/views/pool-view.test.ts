@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type OpenInRoamDecision =
+  | { type: "close" }
+  | { type: "keep-open" }
+  | { type: "confirm"; onConfirm: () => Promise<boolean> };
+
 const {
   buildPoolViewStateFromRuntimeMock,
   renderPoolViewMock,
@@ -117,10 +122,14 @@ const {
     activeBoardIndex: number;
     handlers: {
       onOpenError?: (error: unknown) => void;
+      onOpenInRoam?: (board: { path: string; name: string }) => Promise<OpenInRoamDecision> | OpenInRoamDecision;
       onClose?: () => void;
     };
     close: () => void;
     failToOpen: (error: Error) => void;
+    requestOpenInRoam?: (board: { path: string; name: string }) => Promise<OpenInRoamDecision | undefined>;
+    confirmOpenInRoam?: () => Promise<void>;
+    cancelOpenInRoam?: () => void;
   }>,
   menuShowAtPositionMock: vi.fn(),
   menuItems: [] as Array<{ title: string; onClick?: () => void }>,
@@ -321,10 +330,30 @@ vi.mock("../../src/views/pool-roam-history-modal", () => {
 
 vi.mock("../../src/views/pool-roam-board-modal", () => {
   class MockPoolRoamBoardModal {
+    private readonly boards: Array<{
+      path: string;
+      name: string;
+      updatedAt: number;
+      relatedPools: Array<{ id: string; name: string; color: string }>;
+      thumbnailBoxes: Array<{ x: number; y: number; width: number; height: number; kind: "source" | "plain" }>;
+    }>;
+
+    private readonly activeBoardIndex: number;
+
     private readonly handlers: {
       onOpenError?: (error: unknown) => void;
+      onOpenInRoam?: (board: { path: string; name: string }) => Promise<OpenInRoamDecision> | OpenInRoamDecision;
       onClose?: () => void;
     };
+
+    private openInRoamRequestVersion = 0;
+
+    private confirmOpenInRoamState:
+      | {
+        onConfirm: () => Promise<boolean>;
+        requestVersion: number;
+      }
+      | undefined;
 
     constructor(
       _app: unknown,
@@ -338,9 +367,12 @@ vi.mock("../../src/views/pool-roam-board-modal", () => {
       activeBoardIndex: number,
       handlers: {
         onOpenError?: (error: unknown) => void;
+        onOpenInRoam?: (board: { path: string; name: string }) => Promise<OpenInRoamDecision> | OpenInRoamDecision;
         onClose?: () => void;
       } = {}
     ) {
+      this.boards = boards;
+      this.activeBoardIndex = activeBoardIndex;
       this.handlers = handlers;
       poolRoamBoardInstances.push({
         boards,
@@ -350,8 +382,50 @@ vi.mock("../../src/views/pool-roam-board-modal", () => {
         failToOpen: (error: Error) => {
           this.handlers.onOpenError?.(error);
           this.close();
+        },
+        requestOpenInRoam: async (board: { path: string; name: string }) => {
+          const requestVersion = ++this.openInRoamRequestVersion;
+          this.confirmOpenInRoamState = undefined;
+          const decision = await this.handlers.onOpenInRoam?.(board);
+          if (requestVersion !== this.openInRoamRequestVersion || !decision || decision.type === "keep-open") {
+            return decision;
+          }
+
+          if (decision.type === "close") {
+            this.close();
+            return decision;
+          }
+
+          this.confirmOpenInRoamState = {
+            onConfirm: decision.onConfirm,
+            requestVersion
+          };
+          return decision;
+        },
+        confirmOpenInRoam: async () => {
+          const state = this.confirmOpenInRoamState;
+          this.confirmOpenInRoamState = undefined;
+          const confirmed = await state?.onConfirm();
+          if (state && state.requestVersion === this.openInRoamRequestVersion && confirmed) {
+            this.close();
+          }
+        },
+        cancelOpenInRoam: () => {
+          this.invalidateOpenInRoamRequests();
         }
       });
+    }
+
+    getActiveBoardPath() {
+      return this.boards[this.activeBoardIndex]?.path;
+    }
+
+    getOpenInRoamRequestVersion() {
+      return this.openInRoamRequestVersion;
+    }
+
+    isOpenInRoamRequestCurrent(version: number) {
+      return version === this.openInRoamRequestVersion;
     }
 
     open() {
@@ -359,8 +433,14 @@ vi.mock("../../src/views/pool-roam-board-modal", () => {
     }
 
     close() {
+      this.invalidateOpenInRoamRequests();
       poolRoamBoardCloseMock();
       this.handlers.onClose?.();
+    }
+
+    private invalidateOpenInRoamRequests() {
+      this.openInRoamRequestVersion += 1;
+      this.confirmOpenInRoamState = undefined;
     }
   }
 
@@ -1034,9 +1114,19 @@ describe("GlitterPoolView", () => {
     );
 
     const toggleActions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onBrowseOverlayToggle: (overlay: "browse-more") => void;
       onTogglePoolRoam: () => void;
     };
-    toggleActions.onTogglePoolRoam();
+    toggleActions.onBrowseOverlayToggle("browse-more");
+    await Promise.resolve();
+    expect(buildPoolViewStateFromRuntimeMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ activeOverlay: "browse-more" })
+    );
+
+    const closeRoamActions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onTogglePoolRoam: () => void;
+    };
+    closeRoamActions.onTogglePoolRoam();
     await Promise.resolve();
 
     expect(view.getState()).toMatchObject({
@@ -1059,6 +1149,9 @@ describe("GlitterPoolView", () => {
           open: false
         })
       })
+    );
+    expect(buildPoolViewStateFromRuntimeMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ activeOverlay: undefined })
     );
   });
 
@@ -10026,6 +10119,1015 @@ describe("GlitterPoolView", () => {
     expect(poolRoamBoardInstances[1]?.activeBoardIndex).toBe(0);
   });
 
+  it("closes the board preview immediately when reopening the same board in the live roam pane", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/current.canvas",
+        name: "current",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive.canvas",
+        name: "archive",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    const readPoolRoamBoard = vi.fn(async ({ boardPath }: { boardPath: string }) => ({
+      path: boardPath,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    }));
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true,
+            poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+    readPoolRoamBoard.mockClear();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[0]!, 0);
+
+    const decision = await poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[0]!.path,
+      name: boards[0]!.name
+    });
+
+    expect(decision).toEqual({ type: "close" });
+    expect(readPoolRoamBoard).not.toHaveBeenCalled();
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).toHaveBeenCalledTimes(1);
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+    });
+  });
+
+  it("replaces the live roam board after confirming from history preview", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/current.canvas",
+        name: "current",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive.canvas",
+        name: "archive",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    const readPoolRoamBoard = vi.fn(async ({ boardPath }: { boardPath: string }) => ({
+      path: boardPath,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    }));
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true,
+            poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+    readPoolRoamBoard.mockClear();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[1]!, 1);
+
+    const decision = await poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+
+    expect(decision?.type).toBe("confirm");
+    expect(readPoolRoamBoard).not.toHaveBeenCalled();
+    expect(poolRoamBoardCloseMock).not.toHaveBeenCalled();
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+
+    await poolRoamBoardInstances[0]?.confirmOpenInRoam?.();
+
+    expect(readPoolRoamBoard).toHaveBeenCalledWith({
+      boardPath: "Glitter/灵感漫游/archive.canvas"
+    });
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/archive.canvas"
+    });
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not replace the live roam board after confirm when the history preview closes before the read resolves", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/current.canvas",
+        name: "current",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive.canvas",
+        name: "archive",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    let resolveReadPoolRoamBoard:
+      | ((result: { path: string; canvas: { nodes: never[]; edges: never[] } }) => void)
+      | undefined;
+    const readPoolRoamBoard = vi.fn(({ boardPath }: { boardPath: string }) => {
+      if (boardPath === "Glitter/灵感漫游/current.canvas") {
+        return Promise.resolve({
+          path: boardPath,
+          canvas: {
+            nodes: [],
+            edges: []
+          }
+        });
+      }
+
+      return new Promise<{ path: string; canvas: { nodes: never[]; edges: never[] } }>((resolve) => {
+        resolveReadPoolRoamBoard = resolve;
+      });
+    });
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true,
+            poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+    readPoolRoamBoard.mockClear();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[1]!, 1);
+
+    const decision = await poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+
+    expect(decision?.type).toBe("confirm");
+    expect(readPoolRoamBoard).not.toHaveBeenCalled();
+
+    const confirmPromise = poolRoamBoardInstances[0]?.confirmOpenInRoam?.();
+    await Promise.resolve();
+
+    expect(readPoolRoamBoard).toHaveBeenCalledWith({
+      boardPath: "Glitter/灵感漫游/archive.canvas"
+    });
+
+    poolRoamBoardInstances[0]?.close();
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+    });
+
+    resolveReadPoolRoamBoard?.({
+      path: boards[1]!.path,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    });
+    await confirmPromise;
+    await flush();
+
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+    });
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the live roam board and both modals open when the confirm state is dismissed during an in-flight replace", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/current.canvas",
+        name: "current",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive.canvas",
+        name: "archive",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    let resolveReadPoolRoamBoard:
+      | ((result: { path: string; canvas: { nodes: never[]; edges: never[] } }) => void)
+      | undefined;
+    const readPoolRoamBoard = vi.fn(({ boardPath }: { boardPath: string }) => {
+      if (boardPath === "Glitter/灵感漫游/current.canvas") {
+        return Promise.resolve({
+          path: boardPath,
+          canvas: {
+            nodes: [],
+            edges: []
+          }
+        });
+      }
+
+      return new Promise<{ path: string; canvas: { nodes: never[]; edges: never[] } }>((resolve) => {
+        resolveReadPoolRoamBoard = resolve;
+      });
+    });
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true,
+            poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+    readPoolRoamBoard.mockClear();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[1]!, 1);
+
+    const decision = await poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+
+    expect(decision?.type).toBe("confirm");
+    expect(readPoolRoamBoard).not.toHaveBeenCalled();
+
+    const confirmPromise = poolRoamBoardInstances[0]?.confirmOpenInRoam?.();
+    await Promise.resolve();
+
+    expect(readPoolRoamBoard).toHaveBeenCalledWith({
+      boardPath: "Glitter/灵感漫游/archive.canvas"
+    });
+
+    poolRoamBoardInstances[0]?.cancelOpenInRoam?.();
+    expect(poolRoamBoardCloseMock).not.toHaveBeenCalled();
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+    });
+
+    resolveReadPoolRoamBoard?.({
+      path: boards[1]!.path,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    });
+    await confirmPromise;
+    await flush();
+
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+    });
+    expect(poolRoamBoardCloseMock).not.toHaveBeenCalled();
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the history preview open when replacing the live roam board is canceled", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/current.canvas",
+        name: "current",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive.canvas",
+        name: "archive",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    const readPoolRoamBoard = vi.fn(async ({ boardPath }: { boardPath: string }) => ({
+      path: boardPath,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    }));
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true,
+            poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+    readPoolRoamBoard.mockClear();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[1]!, 1);
+
+    const decision = await poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+
+    expect(decision?.type).toBe("confirm");
+
+    poolRoamBoardInstances[0]?.cancelOpenInRoam?.();
+
+    expect(readPoolRoamBoard).not.toHaveBeenCalled();
+    expect(poolRoamBoardCloseMock).not.toHaveBeenCalled();
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/current.canvas"
+    });
+  });
+
+  it("reopens the previewed board directly when the live roam pane has no active board", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/archive-a.canvas",
+        name: "archive-a",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive-b.canvas",
+        name: "archive-b",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    const readPoolRoamBoard = vi.fn(async ({ boardPath }: { boardPath: string }) => ({
+      path: boardPath,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    }));
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+    readPoolRoamBoard.mockClear();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[1]!, 1);
+
+    const decision = await poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+
+    expect(decision).toEqual({ type: "close" });
+    expect(readPoolRoamBoard).toHaveBeenCalledWith({
+      boardPath: "Glitter/灵感漫游/archive-b.canvas"
+    });
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/archive-b.canvas"
+    });
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores stale direct-open history requests after the preview closes", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/archive-a.canvas",
+        name: "archive-a",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive-b.canvas",
+        name: "archive-b",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    let resolveReadPoolRoamBoard:
+      | ((result: { path: string; canvas: { nodes: never[]; edges: never[] } }) => void)
+      | undefined;
+    const readPoolRoamBoard = vi.fn(({ boardPath }: { boardPath: string }) => (
+      new Promise<{ path: string; canvas: { nodes: never[]; edges: never[] } }>((resolve) => {
+        resolveReadPoolRoamBoard = resolve;
+      })
+    ));
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[1]!, 1);
+
+    const openPromise = poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+    await Promise.resolve();
+
+    expect(readPoolRoamBoard).toHaveBeenCalledWith({
+      boardPath: "Glitter/灵感漫游/archive-b.canvas"
+    });
+
+    poolRoamBoardInstances[0]?.close();
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+
+    resolveReadPoolRoamBoard?.({
+      path: boards[1]!.path,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    });
+    await openPromise;
+    await flush();
+
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true
+    });
+    expect(view.getState()).not.toHaveProperty("poolRoamBoardPath");
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+  });
+
+  it("ignores stale repeated direct-open history requests until the latest request resolves", async () => {
+    const flush = async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        color: "#6ab5ff",
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "Idea Pool", hint: "1 idea · runtime" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+    const boards = [
+      {
+        path: "Glitter/灵感漫游/archive-a.canvas",
+        name: "archive-a",
+        updatedAt: 2,
+        relatedPools: [{ id: "pool-default", name: "默认池", color: "#6ab5ff" }],
+        thumbnailBoxes: []
+      },
+      {
+        path: "Glitter/灵感漫游/archive-b.canvas",
+        name: "archive-b",
+        updatedAt: 1,
+        relatedPools: [],
+        thumbnailBoxes: []
+      }
+    ];
+    const listPoolRoamBoards = vi.fn(async () => boards);
+    const resolveReadPoolRoamBoard: Array<(result: { path: string; canvas: { nodes: never[]; edges: never[] } }) => void> = [];
+    const readPoolRoamBoard = vi.fn(({ boardPath }: { boardPath: string }) => (
+      new Promise<{ path: string; canvas: { nodes: never[]; edges: never[] } }>((resolve) => {
+        resolveReadPoolRoamBoard.push(resolve);
+      })
+    ));
+
+    const plugin = {
+      app: {},
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        listPoolRoamBoards,
+        readPoolRoamBoard,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea 1.md" }))
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView(
+      {
+        getViewState: () => ({
+          state: {
+            mode: "browse",
+            poolRoamOpen: true
+          }
+        })
+      } as any,
+      plugin as any
+    );
+    await view.onOpen();
+
+    const actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onOpenPoolRoamHistory?: () => void;
+    };
+
+    actions.onOpenPoolRoamHistory?.();
+    await flush();
+
+    poolRoamHistoryInstances[0]?.handlers.onSelectBoard?.(boards[1]!, 1);
+
+    const firstOpenPromise = poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+    await Promise.resolve();
+    const secondOpenPromise = poolRoamBoardInstances[0]?.requestOpenInRoam?.({
+      path: boards[1]!.path,
+      name: boards[1]!.name
+    });
+    await Promise.resolve();
+
+    expect(readPoolRoamBoard).toHaveBeenNthCalledWith(1, {
+      boardPath: "Glitter/灵感漫游/archive-b.canvas"
+    });
+    expect(readPoolRoamBoard).toHaveBeenNthCalledWith(2, {
+      boardPath: "Glitter/灵感漫游/archive-b.canvas"
+    });
+
+    resolveReadPoolRoamBoard[0]?.({
+      path: boards[1]!.path,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    });
+    await expect(firstOpenPromise).resolves.toEqual({ type: "keep-open" });
+    await flush();
+
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true
+    });
+    expect(view.getState()).not.toHaveProperty("poolRoamBoardPath");
+    expect(poolRoamBoardCloseMock).not.toHaveBeenCalled();
+    expect(poolRoamHistoryCloseMock).not.toHaveBeenCalled();
+
+    resolveReadPoolRoamBoard[1]?.({
+      path: boards[1]!.path,
+      canvas: {
+        nodes: [],
+        edges: []
+      }
+    });
+    await expect(secondOpenPromise).resolves.toEqual({ type: "close" });
+    await flush();
+
+    expect(view.getState()).toMatchObject({
+      poolRoamOpen: true,
+      poolRoamBoardPath: "Glitter/灵感漫游/archive-b.canvas"
+    });
+    expect(poolRoamBoardCloseMock).toHaveBeenCalledTimes(1);
+    expect(poolRoamHistoryCloseMock).toHaveBeenCalledTimes(1);
+  });
+
   it("deletes roam history boards through the modal and clears the live board when the active file is removed", async () => {
     const flush = async () => {
       await Promise.resolve();
@@ -10482,7 +11584,7 @@ describe("GlitterPoolView", () => {
     const ensureFolder = vi.fn(async () => undefined);
     const createUniquePath = vi
       .fn<() => Promise<string>>()
-      .mockResolvedValueOnce("Glitter/池导出/export.svg");
+      .mockResolvedValueOnce("Exports/Roam SVG/export.svg");
 
     const plugin = {
       app: {
@@ -10497,7 +11599,10 @@ describe("GlitterPoolView", () => {
         createUniquePath
       },
       settings: {
-        interfaceLanguage: "zh-CN" as const
+        interfaceLanguage: "zh-CN" as const,
+        roam: {
+          svgStorageDirectory: "Exports/Roam SVG"
+        }
       },
       focusedIdeaId: null,
       pendingFocusedPoolId: null,
@@ -10533,11 +11638,11 @@ describe("GlitterPoolView", () => {
     actions.onDownloadPoolRoamImage?.();
     await flush();
 
-    expect(ensureFolder).toHaveBeenCalledWith("Glitter/池导出");
-    expect(createUniquePath).toHaveBeenCalledWith("Glitter/池导出", "Glitter灵感漫游 2026-05-27 10:00", ".svg");
+    expect(ensureFolder).toHaveBeenCalledWith("Exports/Roam SVG");
+    expect(createUniquePath).toHaveBeenCalledWith("Exports/Roam SVG", "Glitter灵感漫游 2026-05-27 10:00", ".svg");
     expect(create).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith(
-      "Glitter/池导出/export.svg",
+      "Exports/Roam SVG/export.svg",
       expect.stringContaining("<svg")
     );
     const firstCreateCall = create.mock.calls[0] as unknown as [string, string] | undefined;
@@ -10554,7 +11659,7 @@ describe("GlitterPoolView", () => {
     expect(exportedSvg).toContain("Glitter/灵感漫游/Glitter灵感漫游 2026-05-27 10：00.canvas");
     expect(toastShowMock).toHaveBeenCalledWith({
       status: "success",
-      message: "漫游白板图片已导出到 Glitter/池导出/export.svg。"
+      message: "漫游白板图片已导出到 Exports/Roam SVG/export.svg。"
     });
     expect(view.getState()).toMatchObject({
       poolRoamOpen: true,

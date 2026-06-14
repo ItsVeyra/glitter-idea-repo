@@ -120,6 +120,7 @@ describe("followup guidance localization", () => {
     const closeButton = container.queryByClass("glitter-followup-guidance-view__close");
     const continueButton = container.queryByClass("glitter-followup-guidance-view__continue");
     expect(closeButton?.getAttribute("aria-label")).toBe("Close next-use guide");
+    expect(closeButton?.className).toContain("GlitterIdea-edit-modal__close-button");
     expect(continueButton?.textContent).toContain("Go to idea pool");
 
     closeButton?.click();

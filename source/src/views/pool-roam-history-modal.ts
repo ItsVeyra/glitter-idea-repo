@@ -301,7 +301,7 @@ export class PoolRoamHistoryModal extends Modal {
     this.gridToggleEl.type = "button";
     setButtonLabel(this.gridToggleEl, text.roamModal.switchToGrid);
     this.gridToggleEl.createEl("span", {
-      cls: "glitter-write-stage__icon glitter-pool-roam-history-modal__icon--grid"
+      cls: "glitter-pool-stage__results-tool-icon glitter-pool-roam-history-modal__icon--grid"
     });
     this.gridToggleEl.addEventListener("click", () => {
       this.viewMode = "grid";
@@ -314,7 +314,7 @@ export class PoolRoamHistoryModal extends Modal {
     this.listToggleEl.type = "button";
     setButtonLabel(this.listToggleEl, text.roamModal.switchToList);
     this.listToggleEl.createEl("span", {
-      cls: "glitter-write-stage__icon glitter-pool-roam-history-modal__icon--list"
+      cls: "glitter-pool-stage__results-tool-icon glitter-pool-roam-history-modal__icon--list"
     });
     this.listToggleEl.addEventListener("click", () => {
       this.viewMode = "list";
@@ -344,7 +344,7 @@ export class PoolRoamHistoryModal extends Modal {
     this.batchToggleEl.type = "button";
     setButtonLabel(this.batchToggleEl, text.roamModal.batchOrganize);
     this.batchToggleEl.createEl("span", {
-      cls: "glitter-write-stage__icon glitter-pool-roam-history-modal__icon--batch"
+      cls: "glitter-pool-stage__results-tool-icon glitter-pool-roam-history-modal__icon--batch"
     });
     this.batchToggleEl.addEventListener("click", () => {
       this.batchMode = !this.batchMode;

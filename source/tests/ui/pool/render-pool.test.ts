@@ -508,6 +508,15 @@ function expectDeclarationsInSelectorBlock(css: string, selector: string, declar
   });
 }
 
+function expectDeclarationsInLastSelectorBlock(css: string, selector: string, declarations: string[]): void {
+  const blockMatches = [...css.matchAll(new RegExp(`${escapeRegExp(selector)}\\s*\\{([\\s\\S]*?)\\}`, "g"))];
+  expect(blockMatches.length).toBeGreaterThan(0);
+  const block = blockMatches.at(-1)?.[1] ?? "";
+  declarations.forEach((declaration) => {
+    expect(block).toContain(declaration);
+  });
+}
+
 describe("renderPoolView", () => {
   it("renders browse no-sidebar shell with required controls and sections", () => {
     const container = createContainer();
@@ -549,6 +558,7 @@ describe("renderPoolView", () => {
     expect(container.querySelector(".glitter-pool-stage__title-switcher")).not.toBeNull();
     expect(container.querySelector(".glitter-pool-stage__topbar-tools")).not.toBeNull();
     expect(container.querySelector(".glitter-pool-stage__topbar-create-icon")).not.toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__topbar-create")?.getAttribute("aria-label")).toBe("灵感速记");
     expect(container.querySelector(".glitter-pool-stage__topbar-create-label")?.textContent).toContain("灵感速记");
     expect((container.querySelector(".glitter-pool-stage__topbar-create") as unknown as FakeElement | null)?.parent?.className).toContain(
       "glitter-pool-stage__topbar-tools"
@@ -2169,12 +2179,15 @@ describe("renderPoolView", () => {
     expect(calls.toggles).toBe(1);
   });
 
-  it("disables the pool markdown preview trigger while roam mode is open", () => {
+  it("disables the pool markdown preview trigger inside the roam more panel", () => {
     const container = createContainer();
     const calls = {
       toggles: 0
     };
     const state = createBrowseState({
+      browse: {
+        activeOverlay: "browse-more"
+      },
       preview: {
         available: true,
         open: false,
@@ -2201,8 +2214,15 @@ describe("renderPoolView", () => {
       }
     });
 
+    const moreTrigger = container.querySelector(".glitter-pool-stage__results-tool--more") as unknown as FakeElement | null;
+    const morePanel = container.querySelector(".glitter-pool-stage__toolbar-menu--roam-more") as unknown as FakeElement | null;
+    const previewAnchor = container.querySelector(".glitter-pool-stage__results-tool-anchor--preview") as unknown as FakeElement | null;
     const previewTrigger = container.querySelector(".glitter-pool-stage__results-tool--preview") as unknown as FakeElement | null;
 
+    expect(moreTrigger).not.toBeNull();
+    expect(moreTrigger?.getAttribute("aria-expanded")).toBe("true");
+    expect(morePanel).not.toBeNull();
+    expect(previewAnchor?.parent).toBe(morePanel);
     expect(previewTrigger).not.toBeNull();
     expect(previewTrigger?.disabled).toBe(true);
     expect(previewTrigger?.getAttribute("aria-disabled")).toBe("true");
@@ -2210,6 +2230,55 @@ describe("renderPoolView", () => {
 
     previewTrigger?.click();
     expect(calls.toggles).toBe(0);
+  });
+
+  it("renders a compact roam topbar create button and collapses results tools behind one more trigger", () => {
+    const container = createContainer();
+    const state = createBrowseState({
+      preview: {
+        available: true,
+        open: false,
+        saving: false,
+        panelTitle: "写作池 Markdown 文件",
+        saveLabel: "保存 Markdown 文件"
+      },
+      roam: {
+        open: true,
+        mode: "board",
+        boardPath: "Glitter/灵感漫游/demo.canvas",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history", "idea-block"],
+        boundaryAnchors: []
+      }
+    });
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {}
+    });
+
+    const topbarCreate = container.querySelector(".glitter-pool-stage__topbar-create") as unknown as FakeElement | null;
+    const resultsTools = container.querySelector(".glitter-pool-stage__results-tools") as unknown as FakeElement | null;
+    const moreAnchor = container.querySelector(".glitter-pool-stage__results-tool-anchor--more") as unknown as FakeElement | null;
+    const moreTrigger = container.querySelector(".glitter-pool-stage__results-tool--more") as unknown as FakeElement | null;
+
+    expect(topbarCreate).not.toBeNull();
+    expect(topbarCreate?.className).toContain("glitter-pool-stage__topbar-create--compact");
+    expect(topbarCreate?.getAttribute("aria-label")).toBe("灵感速记");
+    expect(container.querySelector(".glitter-pool-stage__topbar-create-label")).toBeNull();
+    expect(resultsTools?.children[0]?.className).toContain("glitter-pool-stage__query");
+    expect(resultsTools?.children[1]?.className).toContain("glitter-pool-stage__results-tool-anchor--more");
+    expect(resultsTools?.children[2]).toBeUndefined();
+    expect(moreAnchor?.parent).toBe(resultsTools);
+    expect(moreTrigger?.getAttribute("aria-label")).toBe("更多操作");
+    expect(moreTrigger?.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector(".glitter-pool-stage__toolbar-menu--roam-more")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__status-trigger")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__results-tool--filter")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__results-tool--sort")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__results-tool--preview")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__batch-toggle")).toBeNull();
   });
 
   it("renders the pool markdown split-view shell while keeping the card pane visible", () => {
@@ -2621,6 +2690,7 @@ describe("renderPoolView", () => {
       "left: 40%;",
       "width: 20px;",
       "transform: translateX(-50%);",
+      "z-index: 5;",
       "cursor: col-resize;"
     ]);
 
@@ -2733,7 +2803,7 @@ describe("renderPoolView", () => {
       "position: absolute;",
       "inset: 0;",
       "pointer-events: none;",
-      "z-index: 4;"
+      "z-index: 6;"
     ]);
 
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__roam-bridge-trace", [
@@ -3531,9 +3601,11 @@ describe("renderPoolView", () => {
     });
 
     const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as unknown as FakeElement | null;
+    const poolStage = container.querySelector(".glitter-pool-stage") as unknown as FakeElement | null;
     const thumbnail = container.querySelector("img.glitter-pool-stage__card-media-thumbnail") as unknown as FakeElement | null;
     expect(previewButton).not.toBeNull();
     expect(previewButton?.getAttribute?.("aria-label")).toBe("Image preview idea，查看大图");
+    expect(poolStage?.className.includes("glitter-pool-stage--media-preview-open")).toBe(false);
     expect(thumbnail).not.toBeNull();
     expect(thumbnail?.tagName).toBe("IMG");
     expect(container.querySelector(".glitter-pool-stage__card-media-switcher")).toBeNull();
@@ -3543,9 +3615,11 @@ describe("renderPoolView", () => {
     const previewImage = container.querySelector(".glitter-pool-stage__media-preview-image") as unknown as FakeElement | null;
     const previewClose = container.querySelector(".glitter-pool-stage__media-preview-close") as unknown as FakeElement | null;
     expect(previewOverlay).not.toBeNull();
+    expect(poolStage?.className.includes("glitter-pool-stage--media-preview-open")).toBe(true);
     expect(previewImage?.getAttribute?.("src")).toBe("app://local/assets/image-preview.png");
     expect(previewClose?.getAttribute?.("aria-label")).toBe("关闭大图预览");
     previewClose?.click();
+    expect(poolStage?.className.includes("glitter-pool-stage--media-preview-open")).toBe(false);
     expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).toBeNull();
   });
 
@@ -3827,11 +3901,32 @@ describe("renderPoolView", () => {
 
     previewButton?.click();
 
+    const previewDialog = container.querySelector(".glitter-pool-stage__media-preview-dialog") as unknown as FakeElement | null;
+    const previewViewport = container.querySelector(".glitter-pool-stage__media-preview-viewport") as unknown as FakeElement | null;
+    const previewNavLayer = container.querySelector(".glitter-pool-stage__media-preview-nav-layer") as unknown as FakeElement | null;
+    const previewStage = container.querySelector(".glitter-pool-stage__media-preview-stage") as unknown as FakeElement | null;
+    const previewFrame = container.querySelector(".glitter-pool-stage__media-preview-frame") as unknown as FakeElement | null;
     const previewImage = container.querySelector(".glitter-pool-stage__media-preview-image") as unknown as FakeElement | null;
+    const previewCloseButton = container.querySelector(".glitter-pool-stage__media-preview-close") as unknown as FakeElement | null;
     const previewPreviousButton = container.querySelector(".glitter-pool-stage__media-preview-nav--previous") as unknown as FakeElement | null;
     const previewNextButton = container.querySelector(".glitter-pool-stage__media-preview-nav--next") as unknown as FakeElement | null;
     const previewPagination = container.querySelector(".glitter-pool-stage__media-preview-pagination") as unknown as FakeElement | null;
 
+    expect(previewDialog).not.toBeNull();
+    expect(previewViewport).not.toBeNull();
+    expect(previewNavLayer).not.toBeNull();
+    expect(previewDialog?.children[0]).toBe(previewViewport);
+    expect(previewDialog?.children[1]).toBe(previewNavLayer);
+    expect(previewDialog?.children[previewDialog.children.length - 1]).toBe(previewCloseButton);
+    expect(previewViewport?.parent).toBe(previewDialog);
+    expect(previewNavLayer?.parent).toBe(previewDialog);
+    expect(previewStage?.parent).toBe(previewViewport);
+    expect(previewFrame?.parent).toBe(previewStage);
+    expect(previewImage?.parent).toBe(previewFrame);
+    expect(previewCloseButton?.parent).toBe(previewDialog);
+    expect(previewPreviousButton?.parent).toBe(previewNavLayer);
+    expect(previewNextButton?.parent).toBe(previewNavLayer);
+    expect(previewPagination?.parent).toBe(previewViewport);
     expect(previewImage?.getAttribute?.("src")).toBe("app://local/assets/image-c.png");
     expect(previewImage?.getAttribute?.("alt")).toBe("Image gallery preview idea 大图预览（第 3 张，共 3 张）");
     expect(previewPreviousButton?.getAttribute?.("aria-label")).toBe("查看上一张大图");
@@ -3849,6 +3944,97 @@ describe("renderPoolView", () => {
     previewNextButton?.click();
     expect(previewImage?.getAttribute?.("src")).toBe("app://local/assets/image-a.png");
     expect(previewPagination?.textContent).toBe("1 / 3");
+  });
+
+  it("measures the preview stage content box so gallery images stay within bounds while nav buttons stay in fixed side slots", () => {
+    const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    }) as typeof globalThis.requestAnimationFrame;
+
+    try {
+      const container = createContainer({
+        configureElement: (element) => {
+          if (element.className.includes("glitter-pool-stage__media-preview-stage")) {
+            element.setRectSize(780, 520);
+          }
+
+          if (element.className.includes("glitter-pool-stage__media-preview-image")) {
+            element.setRectSize(640, 400);
+          }
+        }
+      });
+      const state = createBrowseState({
+        browse: {
+          cards: [
+            {
+              id: "idea-image-preview-measure",
+              title: "Image preview measure idea",
+              selected: false,
+              typeIcon: "image",
+              contentKind: "image",
+              bodyText: "image body",
+              mediaPath: "assets/image-a.png",
+              mediaThumbnailUrl: "app://local/assets/image-a.png",
+              mediaThumbnailUrls: [
+                "app://local/assets/image-a.png",
+                "app://local/assets/image-b.png",
+                "app://local/assets/image-c.png"
+              ],
+              updatedLabel: "2026-04-18 10:00",
+              fileCreated: false,
+              statusLabels: [],
+              menuActions: [],
+              snippetLocations: []
+            } as any
+          ]
+        }
+      });
+
+      renderPoolView(container, state, {
+        onBack() {},
+        onItemSelect() {},
+        onCreateIdea() {},
+        onQueryChange() {},
+        onBrowseOverlayToggle() {},
+        onBrowseOverlayClose() {},
+        onContentFilterChange() {},
+        onStatusChange() {},
+        onSortChange() {},
+        onBatchModeToggle() {},
+        onMoveSelectionToPool() {},
+        onCreateFile() {},
+        onOpenPrimaryFile() {},
+        onEditIdea() {},
+        onShareIdea() {},
+        onPoolSwitch() {}
+      });
+
+      const previewButton = container.querySelector("button.glitter-pool-stage__card-media-hitbox") as
+        | (FakeElement & { click: () => void })
+        | null;
+      previewButton?.click();
+
+      const previewStage = container.querySelector(".glitter-pool-stage__media-preview-stage") as unknown as FakeElement | null;
+      const previewFrame = container.querySelector(".glitter-pool-stage__media-preview-frame") as unknown as FakeElement | null;
+      const previewPreviousButton = container.querySelector(".glitter-pool-stage__media-preview-nav--previous") as unknown as FakeElement | null;
+      const previewNextButton = container.querySelector(".glitter-pool-stage__media-preview-nav--next") as unknown as FakeElement | null;
+      expect(previewStage).not.toBeNull();
+      expect(previewFrame).not.toBeNull();
+      expect(previewPreviousButton).not.toBeNull();
+      expect(previewNextButton).not.toBeNull();
+      expect(previewStage?.style.getPropertyValue("--glitter-pool-preview-image-max-width")).toBe("780px");
+      expect(previewStage?.style.getPropertyValue("--glitter-pool-preview-image-max-height")).toBe("520px");
+      expect(previewPreviousButton?.style.getPropertyValue("left")).toBe("");
+      expect(previewPreviousButton?.style.getPropertyValue("right")).toBe("");
+      expect(previewNextButton?.style.getPropertyValue("left")).toBe("");
+      expect(previewNextButton?.style.getPropertyValue("right")).toBe("");
+      expect(previewFrame?.style.getPropertyValue("width")).toBe("");
+      expect(previewFrame?.style.getPropertyValue("height")).toBe("");
+    } finally {
+      globalThis.requestAnimationFrame = previousRequestAnimationFrame;
+    }
   });
 
   it("opens a large video preview overlay when clicking the video thumbnail", () => {
@@ -5454,6 +5640,151 @@ describe("renderPoolView", () => {
     expect(calls.switchedPools).toEqual([]);
   });
 
+  it("routes the compact roam toolbar through the more trigger and panel controls", () => {
+    const closedCalls = {
+      closedOverlay: 0,
+      creates: 0,
+      batchToggles: 0,
+      toggledOverlays: [] as string[]
+    };
+    const closedContainer = createContainer();
+    renderPoolView(closedContainer, createBrowseState({
+      roam: {
+        open: true,
+        mode: "board",
+        boardPath: "Glitter/灵感漫游/demo.canvas",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history", "idea-block"],
+        boundaryAnchors: []
+      }
+    }), {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {
+        closedCalls.creates += 1;
+      },
+      onBrowseOverlayToggle(overlay) {
+        closedCalls.toggledOverlays.push(overlay);
+      },
+      onBrowseOverlayClose() {
+        closedCalls.closedOverlay += 1;
+      },
+      onBatchModeToggle() {
+        closedCalls.batchToggles += 1;
+      }
+    });
+
+    const closedMoreTrigger = closedContainer.querySelector(".glitter-pool-stage__results-tool--more") as unknown as FakeElement | null;
+    const closedTopbarCreate = closedContainer.querySelector(".glitter-pool-stage__topbar-create") as unknown as FakeElement | null;
+
+    closedMoreTrigger?.click();
+    closedTopbarCreate?.click();
+
+    expect(closedCalls.toggledOverlays).toEqual(["browse-more"]);
+    expect(closedCalls.closedOverlay).toBe(0);
+    expect(closedCalls.creates).toBe(1);
+    expect(closedCalls.batchToggles).toBe(0);
+
+    const openCalls = {
+      closedOverlay: 0,
+      batchToggles: 0,
+      toggledOverlays: [] as string[]
+    };
+    const openContainer = createContainer();
+    renderPoolView(openContainer, createBrowseState({
+      browse: {
+        activeOverlay: "browse-more"
+      },
+      preview: {
+        available: true,
+        open: false,
+        saving: false,
+        panelTitle: "写作池 Markdown 文件",
+        saveLabel: "保存 Markdown 文件"
+      },
+      roam: {
+        open: true,
+        mode: "board",
+        boardPath: "Glitter/灵感漫游/demo.canvas",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history", "idea-block"],
+        boundaryAnchors: []
+      }
+    }), {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onBrowseOverlayToggle(overlay) {
+        openCalls.toggledOverlays.push(overlay);
+      },
+      onBrowseOverlayClose() {
+        openCalls.closedOverlay += 1;
+      },
+      onBatchModeToggle() {
+        openCalls.batchToggles += 1;
+      }
+    });
+
+    const openMoreTrigger = openContainer.querySelector(".glitter-pool-stage__results-tool--more") as unknown as FakeElement | null;
+    const statusTrigger = openContainer.querySelector(".glitter-pool-stage__status-trigger") as unknown as FakeElement | null;
+    const filterTrigger = openContainer.querySelector(".glitter-pool-stage__results-tool--filter") as unknown as FakeElement | null;
+    const sortTrigger = openContainer.querySelector(".glitter-pool-stage__results-tool--sort") as unknown as FakeElement | null;
+    const batchTrigger = openContainer.querySelector(".glitter-pool-stage__batch-toggle") as unknown as FakeElement | null;
+
+    expect(openContainer.querySelector(".glitter-pool-stage__toolbar-menu--roam-more")).not.toBeNull();
+
+    statusTrigger?.click();
+    filterTrigger?.click();
+    sortTrigger?.click();
+    batchTrigger?.click();
+    openMoreTrigger?.click();
+
+    expect(openCalls.toggledOverlays).toEqual(["status", "filter", "sort"]);
+    expect(openCalls.batchToggles).toBe(1);
+    expect(openCalls.closedOverlay).toBe(1);
+  });
+
+  it("opens compact roam more submenus beside their trigger anchors", () => {
+    const container = createContainer();
+    renderPoolView(container, createBrowseState({
+      browse: {
+        activeOverlay: "filter"
+      },
+      roam: {
+        open: true,
+        mode: "board",
+        boardPath: "Glitter/灵感漫游/demo.canvas",
+        historyEnabled: true,
+        floatingActions: ["download", "share", "history", "idea-block"],
+        boundaryAnchors: []
+      }
+    }), {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onQueryChange() {},
+      onBrowseOverlayToggle() {},
+      onBrowseOverlayClose() {},
+      onContentFilterChange() {},
+      onStatusChange() {},
+      onSortChange() {},
+      onBatchModeToggle() {},
+      onMoveSelectionToPool() {},
+      onCreateFile() {},
+      onOpenPrimaryFile() {},
+      onEditIdea() {},
+      onShareIdea() {},
+      onPoolSwitch() {}
+    });
+
+    const morePanel = container.querySelector(".glitter-pool-stage__toolbar-menu--roam-more") as unknown as FakeElement | null;
+    const submenu = container.querySelector(".glitter-pool-stage__toolbar-menu--roam-submenu") as unknown as FakeElement | null;
+    expect(morePanel).not.toBeNull();
+    expect(submenu).not.toBeNull();
+    expect(submenu?.parent?.className).toContain("glitter-pool-stage__results-tool-anchor--filter");
+    expect(submenu?.parent?.parent).toBe(morePanel);
+  });
+
   it("opens status and filter menus from their own trigger anchors", () => {
     const filterContainer = createContainer();
     renderPoolView(filterContainer, createBrowseState({ browse: { activeOverlay: "filter" } }), {
@@ -6986,6 +7317,22 @@ describe("renderPoolView", () => {
       "display: grid;",
       "flex: 0 0 auto;"
     ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage .glitter-pool-stage__toolbar-menu--roam-more", [
+      "display: flex;",
+      "align-items: center;",
+      "gap: 8px;",
+      "overflow: visible;",
+      "max-height: none;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage .glitter-pool-stage__toolbar-menu--roam-submenu", [
+      "top: 50%;",
+      "right: calc(100% + 8px);",
+      "left: auto;",
+      "transform: translateY(-50%);",
+      "transform-origin: right center;",
+      "min-width: 148px;",
+      "z-index: 6;"
+    ]);
 
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage .glitter-pool-stage__topbar-create", [
       "all: unset;",
@@ -6997,6 +7344,11 @@ describe("renderPoolView", () => {
       "color: var(--glitter-ui-accent-contrast);",
       "box-shadow: none;",
       "white-space: nowrap;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage .glitter-pool-stage__topbar-create--compact", [
+      "width: 32px;",
+      "min-width: 32px;",
+      "padding: 0;"
     ]);
 
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__topbar-create-icon", [
@@ -7146,6 +7498,11 @@ describe("renderPoolView", () => {
       "flex: 0 0 auto;",
       "margin-top: 2px;"
     ]);
+    expect(stylesCss).toContain(`.GlitterIdea-edit-modal__close-button.glitter-write-stage__close-button {
+  border: none;
+  background: color-mix(in srgb, var(--glitter-ui-bg-alt) 88%, transparent);
+  box-shadow: none;
+}`);
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-followup-guidance-view__feature-copy", [
       "min-width: 0;",
       "display: flex;",
@@ -7207,6 +7564,11 @@ describe("renderPoolView", () => {
     const keyboardIconBlock = getSelectorBlock(stylesCss, ".glitter-followup-guidance-view__feature-icon--keyboard");
     expect(keyboardIconBlock).toContain("stroke='black'");
     expect(keyboardIconBlock).toContain("stroke-width='1.6'");
+    const roamIconBlock = getSelectorBlock(stylesCss, ".glitter-followup-guidance-view__feature-icon--roam");
+    expect(roamIconBlock).toContain("stroke='black'");
+    expect(roamIconBlock).toContain("stroke-width='1.8'");
+    expect(roamIconBlock).toContain("M12 4.5c-4.1 0-7.5 3.4-7.5 7.5");
+    expect(roamIconBlock).toContain("M12 19.5c4.1 0 7.5-3.4 7.5-7.5");
     const quoteIconBlock = getSelectorBlock(stylesCss, ".glitter-followup-guidance-view__feature-icon--quote");
     expect(quoteIconBlock).toContain("stroke='black'");
     expect(quoteIconBlock).toContain("stroke-width='1.8'");
@@ -7476,6 +7838,11 @@ describe("renderPoolView", () => {
       "z-index: 2;",
       "pointer-events: none;"
     ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage--media-preview-open .glitter-pool-stage__card-media-switcher", [
+      "opacity: 0;",
+      "visibility: hidden;",
+      "pointer-events: none;"
+    ]);
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage button.glitter-pool-stage__card-media-switch", [
       "position: absolute;",
       "top: 50%;",
@@ -7527,9 +7894,60 @@ describe("renderPoolView", () => {
       "display: flex;",
       "z-index: 9;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-image,\n.glitter-pool-stage__media-preview-video", [
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-nav-layer", [
+      "position: absolute;",
+      "inset: 56px 0;",
+      "pointer-events: none;",
+      "z-index: 1;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-viewport", [
+      "position: relative;",
+      "width: 100%;",
+      "height: 100%;",
+      "min-width: 0;",
+      "min-height: 0;",
+      "display: flex;",
+      "align-items: center;",
+      "justify-content: center;",
+      "padding: 56px 0 56px;",
+      "box-sizing: border-box;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-viewport--gallery", ["padding: 56px 64px 56px;"]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-stage", [
+      "position: relative;",
+      "flex: 1 1 auto;",
+      "min-width: 0;",
+      "min-height: 0;",
+      "width: 100%;",
+      "height: 100%;",
+      "display: flex;",
+      "align-items: center;",
+      "justify-content: center;",
       "max-width: 100%;",
-      "max-height: 100%;",
+      "max-height: 100%;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-frame", [
+      "position: relative;",
+      "flex: 0 1 auto;",
+      "min-width: 0;",
+      "min-height: 0;",
+      "width: fit-content;",
+      "height: fit-content;",
+      "display: flex;",
+      "align-items: center;",
+      "justify-content: center;",
+      "max-width: 100%;",
+      "max-height: 100%;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-stage--gallery,\n.glitter-pool-stage__media-preview-frame--gallery", [
+      "overflow: visible;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-image,\n.glitter-pool-stage__media-preview-video", [
+      "width: auto;",
+      "height: auto;",
+      "max-width: var(--glitter-pool-preview-image-max-width, min(100%, 1180px));",
+      "max-height: var(--glitter-pool-preview-image-max-height, 100%);",
+      "object-fit: contain;",
       "display: block;"
     ]);
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-close", [
@@ -7537,22 +7955,70 @@ describe("renderPoolView", () => {
       "top: 0;",
       "right: 0;",
       "width: 34px;",
-      "height: 34px;"
+      "height: 34px;",
+      "border-radius: 999px;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-nav", [
+    expectDeclarationsInSelectorBlock(stylesCss, "button.glitter-pool-stage__media-preview-close,\nbutton.glitter-pool-stage__media-preview-nav", [
+      "all: unset;",
+      "box-sizing: border-box;",
+      "border: 0 !important;",
+      "border-radius: 999px;",
+      "display: grid;",
+      "place-items: center;",
+      "padding: 0;",
+      "appearance: none !important;",
+      "-webkit-appearance: none !important;",
+      "background: color-mix(in srgb, var(--glitter-ui-surface) 76%, transparent);",
+      "background-image: none !important;",
+      "box-shadow: none !important;",
+      "color: var(--glitter-ui-text);",
+      "filter: none !important;",
+      "text-shadow: none !important;",
+      "cursor: pointer;"
+    ]);
+    expectDeclarationsInSelectorBlock(stylesCss, "button.glitter-pool-stage__media-preview-close", [
+      "position: absolute;",
+      "top: 0;",
+      "right: 0;",
+      "width: 34px;",
+      "height: 34px;",
+      "z-index: 2;"
+    ]);
+    expectDeclarationsInLastSelectorBlock(stylesCss, "button.glitter-pool-stage__media-preview-nav", [
       "position: absolute;",
       "top: 50%;",
       "width: 38px;",
       "height: 38px;",
-      "border-radius: 999px;"
+      "margin-top: 0;",
+      "pointer-events: auto;",
+      "transform: translateY(-50%);",
+      "z-index: 1;"
     ]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-nav--previous", ["left: 12px;"]);
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-nav--next", ["right: 12px;"]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-nav-layer .glitter-pool-stage__media-preview-nav--previous", ["left: 16px;"]);
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-nav-layer .glitter-pool-stage__media-preview-nav--next", ["right: 16px;"]);
+    expectDeclarationsInSelectorBlock(
+      stylesCss,
+      ".glitter-pool-stage__media-preview-close:hover:not(:disabled),\n.glitter-pool-stage__media-preview-close:focus-visible,\n.glitter-pool-stage__media-preview-nav:hover:not(:disabled),\n.glitter-pool-stage__media-preview-nav:focus-visible",
+      [
+        "background: color-mix(in srgb, var(--glitter-ui-surface) 72%, var(--glitter-ui-accent) 24%);",
+        "color: var(--glitter-ui-accent);"
+      ]
+    );
+    expectDeclarationsInSelectorBlock(
+      stylesCss,
+      ".glitter-pool-stage__media-preview-close:focus-visible,\n.glitter-pool-stage__media-preview-nav:focus-visible",
+      [
+        "outline: 2px solid color-mix(in srgb, var(--glitter-ui-accent) 68%, white 32%);",
+        "outline-offset: 2px;"
+      ]
+    );
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__media-preview-pagination", [
       "position: absolute;",
       "left: 50%;",
-      "bottom: 8px;",
-      "transform: translateX(-50%);"
+      "bottom: 12px;",
+      "transform: translateX(-50%);",
+      "min-width: 52px;",
+      "padding: 4px 10px;"
     ]);
 
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__batch-panel", [

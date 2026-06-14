@@ -8,6 +8,7 @@ import { createToastService } from "../feedback/toast-service";
 import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
 import { CREATE_NEW_POOL_ID, GLITTER_ICON_ID, POOL_VIEW_TYPE } from "../plugin/constants";
+import { DEFAULT_SETTINGS } from "../settings/defaults";
 import type { PluginInterfaceLanguage } from "../settings/settings";
 import { renderPoolView, syncRenderedPoolCardMenus } from "../ui/pool/render-pool";
 import {
@@ -59,8 +60,6 @@ type PoolMarkdownPreviewData = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWo
 type PoolRoamAttachResult = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWorkflow"]["attachIdeaSourceToRoamBoard"]>>;
 type PoolRoamBoardReadResult = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWorkflow"]["readPoolRoamBoard"]>>;
 type SessionBoundaryAnchor = Omit<PoolRoamBoundaryAnchorState, "visibleBridge">;
-
-const GLITTER_POOL_ROAM_EXPORT_FOLDER = "Glitter/池导出";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
@@ -752,6 +751,9 @@ export class GlitterPoolView extends ItemView {
     }
     if (!nextPoolRoamOpen) {
       this.poolRoamBackConfirmVisible = false;
+      if (this.activeBrowseOverlay === "browse-more") {
+        this.setBrowseOverlay(undefined);
+      }
     }
     this.poolRoamOpen = nextPoolRoamOpen;
     this.poolRoamBoardPath = result.poolRoamBoardPath;
@@ -1247,6 +1249,9 @@ export class GlitterPoolView extends ItemView {
     this.poolRoamBoardPath = undefined;
     this.poolRoamErrorMessage = undefined;
     this.poolRoamBackConfirmVisible = false;
+    if (this.activeBrowseOverlay === "browse-more") {
+      this.setBrowseOverlay(undefined);
+    }
     this.poolRoamController.clearSession();
     this.poolRoamController.destroy();
   }
@@ -1548,10 +1553,67 @@ export class GlitterPoolView extends ItemView {
     }
   }
 
+  private async openHistoricalRoamBoardInLivePane(
+    boardPath: string,
+    shouldApply: (() => boolean) | undefined = undefined
+  ): Promise<boolean> {
+    try {
+      const result = await this.plugin.poolWorkbenchWorkflow.readPoolRoamBoard({ boardPath });
+      if (this.isClosed || (shouldApply && !shouldApply())) {
+        return false;
+      }
+
+      this.disablePoolMarkdownPreview();
+      this.applyPoolRoamBoardUpdate(result, {
+        open: true,
+        forceInlineRemount: true
+      });
+      return true;
+    } catch {
+      if (this.isClosed || (shouldApply && !shouldApply())) {
+        return false;
+      }
+
+      this.toastService.show({
+        status: "error",
+        message: "Open roam board failed. Please try again."
+      });
+      return false;
+    }
+  }
+
   private openPoolRoamBoardModal(boards: PoolRoamBoardRecord[], activeBoardIndex: number): void {
     this.activePoolRoamBoardModal?.close();
 
-    const modal = new PoolRoamBoardModal(this.plugin.app, boards, activeBoardIndex, {
+    const historyModal = this.activePoolRoamHistoryModal;
+    const closeActivePoolRoamHistoryModal = () => {
+      if (this.activePoolRoamHistoryModal === historyModal) {
+        historyModal?.close();
+      }
+    };
+    let modal: PoolRoamBoardModal;
+    const shouldApplyDirectOpenBoard = (boardPath: string, openInRoamRequestVersion: number): boolean => {
+      return !this.isClosed
+        && this.poolRoamOpen
+        && !this.poolRoamBoardPath
+        && this.activePoolRoamBoardModal === modal
+        && modal.getActiveBoardPath() === boardPath
+        && modal.isOpenInRoamRequestCurrent(openInRoamRequestVersion);
+    };
+    const shouldApplyConfirmedReplaceBoard = (
+      boardPath: string,
+      replacedBoardPath: string,
+      openInRoamRequestVersion: number
+    ): boolean => {
+      return !this.isClosed
+        && this.poolRoamOpen
+        && this.poolRoamBoardPath === replacedBoardPath
+        && this.activePoolRoamBoardModal === modal
+        && modal.getActiveBoardPath() === boardPath
+        && modal.isOpenInRoamRequestCurrent(openInRoamRequestVersion);
+    };
+
+    modal = new PoolRoamBoardModal(this.plugin.app, boards, activeBoardIndex, {
       onOpenError: () => {
         this.toastService.show({
           status: "error",
@@ -1584,6 +1646,41 @@ export class GlitterPoolView extends ItemView {
             callbacks.onAttached(latestBoards);
           }
         });
+      },
+      onOpenInRoam: async (board) => {
+        if (this.poolRoamOpen && this.poolRoamBoardPath === board.path) {
+          closeActivePoolRoamHistoryModal();
+          return { type: "close" };
+        }
+
+        const liveBoardPath = this.poolRoamBoardPath;
+        if (this.poolRoamOpen && liveBoardPath) {
+          const openInRoamRequestVersion = modal.getOpenInRoamRequestVersion();
+          return {
+            type: "confirm",
+            onConfirm: async () => {
+              const opened = await this.openHistoricalRoamBoardInLivePane(
+                board.path,
+                () => shouldApplyConfirmedReplaceBoard(board.path, liveBoardPath, openInRoamRequestVersion)
+              );
+              if (opened) {
+                closeActivePoolRoamHistoryModal();
+              }
+              return opened;
+            }
+          };
+        }
+
+        const openInRoamRequestVersion = modal.getOpenInRoamRequestVersion();
+        const opened = await this.openHistoricalRoamBoardInLivePane(
+          board.path,
+          () => shouldApplyDirectOpenBoard(board.path, openInRoamRequestVersion)
+        );
+        if (opened) {
+          closeActivePoolRoamHistoryModal();
+          return { type: "close" };
+        }
+        return { type: "keep-open" };
       },
       onClose: () => {
         if (this.activePoolRoamBoardModal === modal) {
@@ -1625,9 +1722,10 @@ export class GlitterPoolView extends ItemView {
         boardContent,
         interfaceLanguage: this.plugin.settings.interfaceLanguage
       });
-      await this.plugin.vaultFileStore.ensureFolder(GLITTER_POOL_ROAM_EXPORT_FOLDER);
+      const svgStorageDirectory = this.plugin.settings.roam?.svgStorageDirectory ?? DEFAULT_SETTINGS.roam.svgStorageDirectory;
+      await this.plugin.vaultFileStore.ensureFolder(svgStorageDirectory);
       const exportPath = await this.plugin.vaultFileStore.createUniquePath(
-        GLITTER_POOL_ROAM_EXPORT_FOLDER,
+        svgStorageDirectory,
         boardName,
         ".svg"
       );

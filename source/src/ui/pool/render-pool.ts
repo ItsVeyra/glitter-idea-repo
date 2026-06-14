@@ -138,8 +138,22 @@ function renderPoolEmptyState(
   return empty;
 }
 
+type PoolMediaPreviewOverlayElement = HTMLElement & {
+  __glitterPoolMediaPreviewCleanup?: () => void;
+};
+
+const POOL_MEDIA_PREVIEW_OPEN_CLASS = "glitter-pool-stage--media-preview-open";
+
 function closePoolMediaPreviewOverlay(stage: HTMLElement): void {
-  stage.querySelector(".glitter-pool-stage__media-preview-overlay")?.remove();
+  const overlay = stage.querySelector(".glitter-pool-stage__media-preview-overlay") as PoolMediaPreviewOverlayElement | null;
+  if (!overlay) {
+    setClassToken(stage, POOL_MEDIA_PREVIEW_OPEN_CLASS, false);
+    return;
+  }
+  overlay.__glitterPoolMediaPreviewCleanup?.();
+  overlay.__glitterPoolMediaPreviewCleanup = undefined;
+  overlay.remove();
+  setClassToken(stage, POOL_MEDIA_PREVIEW_OPEN_CLASS, false);
 }
 
 function findClosestPoolStage(element: HTMLElement, fallback: HTMLElement): HTMLElement {
@@ -163,25 +177,81 @@ function openPoolMediaPreviewOverlay(
 ): void {
   closePoolMediaPreviewOverlay(stage);
 
-  const overlay = createNode(stage, "div", "glitter-pool-stage__media-preview-overlay");
+  const overlay = createNode(stage, "div", "glitter-pool-stage__media-preview-overlay") as PoolMediaPreviewOverlayElement;
+  setClassToken(stage, POOL_MEDIA_PREVIEW_OPEN_CLASS, true);
+  const previewCleanupCallbacks: Array<() => void> = [];
+  overlay.__glitterPoolMediaPreviewCleanup = () => {
+    while (previewCleanupCallbacks.length > 0) {
+      previewCleanupCallbacks.pop()?.();
+    }
+  };
+  const removeOverlay = (): void => {
+    overlay.__glitterPoolMediaPreviewCleanup?.();
+    overlay.__glitterPoolMediaPreviewCleanup = undefined;
+    overlay.remove();
+    setClassToken(stage, POOL_MEDIA_PREVIEW_OPEN_CLASS, false);
+  };
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) {
-      overlay.remove();
+      removeOverlay();
     }
   });
 
   const dialog = createNode(overlay, "div", "glitter-pool-stage__media-preview-dialog");
-  const closeButton = createButton(dialog, "glitter-pool-stage__media-preview-close", "", () => {
-    overlay.remove();
-  });
-  closeButton.setAttribute("aria-label", input.labels.mediaPreviewCloseLabel);
-  createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 
   if (input.kind === "image") {
     const imageSources = input.imageSources?.length ? input.imageSources : [input.src];
     let currentImageIndex = Math.max(0, Math.min(input.initialIndex ?? 0, imageSources.length - 1));
-    const previewImage = createNode(dialog, "img", "glitter-pool-stage__media-preview-image") as HTMLImageElement;
+    const previewViewport = createNode(
+      dialog,
+      "div",
+      `glitter-pool-stage__media-preview-viewport${imageSources.length > 1 ? " glitter-pool-stage__media-preview-viewport--gallery" : ""}`
+    );
+    const previewNavLayer = imageSources.length > 1
+      ? createNode(dialog, "div", "glitter-pool-stage__media-preview-nav-layer")
+      : undefined;
+    // 只靠 fit-content + 百分比高度时，真实运行里大图会按原始尺寸溢出，所以这里改成“整块视口负责定界，图片框负责收口”。
+    const previewStage = createNode(
+      previewViewport,
+      "div",
+      `glitter-pool-stage__media-preview-stage${imageSources.length > 1 ? " glitter-pool-stage__media-preview-stage--gallery" : ""}`
+    );
+    const previewFrame = createNode(
+      previewStage,
+      "div",
+      `glitter-pool-stage__media-preview-frame${imageSources.length > 1 ? " glitter-pool-stage__media-preview-frame--gallery" : ""}`
+    );
+    const previewImage = createNode(previewFrame, "img", "glitter-pool-stage__media-preview-image") as HTMLImageElement;
     let pagination: HTMLElement | undefined;
+
+    // 大图尺寸只由舞台内容区控制；左右翻页改挂在 viewport 固定槽位里，不再跟图片一起漂移，也不会压到图片上。
+    const syncPreviewBounds = (): void => {
+      if (typeof previewStage.getBoundingClientRect !== "function") {
+        return;
+      }
+      const stageRect = previewStage.getBoundingClientRect();
+      const maxImageWidth = Math.max(0, Math.min(stageRect.width, 1180));
+      const maxImageHeight = Math.max(0, stageRect.height);
+      if (maxImageWidth > 0) {
+        previewStage.style.setProperty("--glitter-pool-preview-image-max-width", `${maxImageWidth}px`);
+      } else {
+        previewStage.style.removeProperty("--glitter-pool-preview-image-max-width");
+      }
+      if (maxImageHeight > 0) {
+        previewStage.style.setProperty("--glitter-pool-preview-image-max-height", `${maxImageHeight}px`);
+      } else {
+        previewStage.style.removeProperty("--glitter-pool-preview-image-max-height");
+      }
+    };
+    const scheduleSyncPreviewBounds = (): void => {
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => {
+          syncPreviewBounds();
+        });
+        return;
+      }
+      syncPreviewBounds();
+    };
 
     const syncPreviewImage = (): void => {
       const currentImageSrc = imageSources[currentImageIndex] ?? input.src;
@@ -198,11 +268,35 @@ function openPoolMediaPreviewOverlay(
       if (pagination) {
         pagination.textContent = `${currentImageIndex + 1} / ${imageSources.length}`;
       }
+      syncPreviewBounds();
+      scheduleSyncPreviewBounds();
     };
+
+    previewImage.addEventListener("load", () => {
+      scheduleSyncPreviewBounds();
+    });
+
+    if (typeof ResizeObserver === "function") {
+      const previewResizeObserver = new ResizeObserver(() => {
+        scheduleSyncPreviewBounds();
+      });
+      previewResizeObserver.observe(previewStage);
+      previewCleanupCallbacks.push(() => {
+        previewResizeObserver.disconnect();
+      });
+    } else if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      const handleWindowResize = (): void => {
+        scheduleSyncPreviewBounds();
+      };
+      window.addEventListener("resize", handleWindowResize);
+      previewCleanupCallbacks.push(() => {
+        window.removeEventListener("resize", handleWindowResize);
+      });
+    }
 
     if (imageSources.length > 1) {
       const previousButton = createButton(
-        dialog,
+        previewNavLayer ?? dialog,
         "glitter-pool-stage__media-preview-nav glitter-pool-stage__media-preview-nav--previous",
         "",
         () => {
@@ -214,7 +308,7 @@ function openPoolMediaPreviewOverlay(
       createNode(previousButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--chevron-left");
 
       const nextButton = createButton(
-        dialog,
+        previewNavLayer ?? dialog,
         "glitter-pool-stage__media-preview-nav glitter-pool-stage__media-preview-nav--next",
         "",
         () => {
@@ -225,22 +319,27 @@ function openPoolMediaPreviewOverlay(
       nextButton.setAttribute("aria-label", input.labels.mediaPreviewNextImageLabel);
       createNode(nextButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--chevron-right");
 
-      pagination = createNode(dialog, "span", "glitter-pool-stage__media-preview-pagination", "");
+      pagination = createNode(previewViewport, "span", "glitter-pool-stage__media-preview-pagination", "");
     }
 
     syncPreviewImage();
-    return;
+  } else {
+    const previewVideo = createNode(dialog, "video", "glitter-pool-stage__media-preview-video") as HTMLVideoElement;
+    previewVideo.setAttribute("src", input.src);
+    previewVideo.setAttribute("controls", "");
+    previewVideo.setAttribute("playsinline", "");
+    previewVideo.setAttribute("preload", "metadata");
+    previewVideo.setAttribute("aria-label", input.labels.mediaPreviewVideoLabel(input.title));
+    previewVideo.controls = true;
+    previewVideo.playsInline = true;
+    previewVideo.preload = "metadata";
   }
 
-  const previewVideo = createNode(dialog, "video", "glitter-pool-stage__media-preview-video") as HTMLVideoElement;
-  previewVideo.setAttribute("src", input.src);
-  previewVideo.setAttribute("controls", "");
-  previewVideo.setAttribute("playsinline", "");
-  previewVideo.setAttribute("preload", "metadata");
-  previewVideo.setAttribute("aria-label", input.labels.mediaPreviewVideoLabel(input.title));
-  previewVideo.controls = true;
-  previewVideo.playsInline = true;
-  previewVideo.preload = "metadata";
+  const closeButton = createButton(dialog, "glitter-pool-stage__media-preview-close", "", () => {
+    removeOverlay();
+  });
+  closeButton.setAttribute("aria-label", input.labels.mediaPreviewCloseLabel);
+  createNode(closeButton, "span", "glitter-write-stage__icon glitter-write-stage__icon--close");
 }
 
 // 卡片瀑布流与悬停隔离参数：控制列宽、滚动显隐、3 秒进入隔离态以及还原时机。
@@ -991,7 +1090,7 @@ function createPoolCardMenuIcon(parent: HTMLElement, icon: "more" | "edit" | "sh
   );
 }
 
-function createResultsToolIcon(parent: HTMLElement, icon: "status" | "filter" | "sort" | "roam" | "preview" | "batch"): HTMLElement {
+function createResultsToolIcon(parent: HTMLElement, icon: "status" | "filter" | "sort" | "roam" | "preview" | "batch" | "more"): HTMLElement {
   return createNode(
     parent,
     "span",
@@ -1430,6 +1529,7 @@ function buildMarkerOnlyRoamBridgeLayout(
   sourceHandleRect: DOMRect,
   seamX: number
 ): RoamBridgeLayout {
+  // 分隔线连接点需要贴着边界线中心，同时限制在当前卡片区可见范围内，避免看起来掉到边界线下面。
   const markerPadding = 12;
   const minVisibleY = clampRoamBridgeValue(
     (cardGridRect?.top ?? workbenchRect.top) - workbenchRect.top + markerPadding,
@@ -2093,7 +2193,23 @@ function renderResultsToolbarMenuOverlay(
   actions: PoolViewActions
 ): void {
   const labels = controls.labels ?? DEFAULT_BROWSE_LABELS;
-  const menu = createNode(menuHost, "div", "glitter-pool-stage__toolbar-menu");
+  let currentHost: HTMLElement | null = menuHost;
+  let isInsideRoamMoreMenu = false;
+  while (currentHost) {
+    const classTokens = currentHost.className.split(/\s+/);
+    if (classTokens.includes("glitter-pool-stage__toolbar-menu--roam-more")) {
+      isInsideRoamMoreMenu = true;
+      break;
+    }
+    currentHost = currentHost.parentElement ?? (currentHost.parentNode as HTMLElement | null) ?? ((currentHost as unknown as { parent?: HTMLElement | null }).parent ?? null);
+  }
+  const menu = createNode(
+    menuHost,
+    "div",
+    isInsideRoamMoreMenu
+      ? "glitter-pool-stage__toolbar-menu glitter-pool-stage__toolbar-menu--roam-submenu"
+      : "glitter-pool-stage__toolbar-menu"
+  );
 
   if (activeOverlay === "status") {
     [
@@ -2142,6 +2258,116 @@ function renderResultsToolbarMenuOverlay(
       });
     });
   }
+}
+
+function isBrowseResultsMorePanelOpen(activeOverlay: PoolBrowseOverlay | null): boolean {
+  return activeOverlay === "browse-more" || activeOverlay === "status" || activeOverlay === "filter" || activeOverlay === "sort";
+}
+
+function renderBrowseResultsToolbarControls(
+  parent: HTMLElement,
+  actions: PoolViewActions,
+  options: {
+    controls: RenderedBrowseControls;
+    activeOverlay: PoolBrowseOverlay | null;
+    roamOpen: boolean;
+    previewAvailable: boolean;
+    previewOpen: boolean;
+  }
+): {
+  statusAnchor: HTMLElement;
+  filterAnchor: HTMLElement;
+  sortAnchor: HTMLElement;
+  previewAnchor: HTMLElement | null;
+  batchAnchor: HTMLElement;
+} {
+  const statusAnchor = createNode(
+    parent,
+    "div",
+    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--status"
+  );
+  const statusTrigger = createButton(statusAnchor, "glitter-pool-stage__status-trigger", "", () => {
+    actions.onBrowseOverlayToggle?.("status");
+  });
+  statusTrigger.setAttribute("aria-label", options.controls.labels?.statusFilterLabel ?? DEFAULT_BROWSE_LABELS.statusFilterLabel);
+  statusTrigger.setAttribute("aria-expanded", options.activeOverlay === "status" ? "true" : "false");
+  createResultsToolIcon(statusTrigger, "status");
+
+  const filterAnchor = createNode(
+    parent,
+    "div",
+    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--filter"
+  );
+  const filterTrigger = createButton(filterAnchor, "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--filter", "", () => {
+    actions.onBrowseOverlayToggle?.("filter");
+  });
+  filterTrigger.setAttribute("aria-label", options.controls.labels?.filterLabel ?? DEFAULT_BROWSE_LABELS.filterLabel);
+  filterTrigger.setAttribute("aria-expanded", options.activeOverlay === "filter" ? "true" : "false");
+  createResultsToolIcon(filterTrigger, "filter");
+
+  const sortAnchor = createNode(
+    parent,
+    "div",
+    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--sort"
+  );
+  const sortTrigger = createButton(sortAnchor, "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--sort", "", () => {
+    actions.onBrowseOverlayToggle?.("sort");
+  });
+  sortTrigger.setAttribute("aria-label", options.controls.labels?.sortLabel ?? DEFAULT_BROWSE_LABELS.sortLabel);
+  sortTrigger.setAttribute("aria-expanded", options.activeOverlay === "sort" ? "true" : "false");
+  createResultsToolIcon(sortTrigger, "sort");
+
+  let previewAnchor: HTMLElement | null = null;
+  if (options.previewAvailable) {
+    previewAnchor = createNode(
+      parent,
+      "div",
+      "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--preview"
+    );
+    const previewTrigger = createButton(
+      previewAnchor,
+      "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--preview",
+      "",
+      () => {
+        if (options.roamOpen) {
+          return;
+        }
+        actions.onTogglePoolMarkdownPreview?.();
+      }
+    );
+    previewTrigger.setAttribute("aria-label", options.controls.labels?.previewCurrentPoolMarkdown ?? DEFAULT_BROWSE_LABELS.previewCurrentPoolMarkdown);
+    previewTrigger.setAttribute(
+      "title",
+      options.roamOpen
+        ? options.controls.labels?.previewUnavailableInRoam ?? DEFAULT_BROWSE_LABELS.previewUnavailableInRoam
+        : options.controls.labels?.previewCurrentPoolMarkdown ?? DEFAULT_BROWSE_LABELS.previewCurrentPoolMarkdown
+    );
+    previewTrigger.setAttribute("aria-pressed", options.previewOpen ? "true" : "false");
+    previewTrigger.setAttribute("aria-disabled", options.roamOpen ? "true" : "false");
+    previewTrigger.disabled = options.roamOpen;
+    createResultsToolIcon(previewTrigger, "preview");
+  }
+
+  const batchAnchor = createNode(
+    parent,
+    "div",
+    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--batch"
+  );
+  const batchTrigger = createButton(batchAnchor, "glitter-pool-stage__batch-toggle", "", () => {
+    actions.onBatchModeToggle?.();
+  });
+  batchTrigger.dataset.batchMode = options.controls.batchMode ? "on" : "off";
+  batchTrigger.setAttribute("aria-label", options.controls.labels?.batchOrganizeLabel ?? DEFAULT_BROWSE_LABELS.batchOrganizeLabel);
+  batchTrigger.setAttribute("aria-pressed", options.controls.batchMode ? "true" : "false");
+  createResultsToolIcon(batchTrigger, "batch");
+
+  return {
+    statusAnchor,
+    filterAnchor,
+    sortAnchor,
+    previewAnchor,
+    batchAnchor
+  };
 }
 
 // 批量移动菜单把可选池列表和底部新建池入口收在同一弹层里，避免另起第二层可见控件。
@@ -2706,6 +2932,7 @@ function renderBrowseTopbar(
     activePool: { id: string; label: string; count: number; selected: boolean } | null;
     canEditMetadata: boolean;
     showPoolSwitcher: boolean;
+    roamOpen: boolean;
   }
 ): void {
   clearContainer(topbar);
@@ -2776,12 +3003,22 @@ function renderBrowseTopbar(
   }
 
   const topbarTools = createNode(topbar, "div", "glitter-pool-stage__topbar-tools");
-  const topbarCreate = createButton(topbarTools, "glitter-pool-stage__topbar-create", "", () => {
-    actions.onCreateIdea();
-  });
+  const topbarCreate = createButton(
+    topbarTools,
+    options.roamOpen
+      ? "glitter-pool-stage__topbar-create glitter-pool-stage__topbar-create--compact"
+      : "glitter-pool-stage__topbar-create",
+    "",
+    () => {
+      actions.onCreateIdea();
+    }
+  );
   topbarCreate.dataset.role = "create-idea";
+  topbarCreate.setAttribute("aria-label", labels.quickCaptureLabel);
   createNode(topbarCreate, "span", "glitter-pool-stage__topbar-create-icon");
-  createNode(topbarCreate, "span", "glitter-pool-stage__topbar-create-label", labels.quickCaptureLabel);
+  if (!options.roamOpen) {
+    createNode(topbarCreate, "span", "glitter-pool-stage__topbar-create-label", labels.quickCaptureLabel);
+  }
 }
 
 // 描述条既是池简介展示位，也是可内联编辑的 metadata 入口，和标题改名共用同一提交节奏。
@@ -2910,91 +3147,50 @@ function renderBrowseResultsHeader(
     actions.onQuerySubmit?.(queryInput.value);
   });
 
-  const statusAnchor = createNode(
-    resultsTools,
-    "div",
-    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--status"
-  );
-  const statusTrigger = createButton(statusAnchor, "glitter-pool-stage__status-trigger", "", () => {
-    actions.onBrowseOverlayToggle?.("status");
-  });
-  statusTrigger.setAttribute("aria-label", options.controls.labels?.statusFilterLabel ?? DEFAULT_BROWSE_LABELS.statusFilterLabel);
-  statusTrigger.setAttribute("aria-expanded", options.activeOverlay === "status" ? "true" : "false");
-  createResultsToolIcon(statusTrigger, "status");
-
-  const filterAnchor = createNode(
-    resultsTools,
-    "div",
-    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--filter"
-  );
-  const filterTrigger = createButton(filterAnchor, "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--filter", "", () => {
-    actions.onBrowseOverlayToggle?.("filter");
-  });
-  filterTrigger.setAttribute("aria-label", options.controls.labels?.filterLabel ?? DEFAULT_BROWSE_LABELS.filterLabel);
-  filterTrigger.setAttribute("aria-expanded", options.activeOverlay === "filter" ? "true" : "false");
-  createResultsToolIcon(filterTrigger, "filter");
-
-  const sortAnchor = createNode(
-    resultsTools,
-    "div",
-    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--sort"
-  );
-  const sortTrigger = createButton(sortAnchor, "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--sort", "", () => {
-    actions.onBrowseOverlayToggle?.("sort");
-  });
-  sortTrigger.setAttribute("aria-label", options.controls.labels?.sortLabel ?? DEFAULT_BROWSE_LABELS.sortLabel);
-  sortTrigger.setAttribute("aria-expanded", options.activeOverlay === "sort" ? "true" : "false");
-  createResultsToolIcon(sortTrigger, "sort");
-
-  if (options.previewAvailable) {
-    const previewAnchor = createNode(
+  if (options.roamOpen) {
+    const morePanelOpen = isBrowseResultsMorePanelOpen(options.activeOverlay);
+    const moreAnchor = createNode(
       resultsTools,
       "div",
-      "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--preview"
+      "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--more"
     );
-    const previewTrigger = createButton(
-      previewAnchor,
-      "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--preview",
-      "",
-      () => {
-        if (options.roamOpen) {
-          return;
-        }
-        actions.onTogglePoolMarkdownPreview?.();
+    const moreTrigger = createButton(moreAnchor, "glitter-pool-stage__results-tool glitter-pool-stage__results-tool--more", "", () => {
+      if (morePanelOpen) {
+        actions.onBrowseOverlayClose?.();
+        return;
       }
-    );
-    previewTrigger.setAttribute("aria-label", options.controls.labels?.previewCurrentPoolMarkdown ?? DEFAULT_BROWSE_LABELS.previewCurrentPoolMarkdown);
-    previewTrigger.setAttribute(
-      "title",
-      options.roamOpen
-        ? options.controls.labels?.previewUnavailableInRoam ?? DEFAULT_BROWSE_LABELS.previewUnavailableInRoam
-        : options.controls.labels?.previewCurrentPoolMarkdown ?? DEFAULT_BROWSE_LABELS.previewCurrentPoolMarkdown
-    );
-    previewTrigger.setAttribute("aria-pressed", options.previewOpen ? "true" : "false");
-    previewTrigger.setAttribute("aria-disabled", options.roamOpen ? "true" : "false");
-    previewTrigger.disabled = options.roamOpen;
-    createResultsToolIcon(previewTrigger, "preview");
+      actions.onBrowseOverlayToggle?.("browse-more");
+    });
+    moreTrigger.setAttribute("aria-label", options.controls.labels?.moreActionsLabel ?? DEFAULT_BROWSE_LABELS.moreActionsLabel);
+    moreTrigger.setAttribute("aria-expanded", morePanelOpen ? "true" : "false");
+    createResultsToolIcon(moreTrigger, "more");
+
+    if (morePanelOpen) {
+      const morePanel = createNode(
+        moreAnchor,
+        "div",
+        "glitter-pool-stage__toolbar-menu glitter-pool-stage__toolbar-menu--roam-more"
+      );
+      const toolbarAnchors = renderBrowseResultsToolbarControls(morePanel, actions, options);
+      if (options.activeOverlay === "status" || options.activeOverlay === "filter" || options.activeOverlay === "sort") {
+        const menuHost = options.activeOverlay === "status"
+          ? toolbarAnchors.statusAnchor
+          : options.activeOverlay === "filter"
+            ? toolbarAnchors.filterAnchor
+            : toolbarAnchors.sortAnchor;
+        renderResultsToolbarMenuOverlay(menuHost, options.activeOverlay, options.controls, actions);
+      }
+    }
+    return;
   }
 
-  const batchAnchor = createNode(
-    resultsTools,
-    "div",
-    "glitter-pool-stage__results-tool-anchor glitter-pool-stage__results-tool-anchor--batch"
-  );
-  const batchTrigger = createButton(batchAnchor, "glitter-pool-stage__batch-toggle", "", () => {
-    actions.onBatchModeToggle?.();
-  });
-  batchTrigger.dataset.batchMode = options.controls.batchMode ? "on" : "off";
-  batchTrigger.setAttribute("aria-label", options.controls.labels?.batchOrganizeLabel ?? DEFAULT_BROWSE_LABELS.batchOrganizeLabel);
-  batchTrigger.setAttribute("aria-pressed", options.controls.batchMode ? "true" : "false");
-  createResultsToolIcon(batchTrigger, "batch");
-
+  const toolbarAnchors = renderBrowseResultsToolbarControls(resultsTools, actions, options);
   if (options.activeOverlay === "status" || options.activeOverlay === "filter" || options.activeOverlay === "sort") {
     const menuHost = options.activeOverlay === "status"
-      ? statusAnchor
+      ? toolbarAnchors.statusAnchor
       : options.activeOverlay === "filter"
-        ? filterAnchor
-        : sortAnchor;
+        ? toolbarAnchors.filterAnchor
+        : toolbarAnchors.sortAnchor;
     renderResultsToolbarMenuOverlay(menuHost, options.activeOverlay, options.controls, actions);
   }
 }
@@ -3260,7 +3456,8 @@ function patchRenderedBrowseWorkbench(containerEl: HTMLElement, state: PoolViewS
     activeOverlay,
     activePool,
     canEditMetadata,
-    showPoolSwitcher
+    showPoolSwitcher,
+    roamOpen
   });
   renderBrowseDescriptionSlot(descriptionSlot, state, actions, canEditMetadata);
   renderBrowseResultsHeader(resultsHeader, state, actions, {
@@ -3401,7 +3598,8 @@ function renderBrowseWorkbench(containerEl: HTMLElement, stage: HTMLElement, sta
     activeOverlay,
     activePool,
     canEditMetadata,
-    showPoolSwitcher
+    showPoolSwitcher,
+    roamOpen
   });
 
   const descriptionSlot = createNode(poolPane, "div", "glitter-pool-stage__description-slot");

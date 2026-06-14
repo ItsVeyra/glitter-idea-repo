@@ -67,7 +67,8 @@ export const DEFAULT_SETTINGS: GlitterPluginSettings = {
   mediaStorageDirectory: "Glitter",
   fileStorageDirectory: "Glitter",
   roam: {
-    boardStorageDirectory: "Glitter/灵感漫游"
+    boardStorageDirectory: "Glitter/灵感漫游",
+    svgStorageDirectory: "Glitter/池导出"
   },
   createdIdeaEmoji: "✨",
   referencedIdeaEmoji: "🔖",
@@ -186,6 +187,7 @@ export function mergePluginSettings(loaded: LoadedPluginSettings | null | undefi
   return {
     ...DEFAULT_SETTINGS,
     ...rest,
+    enableCreateFromSelection: DEFAULT_SETTINGS.enableCreateFromSelection,
     uiThemeMode: normalizeUiThemeMode(uiThemeMode),
     homeFieldView: normalizeHomeFieldView(homeFieldView),
     interfaceLanguage: normalizePluginInterfaceLanguage(interfaceLanguage),
@@ -195,6 +197,10 @@ export function mergePluginSettings(loaded: LoadedPluginSettings | null | undefi
       boardStorageDirectory: normalizeStorageDirectory(
         roam?.boardStorageDirectory,
         DEFAULT_SETTINGS.roam.boardStorageDirectory
+      ),
+      svgStorageDirectory: normalizeStorageDirectory(
+        roam?.svgStorageDirectory,
+        DEFAULT_SETTINGS.roam.svgStorageDirectory
       )
     },
     reviewScenario: normalizeReviewScenario(reviewScenario),
