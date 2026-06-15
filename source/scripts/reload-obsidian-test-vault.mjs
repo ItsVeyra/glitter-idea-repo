@@ -9,19 +9,11 @@ import { fileURLToPath } from "node:url";
 // 说明：集中维护同步来源、测试库目标、Obsidian 可执行文件与同步戳命名。
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function resolveCanonicalProjectRoot(projectRoot) {
-  const normalizedProjectRoot = resolve(projectRoot);
-  const worktreeDirectory = dirname(normalizedProjectRoot);
-  const worktreeContainerName = worktreeDirectory.split(/[\\/]+/).pop();
-
-  if (worktreeContainerName === ".worktrees" || worktreeContainerName === "worktrees") {
-    return dirname(worktreeDirectory);
-  }
-
-  return normalizedProjectRoot;
+export function resolveDefaultSyncSourceProjectRoot(scriptDirectory = __dirname) {
+  return resolve(scriptDirectory, "..");
 }
 
-const DEFAULT_PROJECT_ROOT = resolveCanonicalProjectRoot(resolve(__dirname, ".."));
+const DEFAULT_PROJECT_ROOT = resolveDefaultSyncSourceProjectRoot(__dirname);
 const projectRoot = DEFAULT_PROJECT_ROOT;
 const vaultRoot = "/Users/lqy/Documents/Test-Vault/Glitter-Test-Vault";
 const pluginTarget = resolve(vaultRoot, ".obsidian/plugins/glitter-idea");

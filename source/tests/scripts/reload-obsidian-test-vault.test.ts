@@ -7,15 +7,9 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 // @ts-ignore Vitest imports the executable .mjs helper directly in this focused script test.
-import { buildPluginAutomationData, createSyncStamp, describeSyncSource, ensureAllowedSyncSource, ensureCommunityPluginEnabled, normalizeEnabledCommunityPlugins, verifySyncedArtifactsMatchSource, writeSyncStamp } from "../../scripts/reload-obsidian-test-vault.mjs";
+import { buildPluginAutomationData, createSyncStamp, describeSyncSource, ensureAllowedSyncSource, ensureCommunityPluginEnabled, normalizeEnabledCommunityPlugins, resolveDefaultSyncSourceProjectRoot, verifySyncedArtifactsMatchSource, writeSyncStamp } from "../../scripts/reload-obsidian-test-vault.mjs";
 
 const sandboxesToCleanup: string[] = [];
-
-function resolveCanonicalProjectRoot(projectRoot = resolve(process.cwd())): string {
-  return projectRoot.includes("/.worktrees/") || projectRoot.includes("/worktrees/")
-    ? resolve(projectRoot, "..", "..")
-    : projectRoot;
-}
 
 // 提供测试夹具与辅助查询函数，减少重复的宿主搭建。
 async function createSandboxRoot() {
@@ -108,8 +102,14 @@ describe("reload-obsidian-test-vault script helpers", () => {
     });
   });
 
+  it("keeps a worktree script directory rooted in the current worktree", () => {
+    expect(
+      resolveDefaultSyncSourceProjectRoot("/tmp/glitter-plugin/.worktrees/glitter-structure-refactor/scripts")
+    ).toBe("/tmp/glitter-plugin/.worktrees/glitter-structure-refactor");
+  });
+
   it("accepts the canonical glitter-plugin root when no sync source is provided", () => {
-    expect(ensureAllowedSyncSource()).toBe(resolveCanonicalProjectRoot(resolve(process.cwd())));
+    expect(ensureAllowedSyncSource()).toBe(resolve(process.cwd()));
   });
 
   it("normalizes enabled community plugins by replacing legacy Glitter ids and keeping current id", () => {
