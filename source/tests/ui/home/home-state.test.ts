@@ -72,7 +72,7 @@ describe("buildHomeViewState", () => {
       }
     );
 
-    expect(state.hero.title).toBe("Glitter · Idea Pools");
+    expect(state.hero.title).toBe("Glitter · 灵感池");
     expect(state.hero.subtitle).toBe("Calibrate the main stage, pool hierarchy, and key actions first.");
     expect(state.firstUseEntry).toBeUndefined();
   });
@@ -138,7 +138,7 @@ describe("buildHomeViewState", () => {
 
     expect(state.mode).toBe("empty");
     expect(state.hero).toMatchObject({
-      title: "Glitter · Idea Pools",
+      title: "Glitter · 灵感池",
       emphasis: "single-center"
     });
     expect(state.firstUseEntry).toEqual({
@@ -162,7 +162,7 @@ describe("buildHomeViewState", () => {
   it("builds English fixed home interface text when requested", () => {
     const state = buildHomeViewState("home-populated", { interfaceLanguage: "en" });
 
-    expect(state.hero.title).toBe("Glitter · Idea Pools");
+    expect(state.hero.title).toBe("Glitter · 灵感池");
     expect(state.hero.subtitle).toBe("Calibrate the main stage, pool hierarchy, and key actions first.");
     expect(state.topbar.search?.placeholder).toBe("Search ideas, snippets, or pools");
     expect(state.topbar.controls).toEqual([

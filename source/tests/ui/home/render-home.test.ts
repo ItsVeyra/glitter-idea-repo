@@ -5316,6 +5316,57 @@ describe("renderHomeView", () => {
     }
   });
 
+  it("does not let a stale hover-isolation timer mutate the DOM after rerendering to an empty stage", () => {
+    vi.useFakeTimers();
+
+    try {
+      const state = buildHomeViewStateFromRuntime(
+        {
+          mode: "populated",
+          pools: [
+            { id: "pool-default", name: "默认池", ideaCount: 8, isDefault: true, color: "#6AB5FF" },
+            { id: "pool-writing", name: "写作池", ideaCount: 3, isDefault: false, color: "#74CCBA" }
+          ]
+        },
+        {
+          poolColors: {
+            unsorted: "#6AB5FF",
+            product: "#74CCBA",
+            research: "#FFA980",
+            writing: "#FFD468",
+            unnamed: "#B794FF"
+          }
+        }
+      );
+      const container = createContainer();
+      const actions = {
+        onPrimaryAction: () => undefined,
+        onSecondaryAction: () => undefined,
+        onPoolSelect: () => undefined,
+        onPoolDelete: () => undefined,
+        onSearchSubmit() {}
+      };
+
+      renderHomeView(container, state, actions);
+
+      const supportingOrb = container.querySelector(".glitter-home-stage__supporting-orb") as
+        | (HTMLElement & { dispatch: (type: string) => void })
+        | null;
+      expect(supportingOrb).not.toBeNull();
+
+      supportingOrb?.dispatch("pointerenter");
+
+      renderHomeView(container, buildHomeViewState("home-empty"), actions);
+      vi.advanceTimersByTime(3000);
+
+      expect(container.querySelector(".glitter-home-stage__pool-orb--isolated")).toBeNull();
+      expect(container.querySelector(".glitter-home-stage__pool-orb-actions")).toBeNull();
+      expect(container.querySelector(".glitter-home-stage--empty")).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("starts inline orb-name editing from the edit action without entering the pool", () => {
     vi.useFakeTimers();
 

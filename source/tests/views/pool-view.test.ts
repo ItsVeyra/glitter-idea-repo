@@ -1067,6 +1067,10 @@ describe("GlitterPoolView", () => {
     await view.onOpen();
     await Promise.resolve();
 
+    expect((view as any).poolMarkdownPreviewOpen).toBe(false);
+    expect((view as any).poolRoamOpen).toBe(true);
+    expect((view as any).poolRoamBoardPath).toBeUndefined();
+
     const attachActions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
       onAttachPoolRoamSource: (ideaId: string) => void;
     };
@@ -3242,12 +3246,16 @@ describe("GlitterPoolView", () => {
     resolveQueriedRuntime?.(queriedRuntime);
     await flush();
 
+    expect(markdownRenderMock).toHaveBeenCalledTimes(1);
     expect(buildPoolViewStateFromRuntimeMock).toHaveBeenLastCalledWith(
       expect.objectContaining({
         cards: [expect.objectContaining({ id: "idea-alpha", title: "Alpha idea" })],
-        preview: expect.objectContaining({ available: true, open: true })
+        preview: expect.objectContaining({ available: true, open: true }),
+        roam: expect.objectContaining({ open: false })
       })
     );
+    expect((view as any).poolMarkdownPreviewOpen).toBe(true);
+    expect((view as any).poolRoamOpen).toBe(false);
   });
 
   it("does not replay a stale cached runtime after a local browse rerender during preview loading", async () => {
@@ -3959,6 +3967,9 @@ describe("GlitterPoolView", () => {
     expect(staleRenderUnloadSpy).toHaveBeenCalledTimes(1);
     expect(currentRenderUnloadSpy).not.toHaveBeenCalled();
     expect(toastShowMock).not.toHaveBeenCalled();
+    expect(toastShowMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Load Markdown preview failed. Please try again." })
+    );
 
     resolveCurrentRender?.();
     await flush();

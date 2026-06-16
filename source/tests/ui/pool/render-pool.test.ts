@@ -477,6 +477,12 @@ function getSelectorBlock(css: string, selector: string): string {
   return blockMatch?.[1] ?? "";
 }
 
+function getDeclarationValue(block: string, property: string): string {
+  const declarationMatch = block.match(new RegExp(`${escapeRegExp(property)}\\s*:\\s*([^;]+);`));
+  expect(declarationMatch).not.toBeNull();
+  return declarationMatch?.[1]?.trim() ?? "";
+}
+
 function getMediaQueryBlock(css: string, mediaQuery: string): string {
   const atRule = `@media ${mediaQuery}`;
   const startIndex = css.indexOf(atRule);
@@ -1553,6 +1559,9 @@ describe("renderPoolView", () => {
     oldCardGrid?.trigger("scroll");
 
     expect(oldWorkbenchSyncCalls).toBe(0);
+    expect(container.querySelector(".glitter-pool-stage__roam-bridge-lane")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__card-scroll-indicator")).toBeNull();
+    expect(container.querySelector(".glitter-pool-stage__media-preview-overlay")).toBeNull();
   });
 
   it("cancels a pending roam bridge relayout frame when the workbench rerenders", () => {
@@ -2659,6 +2668,32 @@ describe("renderPoolView", () => {
       "padding-right: var(--glitter-pool-stage-side-padding);"
     ]);
 
+    const resultsHeaderBlock = getSelectorBlock(stylesCss, ".glitter-pool-stage__results-header");
+    expect(resultsHeaderBlock).toContain("position: relative;");
+    expect(Number.parseInt(getDeclarationValue(resultsHeaderBlock, "z-index"), 10)).toBeGreaterThan(
+      Number.parseInt(
+        getDeclarationValue(getSelectorBlock(stylesCss, ".glitter-pool-stage__card-shell--isolation-active"), "z-index"),
+        10
+      )
+    );
+
+    const resultsOverlayShellBlock = getSelectorBlock(stylesCss, ".glitter-pool-stage__results-toolbar-overlay-shell");
+    expect(resultsOverlayShellBlock).toContain("position: absolute;");
+    expect(resultsOverlayShellBlock).toContain("pointer-events: none;");
+    expect(Number.parseInt(getDeclarationValue(resultsOverlayShellBlock, "z-index"), 10)).toBeGreaterThan(
+      Number.parseInt(
+        getDeclarationValue(getSelectorBlock(stylesCss, ".glitter-pool-stage__card-shell--isolation-active"), "z-index"),
+        10
+      )
+    );
+
+    const resultsOverlayMenuBlock = getSelectorBlock(stylesCss, ".glitter-pool-stage__toolbar-menu--results-overlay");
+    expect(getDeclarationValue(resultsOverlayMenuBlock, "left")).toBe("0");
+    expect(getDeclarationValue(resultsOverlayMenuBlock, "right")).toBe("auto");
+    expect(getDeclarationValue(resultsOverlayMenuBlock, "top")).toBe("0");
+    expect(getDeclarationValue(resultsOverlayMenuBlock, "pointer-events")).toBe("auto");
+    expect(getDeclarationValue(resultsOverlayMenuBlock, "z-index")).toBe("12");
+
     expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__roam-back-confirm", [
       "z-index: 8;",
       "align-items: center;"
@@ -3054,11 +3089,15 @@ describe("renderPoolView", () => {
         onPoolSwitch() {}
       });
 
+      const overlayShell = container.querySelector(".glitter-pool-stage__results-toolbar-overlay-shell") as unknown as FakeElement | null;
       const menu = container.querySelector(".glitter-pool-stage__toolbar-menu") as unknown as FakeElement | null;
+      expect(overlayShell).not.toBeNull();
       expect(menu).not.toBeNull();
+      expect(menu?.className).toContain("glitter-pool-stage__toolbar-menu--results-overlay");
+      expect(menu?.parent).toBe(overlayShell);
 
       if (overlay === "status") {
-        expect(menu?.parent?.className).toContain("glitter-pool-stage__results-tool-anchor--status");
+        expect(container.querySelector(".glitter-pool-stage__results-tool-anchor--status .glitter-pool-stage__toolbar-menu")).toBeNull();
         const text = container.querySelector(".glitter-pool-stage__toolbar-menu")?.textContent ?? "";
         expect(text).toContain("全部灵感");
         expect(text).toContain("已引用");
@@ -3067,7 +3106,7 @@ describe("renderPoolView", () => {
       }
 
       if (overlay === "filter") {
-        expect(menu?.parent?.className).toContain("glitter-pool-stage__results-tool-anchor--filter");
+        expect(container.querySelector(".glitter-pool-stage__results-tool-anchor--filter .glitter-pool-stage__toolbar-menu")).toBeNull();
         const text = container.querySelector(".glitter-pool-stage__toolbar-menu")?.textContent ?? "";
         expect(text).toContain("全部");
         expect(text).toContain("文本");
@@ -3077,7 +3116,7 @@ describe("renderPoolView", () => {
       }
 
       if (overlay === "sort") {
-        expect(menu?.parent?.className).toContain("glitter-pool-stage__results-tool-anchor--sort");
+        expect(container.querySelector(".glitter-pool-stage__results-tool-anchor--sort .glitter-pool-stage__toolbar-menu")).toBeNull();
       }
 
       if (overlay === "sort") {
@@ -3087,6 +3126,72 @@ describe("renderPoolView", () => {
         expect(text).toContain("标题排序");
       }
     });
+  });
+
+  it("positions the non-roam toolbar overlay from the active trigger inside a dedicated stage shell", () => {
+    const container = createContainer({
+      configureElement: (element) => {
+        if (element.className === "glitter-plugin-root glitter-pool-stage") {
+          (element as FakeElement & { getBoundingClientRect: () => DOMRect }).getBoundingClientRect = () => ({
+            left: 100,
+            top: 60,
+            right: 1000,
+            bottom: 760,
+            width: 900,
+            height: 700,
+            x: 100,
+            y: 60,
+            toJSON: () => ({})
+          } as DOMRect);
+        }
+
+        if (element.className.includes("glitter-pool-stage__results-tool-anchor--filter")) {
+          (element as FakeElement & { getBoundingClientRect: () => DOMRect }).getBoundingClientRect = () => ({
+            left: 820,
+            top: 196,
+            right: 852,
+            bottom: 228,
+            width: 32,
+            height: 32,
+            x: 820,
+            y: 196,
+            toJSON: () => ({})
+          } as DOMRect);
+        }
+      }
+    });
+    renderPoolView(container, createBrowseState({
+      browse: {
+        activeOverlay: "filter"
+      }
+    }), {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onQueryChange() {},
+      onBrowseOverlayToggle() {},
+      onBrowseOverlayClose() {},
+      onContentFilterChange() {},
+      onStatusChange() {},
+      onSortChange() {},
+      onBatchModeToggle() {},
+      onMoveSelectionToPool() {},
+      onCreateFile() {},
+      onOpenPrimaryFile() {},
+      onEditIdea() {},
+      onShareIdea() {},
+      onPoolSwitch() {}
+    });
+
+    const overlayShell = container.querySelector(".glitter-pool-stage__results-toolbar-overlay-shell") as unknown as FakeElement | null;
+    const menu = container.querySelector(".glitter-pool-stage__toolbar-menu--results-overlay") as unknown as FakeElement | null;
+
+    expect(overlayShell).not.toBeNull();
+    expect(menu).not.toBeNull();
+    expect(menu?.parent).toBe(overlayShell);
+    expect(menu?.style.left).toBe("752px");
+    expect(menu?.style.top).toBe("176px");
+    expect(container.querySelector(".glitter-pool-stage__results-tool-anchor--filter .glitter-pool-stage__toolbar-menu")).toBeNull();
   });
 
   it("renders batch organize controls with round card selectors and move menu", () => {
@@ -5279,20 +5384,24 @@ describe("renderPoolView", () => {
       actions
     );
 
-    const results = container.querySelector(".glitter-pool-stage__results") as unknown as FakeElement | null;
+    const workbenchBefore = container.querySelector(".glitter-pool-stage__workbench") as unknown as FakeElement | null;
+    const resultsBefore = container.querySelector(".glitter-pool-stage__results") as unknown as FakeElement | null;
+    const gridBefore = container.querySelector(".glitter-pool-stage__card-grid") as unknown as FakeElement | null;
     const cardGridShell = container.querySelector(".glitter-pool-stage__card-grid-shell") as unknown as FakeElement | null;
-    expect(results).not.toBeNull();
+    expect(workbenchBefore).not.toBeNull();
+    expect(resultsBefore).not.toBeNull();
+    expect(gridBefore).not.toBeNull();
     expect(cardGridShell).not.toBeNull();
 
-    const originalAppendChild = results?.appendChild.bind(results);
+    const originalAppendChild = resultsBefore?.appendChild.bind(resultsBefore);
     let reappendedCardGridShell = false;
-    if (results && originalAppendChild && cardGridShell) {
-      results.appendChild = ((child: FakeElement) => {
+    if (resultsBefore && originalAppendChild && cardGridShell) {
+      resultsBefore.appendChild = ((child: FakeElement) => {
         if (child === cardGridShell) {
           reappendedCardGridShell = true;
         }
         return originalAppendChild(child);
-      }) as typeof results.appendChild;
+      }) as typeof resultsBefore.appendChild;
     }
 
     renderPoolView(
@@ -5306,8 +5415,128 @@ describe("renderPoolView", () => {
       actions
     );
 
+    expect(container.querySelector(".glitter-pool-stage__workbench")).toBe(workbenchBefore);
+    expect(container.querySelector(".glitter-pool-stage__results")).toBe(resultsBefore);
+    expect(container.querySelector(".glitter-pool-stage__card-grid")).toBe(gridBefore);
     expect(reappendedCardGridShell).toBe(false);
     expect(container.querySelector(".glitter-pool-stage__card-grid-shell")).toBe(cardGridShell);
+  });
+
+  it("keeps non-roam toolbar menu callbacks wired after an in-place overlay rerender", () => {
+    const container = createContainer();
+    const calls = {
+      toggledOverlays: [] as string[],
+      statuses: [] as string[],
+      filters: [] as string[],
+      sorts: [] as string[]
+    };
+    const cards = [
+      {
+        id: "idea-a",
+        title: "Idea A",
+        selected: false,
+        typeIcon: "text",
+        contentKind: "text",
+        bodyText: "A",
+        updatedLabel: "2026-04-18 11:22 已更新",
+        fileCreated: false,
+        statusLabels: [],
+        menuActions: []
+      } as any,
+      {
+        id: "idea-b",
+        title: "Idea B",
+        selected: false,
+        typeIcon: "text",
+        contentKind: "text",
+        bodyText: "B",
+        updatedLabel: "2026-04-18 11:22 已更新",
+        fileCreated: false,
+        statusLabels: [],
+        menuActions: []
+      } as any
+    ];
+    const actions = {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onQueryChange() {},
+      onBrowseOverlayToggle(overlay: string) {
+        calls.toggledOverlays.push(overlay);
+      },
+      onBrowseOverlayClose() {},
+      onContentFilterChange(filter: string) {
+        calls.filters.push(filter);
+      },
+      onStatusChange(status: string) {
+        calls.statuses.push(status);
+      },
+      onSortChange(sort: string) {
+        calls.sorts.push(sort);
+      },
+      onBatchModeToggle() {},
+      onMoveSelectionToPool() {},
+      onCreateFile() {},
+      onOpenPrimaryFile() {},
+      onEditIdea() {},
+      onShareIdea() {},
+      onPoolSwitch() {}
+    };
+
+    renderPoolView(
+      container,
+      createBrowseState({
+        browse: {
+          cards
+        }
+      }),
+      actions
+    );
+
+    (container.querySelector(".glitter-pool-stage__status-trigger") as unknown as FakeElement | null)?.click();
+    expect(calls.toggledOverlays).toEqual(["status"]);
+
+    renderPoolView(
+      container,
+      createBrowseState({
+        browse: {
+          activeOverlay: "status",
+          cards
+        }
+      }),
+      actions
+    );
+
+    (container.querySelectorAll(".glitter-pool-stage__toolbar-menu-item") as unknown as FakeElement[])[1]?.click();
+    expect(calls.statuses).toEqual(["referenced"]);
+
+    renderPoolView(
+      container,
+      createBrowseState({
+        browse: {
+          activeOverlay: "filter",
+          cards
+        }
+      }),
+      actions
+    );
+
+    (container.querySelectorAll(".glitter-pool-stage__toolbar-menu-item") as unknown as FakeElement[])[2]?.click();
+    expect(calls.filters).toEqual(["link"]);
+
+    renderPoolView(
+      container,
+      createBrowseState({
+        browse: {
+          activeOverlay: "sort",
+          cards
+        }
+      }),
+      actions
+    );
+
+    (container.querySelectorAll(".glitter-pool-stage__toolbar-menu-item") as unknown as FakeElement[])[1]?.click();
+    expect(calls.sorts).toEqual(["created-desc"]);
   });
 
   it("keeps the browse stage mounted when the toolbar rerender swaps to a different card set", () => {
@@ -5785,7 +6014,7 @@ describe("renderPoolView", () => {
     expect(submenu?.parent?.parent).toBe(morePanel);
   });
 
-  it("opens status and filter menus from their own trigger anchors", () => {
+  it("opens non-roam status and filter menus in the dedicated stage overlay shell", () => {
     const filterContainer = createContainer();
     renderPoolView(filterContainer, createBrowseState({ browse: { activeOverlay: "filter" } }), {
       onBack() {},
@@ -5807,7 +6036,8 @@ describe("renderPoolView", () => {
     });
 
     const filterMenu = filterContainer.querySelector(".glitter-pool-stage__toolbar-menu") as unknown as FakeElement | null;
-    expect(filterMenu?.parent?.className).toContain("glitter-pool-stage__results-tool-anchor--filter");
+    expect(filterMenu?.parent?.className).toContain("glitter-pool-stage__results-toolbar-overlay-shell");
+    expect(filterContainer.querySelector(".glitter-pool-stage__results-tool-anchor--filter .glitter-pool-stage__toolbar-menu")).toBeNull();
 
     const statusContainer = createContainer();
     renderPoolView(statusContainer, createBrowseState({ browse: { activeOverlay: "status" } }), {
@@ -5830,7 +6060,8 @@ describe("renderPoolView", () => {
     });
 
     const statusMenu = statusContainer.querySelector(".glitter-pool-stage__toolbar-menu") as unknown as FakeElement | null;
-    expect(statusMenu?.parent?.className).toContain("glitter-pool-stage__results-tool-anchor--status");
+    expect(statusMenu?.parent?.className).toContain("glitter-pool-stage__results-toolbar-overlay-shell");
+    expect(statusContainer.querySelector(".glitter-pool-stage__results-tool-anchor--status .glitter-pool-stage__toolbar-menu")).toBeNull();
   });
 
   it("routes pool switcher selected row to close and other row to switch", () => {

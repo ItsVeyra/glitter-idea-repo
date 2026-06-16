@@ -1,15 +1,11 @@
 import { ItemView, Menu, TFile, WorkspaceLeaf, type ViewStateResult } from "obsidian";
-import {
-  formatPoolRoamBoardDisplayName,
-  type PoolRoamBoardRecord
-} from "../application/pool-workbench/pool-roam-workflow";
+import { formatPoolRoamBoardDisplayName } from "../application/pool-workbench/pool-roam-workflow";
 import { isIdeaSnippetStartLine } from "../editor/snippet-serializer";
 import { createToastService } from "../feedback/toast-service";
 import { getInterfaceText } from "../i18n/interface-language";
 import type GlitterPlugin from "../plugin/GlitterPlugin";
-import { CREATE_NEW_POOL_ID, GLITTER_ICON_ID, POOL_VIEW_TYPE } from "../plugin/constants";
+import { GLITTER_ICON_ID, POOL_VIEW_TYPE } from "../plugin/constants";
 import { DEFAULT_SETTINGS } from "../settings/defaults";
-import type { PluginInterfaceLanguage } from "../settings/settings";
 import { renderPoolView, syncRenderedPoolCardMenus } from "../ui/pool/render-pool";
 import {
   DEFAULT_POOL_ROAM_PANEL_WIDTH_RATIO,
@@ -17,7 +13,6 @@ import {
   MIN_POOL_ROAM_PANEL_WIDTH_RATIO,
   buildPoolViewStateFromRuntime,
   type PoolBrowseOverlay,
-  type PoolRoamBoundaryAnchorState,
   type PoolRoamPanelState
 } from "../ui/pool/pool-state";
 import {
@@ -26,13 +21,15 @@ import {
   readPoolViewState,
   type PoolViewContentFilter,
   type PoolViewHistoryState,
-  type PoolViewLocalState,
-  type PoolViewLocalStateResult,
   type PoolViewNavigationOptions,
   type PoolViewScope,
   type PoolViewSort,
   type PoolViewStatus
 } from "./pool-view-history";
+import {
+  applyPoolViewLocalStateResult,
+  snapshotPoolViewLocalState
+} from "./pool-view-local-state";
 import {
   captureCardGridScrollSnapshot,
   captureTextSelectionSnapshot,
@@ -43,469 +40,40 @@ import {
 } from "./pool-view-render-transient";
 import { createPoolViewActions } from "./pool-view-actions";
 import {
+  beginPoolViewRenderCycle,
+  buildPoolViewRuntimeWithSelectedCards,
+  finishPoolViewRenderCycle,
+  renderPoolMarkdownPreviewFromCachedRuntime,
+  shouldSkipPoolViewRender
+} from "./pool-view-render-cycle";
+import {
   createPoolMarkdownPreviewRenderer,
   isPoolMarkdownPreviewAvailableForPoolId as isPoolMarkdownPreviewAvailableForPoolIdValue,
   resolvePoolMarkdownPreview as resolvePoolMarkdownPreviewValue,
   savePoolMarkdownPreviewFile
 } from "./pool-view-markdown-preview";
+import {
+  createPoolViewModalCoordinator,
+  openCreatePoolModalForSelection,
+  openSnippetLocationsModal
+} from "./pool-view-modal-coordinator";
+import { renderPoolRoamBoardSvgExport } from "./pool-view-roam-export";
+import {
+  buildRoamSourceContent,
+  canCreatePoolRoamCanvasHost,
+  canObservePoolRoamBoardVault,
+  canWriteToClipboard,
+  extractSessionBoundaryAnchors,
+  hasSameSessionBoundaryAnchors,
+  type SessionBoundaryAnchor
+} from "./pool-view-roam-support";
 import { createPoolRoamCanvasHost } from "./pool-roam-canvas-host";
-import { PoolRoamBoardModal } from "./pool-roam-board-modal";
 import { createPoolViewRoamController } from "./pool-view-roam";
-import { PoolRoamHistoryModal } from "./pool-roam-history-modal";
-import { PoolModal } from "./pool-modal";
-import { SnippetLocationsModal } from "./snippet-locations-modal";
 
 type PoolBrowseRuntimeState = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWorkflow"]["loadPoolState"]>>;
 type PoolMarkdownPreviewData = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWorkflow"]["loadPoolMarkdownPreview"]>>;
 type PoolRoamAttachResult = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWorkflow"]["attachIdeaSourceToRoamBoard"]>>;
 type PoolRoamBoardReadResult = Awaited<ReturnType<GlitterPlugin["poolWorkbenchWorkflow"]["readPoolRoamBoard"]>>;
-type SessionBoundaryAnchor = Omit<PoolRoamBoundaryAnchorState, "visibleBridge">;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object";
-}
-
-function isSessionBoundarySourceMeta(value: unknown): value is Omit<SessionBoundaryAnchor, "anchorId"> {
-  return (
-    isRecord(value)
-    && typeof value.ideaId === "string"
-    && typeof value.poolId === "string"
-    && typeof value.poolName === "string"
-    && typeof value.poolColor === "string"
-    && typeof value.ideaTitle === "string"
-  );
-}
-
-function isRootSessionBoundaryAnchorNode(node: unknown): boolean {
-  if (!isRecord(node) || !isRecord(node.glitterSourceBlock)) {
-    return true;
-  }
-
-  return typeof node.glitterSourceBlock.role === "string"
-    && node.glitterSourceBlock.role.trim() === "root";
-}
-
-function extractSessionBoundaryAnchors(canvas: PoolRoamAttachResult["canvas"]): SessionBoundaryAnchor[] {
-  return canvas.nodes.flatMap((node) => {
-    if (
-      typeof node.id !== "string"
-      || !isSessionBoundarySourceMeta(node.glitterSource)
-      || !isRootSessionBoundaryAnchorNode(node)
-    ) {
-      return [];
-    }
-
-    return [{
-      anchorId: node.id,
-      ideaId: node.glitterSource.ideaId,
-      poolId: node.glitterSource.poolId,
-      poolName: node.glitterSource.poolName,
-      poolColor: node.glitterSource.poolColor,
-      ideaTitle: node.glitterSource.ideaTitle
-    }];
-  });
-}
-
-function buildRoamSourceContent(card: PoolBrowseRuntimeState["cards"][number]) {
-  return {
-    title: card.title,
-    body: card.body,
-    contentType: card.contentType,
-    sourceUrl: card.sourceUrl,
-    attachmentPaths: [...card.attachmentPaths]
-  };
-}
-
-function canCreatePoolRoamCanvasHost(app: unknown): app is {
-  vault: { getAbstractFileByPath: (path: string) => unknown };
-  workspace: { getLeaf: (newLeaf: boolean) => { openFile: (file: TFile) => Promise<void>; detach?: () => void } };
-} {
-  return Boolean(app)
-    && typeof app === "object"
-    && typeof (app as { vault?: { getAbstractFileByPath?: unknown } }).vault?.getAbstractFileByPath === "function"
-    && typeof (app as { workspace?: { getLeaf?: unknown } }).workspace?.getLeaf === "function";
-}
-
-function canObservePoolRoamBoardVault(app: unknown): app is {
-  vault: { on: (name: string, callback: (file: { path: string }) => void) => unknown };
-} {
-  return Boolean(app)
-    && typeof app === "object"
-    && typeof (app as { vault?: { on?: unknown } }).vault?.on === "function";
-}
-
-function buildSessionBoundaryAnchorIdentity(
-  anchor: Pick<SessionBoundaryAnchor, "anchorId" | "ideaId" | "poolId" | "poolName" | "poolColor" | "ideaTitle">
-): string {
-  return [anchor.anchorId, anchor.ideaId, anchor.poolId, anchor.poolName, anchor.poolColor, anchor.ideaTitle].join("\u0000");
-}
-
-function hasSameSessionBoundaryAnchors(
-  current: PoolRoamBoundaryAnchorState[],
-  next: SessionBoundaryAnchor[]
-): boolean {
-  if (current.length !== next.length) {
-    return false;
-  }
-
-  const currentKeys = current.map((anchor) => buildSessionBoundaryAnchorIdentity(anchor)).sort();
-  const nextKeys = next.map((anchor) => buildSessionBoundaryAnchorIdentity(anchor)).sort();
-  return currentKeys.every((key, index) => key === nextKeys[index]);
-}
-
-function canWriteToClipboard(navigatorValue: unknown): navigatorValue is {
-  clipboard: { writeText: (text: string) => Promise<void> };
-} {
-  return Boolean(navigatorValue)
-    && typeof navigatorValue === "object"
-    && typeof (navigatorValue as { clipboard?: { writeText?: unknown } }).clipboard?.writeText === "function";
-}
-
-type PoolRoamExportNode = {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  kind: "source" | "plain";
-  poolName?: string;
-  poolColor?: string;
-  sourceStatus?: "active" | "missing";
-};
-
-type PoolRoamExportParsedNode = PoolRoamExportNode & {
-  sourceBlockId?: string;
-  sourceBlockRole?: string;
-};
-
-function isPoolRoamExportSourceMeta(value: unknown): value is {
-  poolName: string;
-  poolColor: string;
-  status?: "active" | "missing";
-  ideaTitle?: string;
-} {
-  return isRecord(value)
-    && typeof value.poolName === "string"
-    && typeof value.poolColor === "string"
-    && (value.status === undefined || value.status === "active" || value.status === "missing")
-    && (value.ideaTitle === undefined || typeof value.ideaTitle === "string");
-}
-
-function extractPoolRoamExportSourceBlockId(node: unknown): string | undefined {
-  if (!isRecord(node) || !isRecord(node.glitterSourceBlock) || typeof node.glitterSourceBlock.sourceBlockId !== "string") {
-    return undefined;
-  }
-
-  const sourceBlockId = node.glitterSourceBlock.sourceBlockId.trim();
-  return sourceBlockId.length > 0 ? sourceBlockId : undefined;
-}
-
-function extractPoolRoamExportSourceBlockRole(node: unknown): string | undefined {
-  if (!isRecord(node) || !isRecord(node.glitterSourceBlock) || typeof node.glitterSourceBlock.role !== "string") {
-    return undefined;
-  }
-
-  const role = node.glitterSourceBlock.role.trim();
-  return role.length > 0 ? role : undefined;
-}
-
-function escapeSvgText(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-function sanitizeSvgColor(color: string | undefined, fallback: string): string {
-  if (!color) {
-    return fallback;
-  }
-
-  const normalized = color.trim();
-  if (/^#[0-9a-fA-F]{3,8}$/.test(normalized)) {
-    return normalized;
-  }
-
-  if (/^(rgb|rgba|hsl|hsla)\([\d\s.,%+-]+\)$/.test(normalized)) {
-    return normalized;
-  }
-
-  return fallback;
-}
-
-function normalizePoolRoamExportText(text: string | undefined): string {
-  return (text ?? "")
-    .replace(/\r/g, "")
-    .split("\n")
-    .map((line) =>
-      line
-        .replace(/^#{1,6}\s*/u, "")
-        .replace(/^[-*+]\s+/u, "")
-        .replace(/^>\s?/u, "")
-        .replace(/`+/g, "")
-        .trim()
-    )
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function splitPoolRoamExportText(text: string, maxCharsPerLine: number, maxLines: number): string[] {
-  const normalized = normalizePoolRoamExportText(text);
-  if (!normalized || maxCharsPerLine <= 0 || maxLines <= 0) {
-    return [];
-  }
-
-  const words = normalized.split(/\s+/u).filter(Boolean);
-  const lines: string[] = [];
-  let currentLine = "";
-  let clipped = false;
-
-  const pushLine = (line: string) => {
-    if (lines.length < maxLines) {
-      lines.push(line);
-      return;
-    }
-    clipped = true;
-  };
-
-  for (const word of words) {
-    if (lines.length >= maxLines) {
-      clipped = true;
-      break;
-    }
-
-    if (word.length > maxCharsPerLine) {
-      if (currentLine) {
-        pushLine(currentLine);
-        currentLine = "";
-      }
-      for (let index = 0; index < word.length; index += maxCharsPerLine) {
-        if (lines.length >= maxLines) {
-          clipped = true;
-          break;
-        }
-        const segment = word.slice(index, index + maxCharsPerLine);
-        if (segment.length < maxCharsPerLine && index + maxCharsPerLine >= word.length) {
-          currentLine = segment;
-        } else {
-          pushLine(segment);
-        }
-      }
-      continue;
-    }
-
-    const nextLine = currentLine ? `${currentLine} ${word}` : word;
-    if (nextLine.length <= maxCharsPerLine) {
-      currentLine = nextLine;
-      continue;
-    }
-
-    pushLine(currentLine);
-    currentLine = word;
-  }
-
-  if (currentLine) {
-    pushLine(currentLine);
-  }
-
-  if (clipped && lines.length > 0) {
-    const lastIndex = lines.length - 1;
-    const baseLine = lines[lastIndex].replace(/\s+$/u, "");
-    lines[lastIndex] = baseLine.length >= maxCharsPerLine
-      ? `${baseLine.slice(0, Math.max(0, maxCharsPerLine - 1))}…`
-      : `${baseLine}…`;
-  }
-
-  return lines;
-}
-
-function resolvePoolRoamExportTextLayout(node: PoolRoamExportNode): {
-  textX: number;
-  textY: number;
-  maxCharsPerLine: number;
-  maxLines: number;
-} {
-  const horizontalPadding = node.kind === "source" ? 28 : 20;
-  const hasPoolPill = node.kind === "source" && Boolean(node.poolName);
-  const textX = horizontalPadding;
-  const textY = hasPoolPill ? 72 : 38;
-  const availableWidth = Math.max(48, node.width - horizontalPadding * 2);
-  const availableHeight = Math.max(20, node.height - textY - 20);
-
-  return {
-    textX,
-    textY,
-    maxCharsPerLine: Math.max(8, Math.floor(availableWidth / 8.4)),
-    maxLines: Math.max(1, Math.floor(availableHeight / 20))
-  };
-}
-
-function renderPoolRoamExportSourceIcon(x: number, y: number): string {
-  return `<text x="${x}" y="${y}" fill="#16324F" font-size="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">✨</text>`;
-}
-
-// 导出时把 managed source block 重新折叠成一个逻辑节点，避免多图块在导出结果里被拆成多条来源记录。
-function parsePoolRoamExportNodes(boardContent: string): PoolRoamExportNode[] {
-  let parsedContent: unknown;
-  try {
-    parsedContent = JSON.parse(boardContent);
-  } catch {
-    throw new Error("ROAM_BOARD_PARSE_FAILED");
-  }
-
-  const nodes = isRecord(parsedContent) && Array.isArray(parsedContent.nodes) ? parsedContent.nodes : [];
-  const parsedNodes: PoolRoamExportParsedNode[] = nodes.flatMap((node, index) => {
-    if (
-      !isRecord(node)
-      || typeof node.x !== "number"
-      || typeof node.y !== "number"
-      || typeof node.width !== "number"
-      || typeof node.height !== "number"
-    ) {
-      return [];
-    }
-
-    const sourceMeta = isPoolRoamExportSourceMeta(node.glitterSource) ? node.glitterSource : undefined;
-    const text = typeof node.text === "string"
-      ? node.text
-      : sourceMeta?.ideaTitle ?? `Node ${index + 1}`;
-
-    return [{
-      id: typeof node.id === "string" ? node.id : `node-${index + 1}`,
-      text,
-      x: node.x,
-      y: node.y,
-      width: node.width,
-      height: node.height,
-      kind: sourceMeta ? "source" : "plain",
-      poolName: sourceMeta?.poolName,
-      poolColor: sourceMeta?.poolColor,
-      sourceStatus: sourceMeta?.status,
-      sourceBlockId: extractPoolRoamExportSourceBlockId(node),
-      sourceBlockRole: extractPoolRoamExportSourceBlockRole(node)
-    }];
-  });
-  const logicalNodes: PoolRoamExportNode[] = [];
-  const managedNodesBySourceBlockId = new Map<string, PoolRoamExportParsedNode[]>();
-
-  for (const node of parsedNodes) {
-    if (!node.sourceBlockId) {
-      logicalNodes.push(node);
-      continue;
-    }
-
-    const managedNodes = managedNodesBySourceBlockId.get(node.sourceBlockId) ?? [];
-    managedNodes.push(node);
-    managedNodesBySourceBlockId.set(node.sourceBlockId, managedNodes);
-  }
-
-  for (const managedNodes of managedNodesBySourceBlockId.values()) {
-    const rootNode = managedNodes.find((node) => node.sourceBlockRole === "root") ?? managedNodes[0];
-    const labelNode = managedNodes.find((node) => node.sourceBlockRole === "caption" && node.text.trim().length > 0)
-      ?? managedNodes.find((node) => node.text.trim().length > 0)
-      ?? rootNode;
-    const sourceNode = managedNodes.find((node) => node.kind === "source") ?? rootNode;
-
-    logicalNodes.push({
-      id: rootNode.id,
-      text: labelNode.text,
-      x: rootNode.x,
-      y: rootNode.y,
-      width: rootNode.width,
-      height: rootNode.height,
-      kind: sourceNode.kind,
-      poolName: sourceNode.poolName,
-      poolColor: sourceNode.poolColor,
-      sourceStatus: sourceNode.sourceStatus
-    });
-  }
-
-  return logicalNodes;
-}
-
-function renderPoolRoamBoardSvgExport(input: {
-  boardPath: string;
-  boardName: string;
-  boardContent: string;
-  interfaceLanguage: PluginInterfaceLanguage;
-}): string {
-  const text = getInterfaceText(input.interfaceLanguage);
-  const nodes = parsePoolRoamExportNodes(input.boardContent);
-  const boardPadding = 72;
-  const headerHeight = 124;
-  const defaultWidth = 960;
-  const defaultHeight = 640;
-  const minX = nodes.length > 0 ? Math.min(...nodes.map((node) => node.x)) : 0;
-  const minY = nodes.length > 0 ? Math.min(...nodes.map((node) => node.y)) : 0;
-  const maxRight = nodes.length > 0 ? Math.max(...nodes.map((node) => node.x + node.width)) : defaultWidth - boardPadding * 2;
-  const maxBottom = nodes.length > 0 ? Math.max(...nodes.map((node) => node.y + node.height)) : defaultHeight - headerHeight - boardPadding;
-  const contentWidth = Math.max(maxRight - minX, 1);
-  const contentHeight = Math.max(maxBottom - minY, 1);
-  const svgWidth = Math.max(defaultWidth, Math.ceil(contentWidth + boardPadding * 2));
-  const svgHeight = Math.max(defaultHeight, Math.ceil(contentHeight + headerHeight + boardPadding));
-  const offsetX = boardPadding - minX;
-  const offsetY = headerHeight - minY;
-
-  const renderedNodes = nodes.map((node, index) => {
-    const x = node.x + offsetX;
-    const y = node.y + offsetY;
-    const clipId = `glitter-roam-export-node-clip-${index}`;
-    const strokeColor = node.kind === "source"
-      ? sanitizeSvgColor(node.poolColor, "#6AB5FF")
-      : "#C8D4E3";
-    const fillColor = node.kind === "source" ? "rgba(106, 181, 255, 0.12)" : "rgba(255, 255, 255, 0.94)";
-    const layout = resolvePoolRoamExportTextLayout(node);
-    const labelLines = splitPoolRoamExportText(node.text, layout.maxCharsPerLine, layout.maxLines);
-    const labelSvg = labelLines.length === 0
-      ? ""
-      : `<text x="${layout.textX}" y="${layout.textY}" fill="#16324F" font-size="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${labelLines.map((line, lineIndex) => `<tspan x="${layout.textX}" dy="${lineIndex === 0 ? 0 : 20}">${escapeSvgText(line)}</tspan>`).join("")}</text>`;
-    const poolPill = node.kind === "source" && node.poolName
-      ? `<g><rect x="52" y="16" width="${Math.min(Math.max(node.poolName.length * 8 + 20, 56), Math.max(56, node.width - 92))}" height="24" rx="12" fill="rgba(255, 255, 255, 0.68)" stroke="${strokeColor}" stroke-width="1" /><text x="64" y="32" fill="#48617D" font-size="11" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letter-spacing="0.04em">${escapeSvgText(node.poolName)}</text></g>`
-      : "";
-    const sourceIcon = node.kind === "source" ? renderPoolRoamExportSourceIcon(24, 34) : "";
-    const statusBadge = node.sourceStatus === "missing"
-      ? `<text x="${Math.max(24, node.width - 64)}" y="32" fill="#A63B3B" font-size="11" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(text.roamExport.missingStatus)}</text>`
-      : "";
-
-    return [
-      `<g data-node-id="${escapeSvgText(node.id)}">`,
-      `<defs><clipPath id="${clipId}"><rect x="${x}" y="${y}" width="${node.width}" height="${node.height}" rx="24" /></clipPath></defs>`,
-      `<rect x="${x}" y="${y}" width="${node.width}" height="${node.height}" rx="24" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"${node.sourceStatus === "missing" ? ' stroke-dasharray="8 6"' : ""} />`,
-      node.kind === "source"
-        ? `<rect x="${x}" y="${y}" width="8" height="${node.height}" rx="24" fill="${strokeColor}" />`
-        : "",
-      `<g clip-path="url(#${clipId})"><g transform="translate(${x}, ${y})">`,
-      sourceIcon,
-      poolPill,
-      statusBadge,
-      labelSvg,
-      `</g></g>`,
-      `</g>`
-    ].join("");
-  }).join("");
-
-  const emptyState = nodes.length === 0
-    ? `<g><rect x="${boardPadding}" y="${headerHeight + 24}" width="${svgWidth - boardPadding * 2}" height="${svgHeight - headerHeight - 48}" rx="28" fill="rgba(255, 255, 255, 0.72)" stroke="#D8E1EF" stroke-width="2" /><text x="${svgWidth / 2}" y="${svgHeight / 2 - 8}" text-anchor="middle" fill="#48617D" font-size="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(text.roamExport.emptyTitle)}</text><text x="${svgWidth / 2}" y="${svgHeight / 2 + 24}" text-anchor="middle" fill="#6F8398" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(text.roamExport.emptySubtitle)}</text></g>`
-    : "";
-
-  return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" fill="none" role="img" aria-labelledby="glitter-roam-export-title glitter-roam-export-desc">`,
-    `<title id="glitter-roam-export-title">${escapeSvgText(input.boardName)}</title>`,
-    `<desc id="glitter-roam-export-desc">${escapeSvgText(input.boardPath)}</desc>`,
-    `<rect width="${svgWidth}" height="${svgHeight}" rx="32" fill="#F3F7FD" />`,
-    `<rect x="24" y="24" width="${svgWidth - 48}" height="${svgHeight - 48}" rx="28" fill="#FCFEFF" stroke="#D8E1EF" stroke-width="2" />`,
-    `<text x="72" y="84" fill="#16324F" font-size="28" font-weight="700" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(input.boardName)}</text>`,
-    `<text x="72" y="112" fill="#6F8398" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">${escapeSvgText(input.boardPath)}</text>`,
-    emptyState,
-    renderedNodes,
-    `</svg>`
-  ].join("");
-}
 
 // 池页面宿主：统一管理查询、筛选、批量模式、卡片菜单、池切换、Markdown 预览与文件跳转。
 export class GlitterPoolView extends ItemView {
@@ -561,9 +129,7 @@ export class GlitterPoolView extends ItemView {
 
   private readonly poolRoamController: ReturnType<typeof createPoolViewRoamController>;
 
-  private activePoolRoamHistoryModal: PoolRoamHistoryModal | undefined;
-
-  private activePoolRoamBoardModal: PoolRoamBoardModal | undefined;
+  private readonly modalCoordinator: ReturnType<typeof createPoolViewModalCoordinator>;
 
   private activeBrowseOverlay: PoolBrowseOverlay | undefined;
 
@@ -620,6 +186,37 @@ export class GlitterPoolView extends ItemView {
         ? createPoolRoamCanvasHost(this.plugin.app as Parameters<typeof createPoolRoamCanvasHost>[0])
         : undefined
     });
+    this.modalCoordinator = createPoolViewModalCoordinator({
+      plugin: this.plugin,
+      toastService: this.toastService,
+      isClosed: () => this.isClosed,
+      nextPoolRoamHistoryRequestVersion: () => ++this.poolRoamHistoryRequestVersion,
+      shouldIgnorePoolRoamHistoryRequest: (requestVersion) => this.shouldIgnorePoolRoamHistoryRequest(requestVersion),
+      isPoolRoamOpen: () => this.poolRoamOpen,
+      getPoolRoamBoardPath: () => this.poolRoamBoardPath,
+      setPoolRoamBoardPath: (boardPath) => {
+        this.poolRoamBoardPath = boardPath;
+      },
+      setPoolRoamErrorMessage: (message) => {
+        this.poolRoamErrorMessage = message;
+      },
+      clearPoolRoamSession: () => {
+        this.poolRoamController.clearSession();
+      },
+      preserveResultScrollOnNextRender: () => {
+        this.preserveResultScrollOnNextRender = true;
+      },
+      rerenderLastRenderedBrowseRuntime: () => this.rerenderLastRenderedBrowseRuntime(),
+      renderPoolShell: () => this.renderPoolShell(),
+      disablePoolMarkdownPreview: () => this.disablePoolMarkdownPreview(),
+      applyPoolRoamBoardUpdate: (result, options) => {
+        this.applyPoolRoamBoardUpdate(result, options);
+      },
+      downloadPoolRoamBoardByPath: (boardPath) => this.downloadPoolRoamBoardByPath(boardPath),
+      openPoolRoamShareMenuForBoard: (boardPath, anchorEl) => {
+        this.openPoolRoamShareMenuForBoard(boardPath, anchorEl);
+      }
+    });
   }
 
   override getViewType(): string {
@@ -673,10 +270,7 @@ export class GlitterPoolView extends ItemView {
     this.pendingBrowseRenderVersion = undefined;
     this.lastRenderedBrowseRuntime = undefined;
     this.lastPoolMarkdownPreview = undefined;
-    this.activePoolRoamBoardModal?.close();
-    this.activePoolRoamBoardModal = undefined;
-    this.activePoolRoamHistoryModal?.close();
-    this.activePoolRoamHistoryModal = undefined;
+    this.modalCoordinator.destroy();
     this.poolMarkdownPreviewRenderer.release();
     this.poolRoamController.destroy();
     this.contentEl?.removeClass?.("glitter-idea-pool-view-host");
@@ -714,8 +308,8 @@ export class GlitterPoolView extends ItemView {
   }
 
   // 本地状态快照与恢复：保证切页、重开视图、浏览历史回放时能回到同一浏览语义。
-  private snapshotLocalState(): PoolViewLocalState {
-    return {
+  private snapshotLocalState() {
+    return snapshotPoolViewLocalState({
       activePoolId: this.activePoolId,
       pendingNavigationPoolId: this.pendingNavigationPoolId,
       navigationMode: this.navigationMode,
@@ -729,48 +323,51 @@ export class GlitterPoolView extends ItemView {
       poolMarkdownPreviewOpen: this.poolMarkdownPreviewOpen,
       poolRoamOpen: this.poolRoamOpen,
       poolRoamBoardPath: this.poolRoamBoardPath
-    };
+    });
   }
 
-  private applyLocalStateResult(result: PoolViewLocalStateResult): void {
-    this.activePoolId = result.activePoolId;
-    this.pendingNavigationPoolId = result.pendingNavigationPoolId;
-    this.navigationMode = result.navigationMode;
-    this.browseScope = result.browseScope;
-    this.query = result.query;
-    this.queryDraft = result.queryDraft;
-    this.status = result.status;
-    this.contentFilter = result.contentFilter;
-    this.sort = result.sort;
-    this.batchMode = result.batchMode;
-    this.poolMarkdownPreviewOpen = result.poolMarkdownPreviewOpen;
-    const nextPoolRoamOpen = result.poolRoamOpen === true;
-    if (!nextPoolRoamOpen || result.poolRoamBoardPath !== this.poolRoamBoardPath) {
-      this.poolRoamErrorMessage = undefined;
+  private applyLocalStateResult(result: ReturnType<typeof applyPoolViewHistoryState>): void {
+    const applied = applyPoolViewLocalStateResult({
+      result,
+      poolRoamBoardPath: this.poolRoamBoardPath,
+      poolRoamErrorMessage: this.poolRoamErrorMessage,
+      poolRoamBackConfirmVisible: this.poolRoamBackConfirmVisible,
+      activeBrowseOverlay: this.activeBrowseOverlay
+    });
+
+    this.activePoolId = applied.nextState.activePoolId;
+    this.pendingNavigationPoolId = applied.nextState.pendingNavigationPoolId;
+    this.navigationMode = applied.nextState.navigationMode;
+    this.browseScope = applied.nextState.browseScope;
+    this.query = applied.nextState.query;
+    this.queryDraft = applied.nextState.queryDraft;
+    this.status = applied.nextState.status;
+    this.contentFilter = applied.nextState.contentFilter;
+    this.sort = applied.nextState.sort;
+    this.batchMode = applied.nextState.batchMode;
+    this.poolMarkdownPreviewOpen = applied.nextState.poolMarkdownPreviewOpen;
+    this.poolRoamOpen = applied.nextState.poolRoamOpen;
+    this.poolRoamBoardPath = applied.nextState.poolRoamBoardPath;
+    this.poolRoamErrorMessage = applied.nextState.poolRoamErrorMessage;
+    this.poolRoamBackConfirmVisible = applied.nextState.poolRoamBackConfirmVisible;
+
+    if (applied.shouldClearPoolRoamSession) {
       this.poolRoamController.clearSession();
     }
-    if (!nextPoolRoamOpen) {
-      this.poolRoamBackConfirmVisible = false;
-      if (this.activeBrowseOverlay === "browse-more") {
-        this.setBrowseOverlay(undefined);
-      }
-    }
-    this.poolRoamOpen = nextPoolRoamOpen;
-    this.poolRoamBoardPath = result.poolRoamBoardPath;
 
-    if (result.clearSelection) {
+    if (applied.shouldClearSelection) {
       this.selectedIdeaIds.clear();
     }
 
-    if (result.clearBrowseOverlay) {
+    if (applied.shouldClearBrowseOverlay) {
       this.setBrowseOverlay(undefined);
     }
 
-    if (result.disablePoolMarkdownPreview) {
+    if (applied.shouldDisablePoolMarkdownPreview) {
       this.disablePoolMarkdownPreview();
     }
 
-    if (result.disablePoolRoam) {
+    if (applied.shouldDisablePoolRoam) {
       this.disablePoolRoam();
     }
   }
@@ -1489,209 +1086,7 @@ export class GlitterPoolView extends ItemView {
   }
 
   private async openPoolRoamHistory(): Promise<void> {
-    const requestVersion = ++this.poolRoamHistoryRequestVersion;
-
-    try {
-      const boards = await this.plugin.poolWorkbenchWorkflow.listPoolRoamBoards();
-      if (this.shouldIgnorePoolRoamHistoryRequest(requestVersion)) {
-        return;
-      }
-
-      this.activePoolRoamBoardModal?.close();
-      this.activePoolRoamHistoryModal?.close();
-
-      let latestBoards = boards;
-      const modal = new PoolRoamHistoryModal(this.plugin.app, boards, {
-        onSelectBoard: (board, index) => {
-          const nextIndex = latestBoards.findIndex((entry) => entry.path === board.path);
-          this.openPoolRoamBoardModal(latestBoards, nextIndex >= 0 ? nextIndex : index);
-        },
-        onDeleteBoards: async (boardPaths) => {
-          try {
-            await this.plugin.poolWorkbenchWorkflow.deletePoolRoamBoards(boardPaths);
-
-            if (this.poolRoamBoardPath && boardPaths.includes(this.poolRoamBoardPath)) {
-              this.poolRoamBoardPath = undefined;
-              this.poolRoamErrorMessage = undefined;
-              this.poolRoamController.clearSession();
-              this.preserveResultScrollOnNextRender = true;
-
-              if (!this.rerenderLastRenderedBrowseRuntime()) {
-                this.renderPoolShell();
-              }
-            }
-
-            latestBoards = await this.plugin.poolWorkbenchWorkflow.listPoolRoamBoards();
-            return latestBoards;
-          } catch (_error) {
-            this.toastService.show({
-              status: "error",
-              message: "Delete roam boards failed. Please try again."
-            });
-            throw _error;
-          }
-        },
-        onClose: () => {
-          if (this.activePoolRoamHistoryModal === modal) {
-            this.activePoolRoamHistoryModal = undefined;
-          }
-        }
-      }, {
-        interfaceLanguage: this.plugin.settings?.interfaceLanguage
-      });
-      this.activePoolRoamHistoryModal = modal;
-      modal.open();
-    } catch (_error) {
-      if (this.shouldIgnorePoolRoamHistoryRequest(requestVersion)) {
-        return;
-      }
-
-      this.toastService.show({
-        status: "error",
-        message: "Load roam history failed. Please try again."
-      });
-    }
-  }
-
-  private async openHistoricalRoamBoardInLivePane(
-    boardPath: string,
-    shouldApply: (() => boolean) | undefined = undefined
-  ): Promise<boolean> {
-    try {
-      const result = await this.plugin.poolWorkbenchWorkflow.readPoolRoamBoard({ boardPath });
-      if (this.isClosed || (shouldApply && !shouldApply())) {
-        return false;
-      }
-
-      this.disablePoolMarkdownPreview();
-      this.applyPoolRoamBoardUpdate(result, {
-        open: true,
-        forceInlineRemount: true
-      });
-      return true;
-    } catch {
-      if (this.isClosed || (shouldApply && !shouldApply())) {
-        return false;
-      }
-
-      this.toastService.show({
-        status: "error",
-        message: "Open roam board failed. Please try again."
-      });
-      return false;
-    }
-  }
-
-  private openPoolRoamBoardModal(boards: PoolRoamBoardRecord[], activeBoardIndex: number): void {
-    this.activePoolRoamBoardModal?.close();
-
-    const historyModal = this.activePoolRoamHistoryModal;
-    const closeActivePoolRoamHistoryModal = () => {
-      if (this.activePoolRoamHistoryModal === historyModal) {
-        historyModal?.close();
-      }
-    };
-    let modal: PoolRoamBoardModal;
-    const shouldApplyDirectOpenBoard = (boardPath: string, openInRoamRequestVersion: number): boolean => {
-      return !this.isClosed
-        && this.poolRoamOpen
-        && !this.poolRoamBoardPath
-        && this.activePoolRoamBoardModal === modal
-        && modal.getActiveBoardPath() === boardPath
-        && modal.isOpenInRoamRequestCurrent(openInRoamRequestVersion);
-    };
-    const shouldApplyConfirmedReplaceBoard = (
-      boardPath: string,
-      replacedBoardPath: string,
-      openInRoamRequestVersion: number
-    ): boolean => {
-      return !this.isClosed
-        && this.poolRoamOpen
-        && this.poolRoamBoardPath === replacedBoardPath
-        && this.activePoolRoamBoardModal === modal
-        && modal.getActiveBoardPath() === boardPath
-        && modal.isOpenInRoamRequestCurrent(openInRoamRequestVersion);
-    };
-
-    modal = new PoolRoamBoardModal(this.plugin.app, boards, activeBoardIndex, {
-      onOpenError: () => {
-        this.toastService.show({
-          status: "error",
-          message: "Open roam board failed. Please try again."
-        });
-      },
-      onDownloadBoard: (board) => this.downloadPoolRoamBoardByPath(board.path),
-      onShareBoard: (board, anchorEl) => {
-        this.openPoolRoamShareMenuForBoard(board.path, anchorEl);
-      },
-      onAddIdeaBlock: (board, callbacks) => {
-        this.plugin.openRoamIdeaBlockPicker({
-          boardPath: board.path,
-          onAttached: async (result) => {
-            if (this.poolRoamOpen && this.poolRoamBoardPath === result.path && !this.isClosed) {
-              this.disablePoolMarkdownPreview();
-              this.applyPoolRoamBoardUpdate(result, {
-                open: true,
-                forceInlineRemount: true
-              });
-            }
-
-            let latestBoards: PoolRoamBoardRecord[] | undefined;
-            try {
-              latestBoards = await this.plugin.poolWorkbenchWorkflow.listPoolRoamBoards();
-            } catch {
-              latestBoards = undefined;
-            }
-
-            callbacks.onAttached(latestBoards);
-          }
-        });
-      },
-      onOpenInRoam: async (board) => {
-        if (this.poolRoamOpen && this.poolRoamBoardPath === board.path) {
-          closeActivePoolRoamHistoryModal();
-          return { type: "close" };
-        }
-
-        const liveBoardPath = this.poolRoamBoardPath;
-        if (this.poolRoamOpen && liveBoardPath) {
-          const openInRoamRequestVersion = modal.getOpenInRoamRequestVersion();
-          return {
-            type: "confirm",
-            onConfirm: async () => {
-              const opened = await this.openHistoricalRoamBoardInLivePane(
-                board.path,
-                () => shouldApplyConfirmedReplaceBoard(board.path, liveBoardPath, openInRoamRequestVersion)
-              );
-              if (opened) {
-                closeActivePoolRoamHistoryModal();
-              }
-              return opened;
-            }
-          };
-        }
-
-        const openInRoamRequestVersion = modal.getOpenInRoamRequestVersion();
-        const opened = await this.openHistoricalRoamBoardInLivePane(
-          board.path,
-          () => shouldApplyDirectOpenBoard(board.path, openInRoamRequestVersion)
-        );
-        if (opened) {
-          closeActivePoolRoamHistoryModal();
-          return { type: "close" };
-        }
-        return { type: "keep-open" };
-      },
-      onClose: () => {
-        if (this.activePoolRoamBoardModal === modal) {
-          this.activePoolRoamBoardModal = undefined;
-        }
-      }
-    }, {
-      interfaceLanguage: this.plugin.settings?.interfaceLanguage
-    });
-    this.activePoolRoamBoardModal = modal;
-    modal.open();
+    await this.modalCoordinator.openPoolRoamHistory();
   }
 
   private async downloadPoolRoamBoard(): Promise<void> {
@@ -1817,57 +1212,30 @@ export class GlitterPoolView extends ItemView {
 
   // Markdown 预览优先复用最近一次已渲染的浏览态，只在池仍然匹配且版本未过期时把异步结果贴回当前界面。
   private async renderPoolMarkdownPreviewFromCachedRuntime(): Promise<void> {
-    const runtime = this.lastRenderedBrowseRuntime;
-    const poolId = this.activePoolId;
-    if (!runtime || !poolId || !this.isPoolMarkdownPreviewAvailableForPoolId(poolId)) {
-      this.renderPoolShell();
-      return;
-    }
-
-    const renderVersion = this.renderVersion;
-    const renderedBrowseRuntimeVersion = this.renderedBrowseRuntimeVersion;
-    if (this.pendingBrowseRenderVersion !== undefined) {
-      return;
-    }
-
-    try {
-      const preview = await this.plugin.poolWorkbenchWorkflow.loadPoolMarkdownPreview({
-        poolId,
-        sort: this.sort
-      });
-      if (
-        this.shouldSkipRender(renderVersion) ||
-        this.pendingBrowseRenderVersion !== undefined ||
-        !this.poolMarkdownPreviewOpen ||
-        this.activePoolId !== poolId ||
-        !this.isPoolMarkdownPreviewAvailableForPoolId(poolId)
-      ) {
-        return;
+    await renderPoolMarkdownPreviewFromCachedRuntime({
+      runtime: this.lastRenderedBrowseRuntime,
+      activePoolId: this.activePoolId,
+      sort: this.sort,
+      renderedBrowseRuntimeVersion: this.renderedBrowseRuntimeVersion,
+      renderPoolShell: () => this.renderPoolShell(),
+      loadPreview: (input) => this.plugin.poolWorkbenchWorkflow.loadPoolMarkdownPreview(input),
+      renderBrowseFromRuntime: (runtime, preview) => this.renderBrowseFromRuntime(runtime, preview),
+      resolveActivePoolIdFromRuntime: (runtime) => this.resolveActivePoolIdFromRuntime(runtime),
+      isPreviewAvailableForPoolId: (poolId) => this.isPoolMarkdownPreviewAvailableForPoolId(poolId),
+      isPreviewOpen: () => this.poolMarkdownPreviewOpen,
+      getActivePoolId: () => this.activePoolId,
+      hasPendingBrowseRender: () => this.pendingBrowseRenderVersion !== undefined,
+      shouldSkipRender: (renderVersion) => this.shouldSkipRender(renderVersion),
+      getRenderVersion: () => this.renderVersion,
+      getRenderedBrowseRuntimeVersion: () => this.renderedBrowseRuntimeVersion,
+      getLastRenderedBrowseRuntime: () => this.lastRenderedBrowseRuntime,
+      onLoadError: () => {
+        this.toastService.show({
+          status: "error",
+          message: "Load Markdown preview failed. Please try again."
+        });
       }
-
-      const runtimeToRender = renderedBrowseRuntimeVersion === this.renderedBrowseRuntimeVersion
-        ? runtime
-        : this.lastRenderedBrowseRuntime;
-      if (!runtimeToRender || this.resolveActivePoolIdFromRuntime(runtimeToRender) !== poolId) {
-        return;
-      }
-
-      this.renderBrowseFromRuntime(runtimeToRender, preview);
-    } catch (_error) {
-      if (
-        this.shouldSkipRender(renderVersion) ||
-        this.pendingBrowseRenderVersion !== undefined ||
-        !this.poolMarkdownPreviewOpen ||
-        this.activePoolId !== poolId ||
-        !this.isPoolMarkdownPreviewAvailableForPoolId(poolId)
-      ) {
-        return;
-      }
-      this.toastService.show({
-        status: "error",
-        message: "Load Markdown preview failed. Please try again."
-      });
-    }
+    });
   }
 
   private async renderPoolMarkdownPreview(preview: PoolMarkdownPreviewData): Promise<void> {
@@ -1934,21 +1302,10 @@ export class GlitterPoolView extends ItemView {
       return false;
     }
 
-    const selectedIdeaIds = new Set(this.selectedIdeaIds);
-    const runtime = {
-      ...this.lastRenderedBrowseRuntime,
-      cards: this.lastRenderedBrowseRuntime.cards.map((card) => ({
-        ...card,
-        selected: selectedIdeaIds.has(card.id)
-      })),
-      controls: {
-        ...this.lastRenderedBrowseRuntime.controls,
-        selectedCount: selectedIdeaIds.size,
-        hasSelection: selectedIdeaIds.size > 0
-      }
-    };
-
-    this.lastRenderedBrowseRuntime = runtime;
+    this.lastRenderedBrowseRuntime = buildPoolViewRuntimeWithSelectedCards(
+      this.lastRenderedBrowseRuntime,
+      new Set(this.selectedIdeaIds)
+    );
     return this.rerenderCurrentBrowseRuntime();
   }
 
@@ -2309,7 +1666,8 @@ export class GlitterPoolView extends ItemView {
 
   // 异步加载与重绘守卫：用 renderVersion 避免旧请求回填，防止池页在频繁切换时出现脏界面。
   private async renderPoolShellSafely(options: { showLoadErrorToast?: boolean } = {}): Promise<boolean> {
-    const renderVersion = ++this.renderVersion;
+    const renderVersion = beginPoolViewRenderCycle(this.renderVersion);
+    this.renderVersion = renderVersion;
     this.pendingBrowseRenderVersion = renderVersion;
 
     try {
@@ -2324,9 +1682,7 @@ export class GlitterPoolView extends ItemView {
       }
       return false;
     } finally {
-      if (this.pendingBrowseRenderVersion === renderVersion) {
-        this.pendingBrowseRenderVersion = undefined;
-      }
+      this.pendingBrowseRenderVersion = finishPoolViewRenderCycle(this.pendingBrowseRenderVersion, renderVersion);
     }
   }
 
@@ -2462,23 +1818,13 @@ export class GlitterPoolView extends ItemView {
   }
 
   private openCreatePoolModalForSelection(): void {
-    const modal = new PoolModal(
-      this.plugin,
-      "create",
-      {
-        onPoolChosen: (poolId) => {
-          if (poolId === CREATE_NEW_POOL_ID) {
-            return;
-          }
-          this.preserveResultScrollOnNextRender = true;
-          void this.moveSelectedToPool(poolId, { rollbackCreatedPoolOnFailure: true });
-        }
-      },
-      {
-        flowContext: "global"
+    openCreatePoolModalForSelection({
+      plugin: this.plugin,
+      onPoolChosen: (poolId) => {
+        this.preserveResultScrollOnNextRender = true;
+        void this.moveSelectedToPool(poolId, { rollbackCreatedPoolOnFailure: true });
       }
-    );
-    modal.open();
+    });
   }
 
   private async moveSelectedToPool(
@@ -2622,10 +1968,14 @@ export class GlitterPoolView extends ItemView {
       return;
     }
 
-    const modal = new SnippetLocationsModal(this.plugin.app, card.snippetLocations, async (location) => {
-      await this.openIdeaFile(location.notePath, { ideaId });
-    }, this.plugin.settings?.interfaceLanguage);
-    modal.open();
+    openSnippetLocationsModal({
+      app: this.plugin.app,
+      locations: card.snippetLocations,
+      interfaceLanguage: this.plugin.settings?.interfaceLanguage,
+      onOpenLocation: async (location) => {
+        await this.openIdeaFile(location.notePath, { ideaId });
+      }
+    });
   }
 
   private async openSnippetNote(runtime: PoolBrowseRuntimeState, ideaId: string): Promise<void> {
@@ -2736,6 +2086,6 @@ export class GlitterPoolView extends ItemView {
   }
 
   private shouldSkipRender(renderVersion: number): boolean {
-    return this.isClosed || renderVersion !== this.renderVersion;
+    return shouldSkipPoolViewRender(this.isClosed, this.renderVersion, renderVersion);
   }
 }

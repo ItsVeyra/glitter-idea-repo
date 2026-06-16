@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 const glitterPluginSource = readFileSync(resolve(process.cwd(), "src/plugin/GlitterPlugin.ts"), "utf8");
 const settingsTabSource = readFileSync(resolve(process.cwd(), "src/settings/settings-tab.ts"), "utf8");
 const renderHomeSource = readFileSync(resolve(process.cwd(), "src/ui/home/render-home.ts"), "utf8");
+const homeDomSource = readFileSync(resolve(process.cwd(), "src/ui/home/home-dom.ts"), "utf8");
 const noInnerHtmlAssignmentSourcePaths = [
   "src/editor/snippet-postprocessor.ts",
   "src/preview/preview-shell.ts",
@@ -110,14 +111,15 @@ describe("community risk contract", () => {
     });
   });
 
-  it("keeps Task 5 render-home style-write helpers locally owned", () => {
+  it("keeps Task 5 home style-write helpers locally owned within the home domain", () => {
     expect(renderHomeSource).not.toMatch(
       /import\s*\{[^}]*setElementCssProps[^}]*\}\s*from\s*"\.\.\/shared\/theme-state";?/u
     );
     expect(renderHomeSource).not.toMatch(
       /import\s*\{[^}]*setElementStyles[^}]*\}\s*from\s*"\.\.\/shared\/theme-state";?/u
     );
-    expect(renderHomeSource).toMatch(/function\s+setElementStyles\(/u);
-    expect(renderHomeSource).toMatch(/function\s+setElementCssProps\(/u);
+    expect(renderHomeSource).toMatch(/from\s+"\.\/home-dom"/u);
+    expect(homeDomSource).toMatch(/function\s+setElementStyles\(/u);
+    expect(homeDomSource).toMatch(/function\s+setElementCssProps\(/u);
   });
 });

@@ -776,7 +776,7 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
   },
   en: {
     home: {
-      heroTitle: "Glitter · Idea Pools",
+      heroTitle: "Glitter · 灵感池",
       populatedHeroSubtitle: "Calibrate the main stage, pool hierarchy, and key actions first.",
       searchPlaceholder: "Search ideas, snippets, or pools",
       quickCapture: "Quick capture",
