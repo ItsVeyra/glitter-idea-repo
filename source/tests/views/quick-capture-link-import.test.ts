@@ -24,7 +24,6 @@ describe("quick-capture-link-import", () => {
     const result = linkImportModule?.buildQuickCaptureBodyInputState({
       runtimeInput: {
         text: "旧正文",
-        sourceUrl: "https://example.com/old",
         importedExcerpt: "旧摘要",
         importState: "loading",
         suspendInlineUrlAutoDetection: true
@@ -43,6 +42,31 @@ describe("quick-capture-link-import", () => {
         suspendInlineUrlAutoDetection: false
       })
     );
+  });
+
+  it("promotes the first typed url to sourceUrl even when media already exists", async () => {
+    const linkImportModule = await loadQuickCaptureLinkImportModule();
+    const result = linkImportModule?.buildQuickCaptureBodyInputState({
+      runtimeInput: {
+        text: "已有补充说明",
+        hasMedia: true,
+        sourceUrl: undefined,
+        importState: "idle",
+        suspendInlineUrlAutoDetection: false
+      },
+      value: "已有补充说明\n\nhttps://example.com/extra",
+      primaryPastedLink: null
+    });
+
+    expect(result?.typedSourceUrl).toBe("https://example.com/extra");
+    expect(result?.nextInput).toEqual(
+      expect.objectContaining({
+        text: "已有补充说明",
+        hasMedia: true,
+        sourceUrl: "https://example.com/extra"
+      })
+    );
+    expect(result?.nextContentKind).toBe("media");
   });
 
   it("starts a new link import only when the request text changes", async () => {
@@ -110,7 +134,8 @@ describe("quick-capture-link-import", () => {
       imported: {
         title: "导入标题",
         body: "导入摘要",
-        sourceUrl: "https://example.com/article"
+        sourceUrl: "https://example.com/article",
+        mediaCandidates: []
       },
       bodyPrefix: "已有判断",
       replaceBody: false
@@ -141,7 +166,8 @@ describe("quick-capture-link-import", () => {
       imported: {
         title: "导入标题",
         body: "导入摘要",
-        sourceUrl: "https://example.com/article"
+        sourceUrl: "https://example.com/article",
+        mediaCandidates: []
       },
       bodyPrefix: "已有判断",
       replaceBody: false
@@ -268,5 +294,40 @@ describe("quick-capture-link-import", () => {
         importState: "error"
       })
     );
+  });
+
+  it("extracts og media candidates from imported html metadata", async () => {
+    const { createLinkImportService } = await import("../../src/domain/link/link-import-service");
+    const service = createLinkImportService(async () => ({
+      status: 200,
+      text: `
+        <html>
+          <head>
+            <title>Article</title>
+            <meta name="description" content="导入摘要" />
+            <meta property="og:image" content="/cover.png" />
+            <meta property="og:video" content="https://cdn.example.com/clip.mp4" />
+          </head>
+        </html>
+      `
+    }));
+
+    await expect(service.importUrl("https://example.com/article")).resolves.toEqual({
+      title: "Article",
+      body: "导入摘要",
+      sourceUrl: "https://example.com/article",
+      mediaCandidates: [
+        {
+          url: "https://cdn.example.com/clip.mp4",
+          mediaType: "video",
+          fileName: "clip.mp4"
+        },
+        {
+          url: "https://example.com/cover.png",
+          mediaType: "image",
+          fileName: "cover.png"
+        }
+      ]
+    });
   });
 });

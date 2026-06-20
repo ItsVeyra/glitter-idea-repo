@@ -5,6 +5,26 @@
 import { requestUrl } from "obsidian";
 import { parseLinkImportResult } from "./link-parser";
 
+function escapeMetaKey(key: string): string {
+  return key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function matchAllMetaContent(html: string, key: string): string[] {
+  const escapedKey = escapeMetaKey(key);
+  const patterns = [
+    new RegExp(`<meta\\s+property=["']${escapedKey}["']\\s+content=["']([^"']+)["']`, "ig"),
+    new RegExp(`<meta\\s+content=["']([^"']+)["']\\s+property=["']${escapedKey}["']`, "ig"),
+    new RegExp(`<meta\\s+name=["']${escapedKey}["']\\s+content=["']([^"']+)["']`, "ig"),
+    new RegExp(`<meta\\s+content=["']([^"']+)["']\\s+name=["']${escapedKey}["']`, "ig")
+  ];
+
+  return patterns.flatMap((pattern) =>
+    Array.from(html.matchAll(pattern), (match) => match[1]?.trim()).filter(
+      (value): value is string => typeof value === "string" && value.length > 0
+    )
+  );
+}
+
 // 远程导入响应契约。
 type LinkImportResponse = {
   status: number;
@@ -28,7 +48,16 @@ export function createLinkImportService(fetcher: (url: string) => Promise<LinkIm
       return parseLinkImportResult({
         url,
         htmlTitle: htmlTitleMatch?.[1],
-        description: descriptionMatch?.[1]
+        description: descriptionMatch?.[1],
+        openGraphTitle: matchAllMetaContent(html, "og:title")[0],
+        openGraphImageUrls: [
+          ...matchAllMetaContent(html, "og:image"),
+          ...matchAllMetaContent(html, "twitter:image")
+        ],
+        openGraphVideoUrls: [
+          ...matchAllMetaContent(html, "og:video"),
+          ...matchAllMetaContent(html, "og:video:url")
+        ]
       });
     }
   };

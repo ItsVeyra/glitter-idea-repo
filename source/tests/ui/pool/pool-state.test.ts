@@ -284,7 +284,7 @@ describe("buildPoolViewState", () => {
           selected: false,
           contentType: "link",
           sourceUrl: "https://example.com/runtime-link",
-          attachmentPaths: ["", "assets/fallback.png"],
+          attachmentPaths: [],
           fileCreated: true,
           filePath: "Glitter/Link.md",
           referenced: true,
@@ -362,6 +362,60 @@ describe("buildPoolViewState", () => {
     expect(state.items).toEqual([]);
     expect(state.detail).toEqual({ title: "", meta: "", body: "" });
     expect(state.roam).toBeUndefined();
+  });
+
+  it("keeps link entry data on media-first cards even when the fixed icon stays link", () => {
+    const state = buildPoolViewStateFromRuntime({
+      pool: {
+        id: "pool-product",
+        title: "产品池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        tone: "bluegray"
+      },
+      header: {
+        eyebrow: "Idea Pool",
+        hint: "runtime"
+      },
+      cards: [
+        {
+          id: "idea-link-media",
+          title: "Link media idea",
+          body: "真实正文",
+          excerpt: "真实正文",
+          hasBodyContent: true,
+          selected: false,
+          contentType: "link",
+          sourceUrl: "https://example.com/article",
+          attachmentPaths: ["Glitter/images/研发池/cover.png"],
+          mediaThumbnailUrl: "app://local/cover.png",
+          fileCreated: false,
+          filePath: undefined,
+          referenced: false,
+          createdAt: "2026-04-18T10:00:00.000Z",
+          editedAt: undefined,
+          updatedAt: "2026-04-18T10:00:00.000Z"
+        }
+      ],
+      controls: {
+        query: "",
+        status: "all",
+        contentFilter: "all",
+        sort: "updated-desc",
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [],
+      batchMode: false,
+      activeOverlay: undefined
+    });
+
+    const card = state.browse?.cards.find((entry) => entry.id === "idea-link-media");
+    expect(card?.typeIcon).toBe("link");
+    expect(card?.contentKind).toBe("image");
+    expect(card?.linkUrl).toBe("https://example.com/article");
+    expect(card?.bodyText).toBe("真实正文");
   });
 
   it("adds English fixed browse labels from interface language", () => {
@@ -1281,7 +1335,7 @@ describe("buildPoolViewState", () => {
     expect(linkEmpty?.contentKind).toBe("empty");
 
     const linkWithText = state.browse?.cards.find((card) => card.id === "link-with-text");
-    expect(linkWithText?.contentKind).toBe("link");
+    expect(linkWithText?.contentKind).toBe("text");
     expect(linkWithText?.bodyText).toBe("(empty)");
     expect(linkWithText?.linkDisplayText).toBeUndefined();
 
@@ -1397,13 +1451,13 @@ describe("buildPoolViewState", () => {
     expect(wwwUrl?.linkDisplayText).toBeUndefined();
 
     const invalidUrl = state.browse?.cards.find((card) => card.id === "link-invalid-url");
-    expect(invalidUrl?.contentKind).toBe("link");
+    expect(invalidUrl?.contentKind).toBe("text");
     expect(invalidUrl?.bodyText).toBe("真实正文");
     expect(invalidUrl?.linkUrl).toBeUndefined();
     expect(invalidUrl?.linkDisplayText).toBeUndefined();
 
     const linkBodyOnly = state.browse?.cards.find((card) => card.id === "link-whitespace-url");
-    expect(linkBodyOnly?.contentKind).toBe("link");
+    expect(linkBodyOnly?.contentKind).toBe("text");
     expect(linkBodyOnly?.bodyText).toBe("真实正文");
     expect(linkBodyOnly?.linkUrl).toBeUndefined();
     expect(linkBodyOnly?.linkDisplayText).toBeUndefined();

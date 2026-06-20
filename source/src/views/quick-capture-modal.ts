@@ -7,6 +7,7 @@ import { Modal } from "obsidian";
 import { PoolModal } from "./pool-modal";
 import {
   createSelectedCaptureMedia,
+  createSelectedCaptureMediaFromImportedCandidates,
   normalizeQuickCapturePickedMediaFiles,
   pickQuickCaptureAttachmentFiles,
   releaseSelectedCaptureMediaPreviews,
@@ -35,8 +36,7 @@ import {
   resolveQuickCaptureLinkImportError,
   resolveQuickCaptureLinkImportSuccess,
   type QuickCaptureLinkImportRequestState,
-  type QuickCapturePasteLinkState,
-  shouldStartQuickCaptureLinkImport
+  type QuickCapturePasteLinkState
 } from "./quick-capture-link-import";
 import { createQuickCapturePolishService } from "../ai/polish/polish-service";
 import {
@@ -105,6 +105,8 @@ interface QuickCaptureAiPolishSession {
   errorMessage?: string;
 }
 
+type QuickCaptureEntryMode = "text" | "link" | "media";
+
 // 文件名清理与内容类型转换辅助。
 const FIRST_USE_QUICK_CAPTURE_POOL_OPTIONS: QuickCapturePoolOption[] = [];
 
@@ -116,13 +118,32 @@ function createGlobalQuickCapturePoolOptions(language: unknown): QuickCapturePoo
   ];
 }
 
-function toIdeaContentType(kind: "text" | "link" | "media", hasVideo: boolean): IdeaContentType {
-  if (kind === "link") {
-    return "link";
+function resolveQuickCaptureEntryMode(options: QuickCaptureModalOptions): QuickCaptureEntryMode {
+  if (options.initialHasMedia) {
+    return "media";
   }
 
-  if (kind === "media") {
+  return isQuickCaptureUrlText(options.initialInputText?.trim() ?? "") ? "link" : "text";
+}
+
+function resolveIdeaContentTypeForSave(input: {
+  entryMode: QuickCaptureEntryMode;
+  sourceUrl?: string;
+  selectedMedia: SelectedCaptureMedia[];
+}): IdeaContentType {
+  const hasMedia = input.selectedMedia.length > 0;
+  const hasVideo = input.selectedMedia.some(({ file }) => file.type.startsWith("video/"));
+
+  if (hasMedia) {
+    if (input.entryMode === "text" && input.sourceUrl) {
+      return "link";
+    }
+
     return hasVideo ? "video" : "image";
+  }
+
+  if (input.sourceUrl) {
+    return "link";
   }
 
   return "text";
@@ -136,6 +157,8 @@ export class QuickCaptureModal extends Modal {
 
   private flowContext: QuickCaptureFlowContext = "first-use";
 
+  private captureEntryMode: QuickCaptureEntryMode = "text";
+
   private runtimePoolOptions: QuickCapturePoolOption[] = this.resolveInitialRuntimePoolOptions("first-use");
 
   private runtimeState: QuickCaptureRuntimeState | null = null;
@@ -143,6 +166,8 @@ export class QuickCaptureModal extends Modal {
   private hasCaptureFieldEdits = false;
 
   private showingCloseConfirm = false;
+
+  private showingMediaReplaceConfirm = false;
 
   private showingMediaPreview = false;
 
@@ -155,6 +180,14 @@ export class QuickCaptureModal extends Modal {
   private selectedMediaIndex = 0;
 
   private primaryPastedLink: QuickCapturePasteLinkState | null = null;
+
+  private pendingMediaLinkImport:
+    | {
+        requestText: string;
+        bodyPrefix: string;
+        replaceBody: boolean;
+      }
+    | null = null;
 
   private linkImportRequestState: QuickCaptureLinkImportRequestState | null = null;
 
@@ -199,6 +232,7 @@ export class QuickCaptureModal extends Modal {
 
   override onOpen(): void {
     this.flowContext = this.options.flowContext ?? "first-use";
+    this.captureEntryMode = resolveQuickCaptureEntryMode(this.options);
     this.runtimePoolOptions = this.resolveInitialRuntimePoolOptions(this.flowContext);
     this.containerEl?.addClass?.("glitter-quick-capture-modal-host");
     this.modalEl?.addClass?.("glitter-quick-capture-modal");
@@ -245,11 +279,13 @@ export class QuickCaptureModal extends Modal {
     this.runtimeState = null;
     this.hasCaptureFieldEdits = false;
     this.showingCloseConfirm = false;
+    this.showingMediaReplaceConfirm = false;
     this.showingMediaPreview = false;
     this.showingEmptySubmitFeedback = false;
     this.selectedMedia = [];
     this.selectedMediaIndex = 0;
     this.primaryPastedLink = null;
+    this.pendingMediaLinkImport = null;
     this.linkImportRequestState = null;
     this.aiPolishSession = null;
     this.runtimePoolOptions = this.resolveInitialRuntimePoolOptions(this.flowContext);
@@ -301,6 +337,11 @@ export class QuickCaptureModal extends Modal {
 
   // 键盘快捷键与关闭行为。
   private handleCloseAction(): void {
+    if (this.showingMediaReplaceConfirm) {
+      this.dismissMediaReplaceConfirm();
+      return;
+    }
+
     if (this.showingMediaPreview) {
       this.showingMediaPreview = false;
       this.renderCurrentState();
@@ -723,6 +764,51 @@ export class QuickCaptureModal extends Modal {
     this.renderCurrentState();
   }
 
+  private promptMediaReplaceConfirm(requestText: string, bodyPrefix: string): void {
+    this.pendingMediaLinkImport = {
+      requestText,
+      bodyPrefix,
+      replaceBody: false
+    };
+    this.showingMediaReplaceConfirm = true;
+    this.showingCloseConfirm = false;
+    this.showingMediaPreview = false;
+    this.renderCurrentState();
+  }
+
+  private dismissMediaReplaceConfirm(): void {
+    if (!this.showingMediaReplaceConfirm) {
+      return;
+    }
+
+    this.showingMediaReplaceConfirm = false;
+    this.pendingMediaLinkImport = null;
+    this.renderCurrentState();
+  }
+
+  private cancelMediaReplaceConfirm(): void {
+    if (!this.showingMediaReplaceConfirm) {
+      return;
+    }
+
+    this.dismissMediaReplaceConfirm();
+    this.toastService.show({
+      status: "info",
+      message: getInterfaceText(this.plugin.settings?.interfaceLanguage).write.replaceMediaWithLinkCancelled
+    });
+  }
+
+  private async confirmMediaReplaceConfirm(): Promise<void> {
+    if (!this.showingMediaReplaceConfirm || !this.pendingMediaLinkImport) {
+      return;
+    }
+
+    const pendingImport = this.pendingMediaLinkImport;
+    this.showingMediaReplaceConfirm = false;
+    this.pendingMediaLinkImport = null;
+    await this.startLinkImport(pendingImport);
+  }
+
   private clearEmptySubmitFeedbackIfVisible(): void {
     if (!this.showingEmptySubmitFeedback) {
       return;
@@ -756,14 +842,13 @@ export class QuickCaptureModal extends Modal {
       return;
     }
 
-    this.primaryPastedLink = null;
-    this.linkImportRequestState = null;
     this.clearAiPolishSession();
     this.runtimeState = {
       ...this.runtimeState,
       input: {
-        ...clearQuickCaptureLinkAttachment(this.runtimeState.input),
-        hasMedia: this.selectedMedia.length > 0
+        ...this.runtimeState.input,
+        hasMedia: this.selectedMedia.length > 0,
+        importState: this.runtimeState.input.importState ?? "idle"
       }
     };
   }
@@ -927,6 +1012,24 @@ export class QuickCaptureModal extends Modal {
     this.renderCurrentState();
   }
 
+  private handleCapturePromptSecondaryAction(): void {
+    if (this.showingMediaReplaceConfirm) {
+      this.cancelMediaReplaceConfirm();
+      return;
+    }
+
+    this.resumeCapture();
+  }
+
+  private async handleCapturePromptPrimaryAction(): Promise<void> {
+    if (this.showingMediaReplaceConfirm) {
+      await this.confirmMediaReplaceConfirm();
+      return;
+    }
+
+    this.close();
+  }
+
   private resolveSecondaryAction(): (() => void) | undefined {
     if (this.runtimeState?.phase === "save-failed" && this.flowContext === "global") {
       return () => {
@@ -1031,6 +1134,7 @@ export class QuickCaptureModal extends Modal {
       canAddMoreImages: isImageGallery && this.selectedMedia.length < MAX_IMAGE_ATTACHMENTS,
       mediaPreviewVisible: this.showingMediaPreview,
       closeConfirmVisible: this.showingCloseConfirm && this.step === "capture",
+      mediaReplaceConfirmVisible: this.showingMediaReplaceConfirm && this.step === "capture",
       emptySubmitFeedbackVisible: this.showingEmptySubmitFeedback && this.step === "capture",
       hasCaptureFieldEdits: this.hasCaptureFieldEdits,
       poolOptions: this.runtimePoolOptions,
@@ -1094,10 +1198,10 @@ export class QuickCaptureModal extends Modal {
           this.handleMediaPreviewClose();
         },
         onResumeCapture: () => {
-          this.resumeCapture();
+          this.handleCapturePromptSecondaryAction();
         },
         onConfirmClose: () => {
-          this.close();
+          return this.handleCapturePromptPrimaryAction();
         },
         onAiPolishStart: () => {
           return this.handleAiPolishStart();
@@ -1134,6 +1238,10 @@ export class QuickCaptureModal extends Modal {
       return;
     }
 
+    if (this.showingMediaReplaceConfirm) {
+      return;
+    }
+
     if ((this.runtimeState.input.importState ?? "idle") === "loading") {
       return;
     }
@@ -1163,9 +1271,12 @@ export class QuickCaptureModal extends Modal {
     try {
       const savedMediaPaths = await this.saveSelectedMediaFiles();
       const model = submissionModel;
-      const hasVideo = this.selectedMedia.some(({ file }) => file.type.startsWith("video/"));
-      const contentType = toIdeaContentType(model.contentKind, hasVideo);
-      const linkSourceUrl = this.runtimeState.input.sourceUrl ?? model.inputText;
+      const sourceUrl = this.runtimeState.input.sourceUrl;
+      const contentType = resolveIdeaContentTypeForSave({
+        entryMode: this.captureEntryMode,
+        sourceUrl,
+        selectedMedia: this.selectedMedia
+      });
       const linkBody = model.inputText;
 
       if (this.flowContext === "first-use") {
@@ -1174,7 +1285,7 @@ export class QuickCaptureModal extends Modal {
           body: linkBody,
           contentType,
           sourceType: "quick-capture",
-          sourceUrl: contentType === "link" ? linkSourceUrl : undefined,
+          sourceUrl,
           attachmentPaths: savedMediaPaths,
           createFileChecked: model.createFileChecked,
           tags: []
@@ -1184,7 +1295,7 @@ export class QuickCaptureModal extends Modal {
           title: model.titleText,
           body: linkBody,
           contentType,
-          sourceUrl: contentType === "link" ? linkSourceUrl : undefined,
+          sourceUrl,
           attachmentPaths: savedMediaPaths,
           createFileChecked: model.createFileChecked,
           poolId: model.selectedPoolId,
@@ -1242,7 +1353,8 @@ export class QuickCaptureModal extends Modal {
       this.clearEmptySubmitFeedbackTimer();
     }
 
-    const { typedSourceUrl, nextInput, nextContentKind, shouldRenderImmediately } = buildQuickCaptureBodyInputState({
+    const hadSourceUrl = Boolean(this.runtimeState.input.sourceUrl);
+    const { typedSourceUrl, nextInput, shouldRenderImmediately } = buildQuickCaptureBodyInputState({
       runtimeInput: this.runtimeState.input,
       value,
       primaryPastedLink: this.primaryPastedLink
@@ -1262,19 +1374,9 @@ export class QuickCaptureModal extends Modal {
     }
 
     if (this.primaryPastedLink) {
-      if (nextContentKind !== "link") {
+      if (!nextInput.sourceUrl) {
         this.primaryPastedLink = null;
         this.linkImportRequestState = null;
-        if ((this.runtimeState.input.importState ?? "idle") !== "idle") {
-          this.runtimeState = {
-            ...this.runtimeState,
-            input: {
-              ...this.runtimeState.input,
-              importState: "idle"
-            }
-          };
-          this.renderCurrentState();
-        }
       } else if (typedSourceUrl) {
         this.runtimeState = {
           ...this.runtimeState,
@@ -1291,20 +1393,16 @@ export class QuickCaptureModal extends Modal {
       return;
     }
 
-    if (nextContentKind === "link") {
-      if (
-        shouldStartQuickCaptureLinkImport({
-          nextInput,
-          typedSourceUrl,
-          currentRequestState: this.linkImportRequestState
-        })
-      ) {
-        void this.startLinkImport({
-          requestText: typedSourceUrl ?? nextInput.sourceUrl,
-          bodyPrefix: nextInput.text,
-          replaceBody: false
-        });
-      }
+    if (typedSourceUrl && !hadSourceUrl) {
+      void this.startLinkImport({
+        requestText: typedSourceUrl,
+        bodyPrefix: nextInput.text,
+        replaceBody: false
+      });
+      return;
+    }
+
+    if (nextInput.sourceUrl) {
       return;
     }
 
@@ -1332,7 +1430,7 @@ export class QuickCaptureModal extends Modal {
 
     if (pastedImages.length > 0) {
       payload.preventDefault();
-      if (currentKind === "link") {
+      if (this.captureEntryMode === "link") {
         this.toastService.show({
           status: "info",
           message: text.write.mediaAlreadyLink
@@ -1360,9 +1458,7 @@ export class QuickCaptureModal extends Modal {
       return;
     }
 
-    this.hasCaptureFieldEdits = true;
-
-    if (currentKind === "media") {
+    if (currentKind === "media" && !isQuickCaptureUrlText(pastedText)) {
       return;
     }
 
@@ -1370,10 +1466,21 @@ export class QuickCaptureModal extends Modal {
       return;
     }
 
+    this.hasCaptureFieldEdits = true;
+
+    if (currentKind === "media" && this.selectedMedia.length > 0 && !this.runtimeState.input.sourceUrl) {
+      payload.preventDefault();
+      this.promptMediaReplaceConfirm(pastedText, this.runtimeState.input.text.trim());
+      return;
+    }
+
     if (this.runtimeState.input.sourceUrl) {
       payload.preventDefault();
-      const shouldAppend = globalThis.confirm?.(text.write.appendSecondLinkConfirm) ?? false;
-      if (!shouldAppend) {
+      if (this.captureEntryMode === "link") {
+        this.toastService.show({
+          status: "info",
+          message: text.write.secondLinkBlockedInLinkCapture
+        });
         return;
       }
 
@@ -1465,6 +1572,18 @@ export class QuickCaptureModal extends Modal {
         ...this.runtimeState,
         input: resolvedState.nextInput
       };
+
+      if (imported.mediaCandidates.length > 0 && this.captureEntryMode !== "link") {
+        const importedMedia = await createSelectedCaptureMediaFromImportedCandidates(imported.mediaCandidates);
+        if (importedMedia.length > 0) {
+          releaseSelectedCaptureMediaPreviews(this.selectedMedia);
+          this.selectedMedia = importedMedia;
+          this.selectedMediaIndex = 0;
+          this.showingMediaPreview = false;
+          this.syncRuntimeStateForMediaSelection();
+        }
+      }
+
       this.renderCurrentState();
     } catch {
       if (!isLatestQuickCaptureLinkImportRequest(this.linkImportRequestState, requestId, trimmedInput)) {
@@ -1507,12 +1626,10 @@ export class QuickCaptureModal extends Modal {
     if (remainingSelectedMedia.length === 0) {
       this.selectedMediaIndex = 0;
       this.showingMediaPreview = false;
-      this.primaryPastedLink = null;
-      this.linkImportRequestState = null;
       this.runtimeState = {
         ...this.runtimeState,
         input: {
-          ...clearQuickCaptureLinkAttachment(this.runtimeState.input),
+          ...this.runtimeState.input,
           hasMedia: false
         }
       };
@@ -1658,14 +1775,19 @@ export class QuickCaptureModal extends Modal {
   }
 
   private resolveRuntimeState(flowContext: QuickCaptureFlowContext): QuickCaptureRuntimeState {
+    const initialText = this.options.initialInputText ?? "";
+    const initialSourceUrl =
+      this.captureEntryMode === "link" ? extractQuickCaptureTypedSourceUrl(initialText.trim()) : undefined;
+
     return {
       flowContext,
       phase: this.step,
       input: {
-        text: this.options.initialInputText ?? "",
+        text: initialText,
         title: this.options.initialTitleText,
         hasManualTitle: this.options.initialTitleText !== undefined,
         hasMedia: this.options.initialHasMedia,
+        sourceUrl: initialSourceUrl,
         importState: this.options.initialImportState,
         suspendInlineUrlAutoDetection: false,
         createFileChecked: this.options.initialCreateFileChecked ?? false,

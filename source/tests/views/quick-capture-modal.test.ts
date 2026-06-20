@@ -350,6 +350,22 @@ describe("QuickCaptureModal", () => {
     };
   }
 
+  function buildImportedLink(
+    sourceUrl: string,
+    overrides: Partial<{
+      title: string;
+      body: string;
+      mediaCandidates: Array<{ url: string; mediaType: "image" | "video"; fileName: string }>;
+    }> = {}
+  ) {
+    return {
+      title: overrides.title ?? "导入标题",
+      body: overrides.body ?? "导入摘要",
+      sourceUrl,
+      mediaCandidates: overrides.mediaCandidates ?? []
+    };
+  }
+
   function createDeferred<T>() {
     let resolve!: (value: T) => void;
     const promise = new Promise<T>((fulfill) => {
@@ -2240,39 +2256,21 @@ describe("QuickCaptureModal", () => {
     }
   });
 
-  it("restarts link import after input changes during an in-flight request", async () => {
-    let resolveFirst!: (value: { title: string; body: string; sourceUrl: string }) => void;
-    const firstRequest = new Promise<{ title: string; body: string; sourceUrl: string }>((resolve) => {
+  it("keeps the first in-flight link request active when a second typed url is entered", async () => {
+    let resolveFirst!: (value: ReturnType<typeof buildImportedLink>) => void;
+    const firstRequest = new Promise<ReturnType<typeof buildImportedLink>>((resolve) => {
       resolveFirst = resolve;
     });
 
     const importFromInput = vi
-      .fn<() => Promise<{ title: string; body: string; sourceUrl: string }>>()
-      .mockImplementationOnce(() => firstRequest)
-      .mockImplementationOnce(async () => ({
-        title: "第二次导入标题",
-        body: "第二次导入摘要",
-        sourceUrl: "https://example.com/second"
-      }));
+      .fn<() => Promise<ReturnType<typeof buildImportedLink>>>()
+      .mockImplementationOnce(() => firstRequest);
 
-    const plugin = {
-      app: {},
-      settings: {
-        enableDesignReviewMode: false,
-        reviewScenario: "quick-capture-global-default",
-        mediaStorageDirectory: "Glitter"
-      },
-      quickCaptureWorkflow: {
-        saveGlobalDraft: vi.fn(async () => undefined),
-        listGlobalPoolOptions: vi.fn(async () => [{ id: "pool-default", label: "默认池" }])
-      },
+    const plugin = createAiReadyGlobalPlugin({
       linkImportService: {
         importFromInput
-      },
-      firstUseWorkflow: {
-        stageFirstIdeaDraft: vi.fn(async () => undefined)
       }
-    };
+    });
 
     buildWriteViewStateMock.mockImplementation((state) => state);
 
@@ -2292,24 +2290,26 @@ describe("QuickCaptureModal", () => {
       onBodyInputChange: (value: string) => void;
     }>();
     latestActions.onBodyInputChange("https://example.com/second");
-    await waitUntil(() => {
-      expect(importFromInput).toHaveBeenCalledTimes(2);
-    });
 
-    resolveFirst({
-      title: "第一次导入标题",
-      body: "第一次导入摘要",
-      sourceUrl: "https://example.com/first"
-    });
+    expect(importFromInput).toHaveBeenCalledTimes(1);
+    expect((modal as any).runtimeState.input.text).toBe("https://example.com/second");
+    expect((modal as any).runtimeState.input.sourceUrl).toBe("https://example.com/first");
+
+    resolveFirst(
+      buildImportedLink("https://example.com/first", {
+        title: "第一次导入标题",
+        body: "第一次导入摘要"
+      })
+    );
 
     await waitUntil(() => {
       expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          inputText: "第二次导入摘要",
-          importedExcerpt: "第二次导入摘要",
-          titleText: "第二次导入标题",
+          inputText: "https://example.com/second\n\n第一次导入摘要",
+          importedExcerpt: "第一次导入摘要",
+          titleText: "第一次导入标题",
           importState: "idle",
-          sourceUrl: "https://example.com/second"
+          sourceUrl: "https://example.com/first"
         })
       );
     });
@@ -2466,8 +2466,8 @@ describe("QuickCaptureModal", () => {
         phase: "capture",
         contentKind: "link",
         importState: "loading",
-        inputText: "",
-        sourceUrl: "https://cdn.example.com/capture.mp4",
+        inputText: "https://cdn.example.com/capture.mp4",
+        sourceUrl: "https://example.com/new-link",
         titleText: "",
         createFileChecked: true
       })
@@ -3447,40 +3447,92 @@ describe("QuickCaptureModal", () => {
     );
   });
 
-  it("keeps note text in body and moves the link into attachment metadata after paste", async () => {
-    const importFromInput = vi.fn(async () => ({
-      title: "导入标题",
-      body: "导入摘要",
-      sourceUrl: "https://example.com/article"
-    }));
-    const plugin = {
-      app: {},
-      settings: {
-        enableDesignReviewMode: false,
-        reviewScenario: "quick-capture-global-default",
-        mediaStorageDirectory: "Glitter"
-      },
-      quickCaptureWorkflow: {
-        saveGlobalDraft: vi.fn(async () => undefined),
-        listGlobalPoolOptions: vi.fn(async () => [{ id: "pool-default", label: "默认池" }])
-      },
+  it("switches a text-origin capture to media layout when imported link media exists but still saves as link", async () => {
+    const saveGlobalDraft = vi.fn(async () => undefined);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "image/png" }),
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer
+    } as Response);
+
+    try {
+      const plugin = createAiReadyGlobalPlugin({
+        quickCaptureWorkflow: {
+          saveGlobalDraft,
+          listGlobalPoolOptions: vi.fn(async () => [{ id: "pool-default", label: "默认池" }])
+        },
+        linkImportService: {
+          importFromInput: vi.fn(async (input: string) =>
+            buildImportedLink(input, {
+              mediaCandidates: [{ url: "https://cdn.example.com/cover.png", mediaType: "image", fileName: "cover.png" }]
+            })
+          )
+        }
+      });
+
+      buildWriteViewStateMock.mockImplementation((state) => state);
+      const modal = new QuickCaptureModal(plugin as any, "capture", {}, { flowContext: "global" });
+      vi.spyOn(modal as any, "saveSelectedMediaFiles").mockResolvedValue(["Glitter/images/默认池/cover.png"]);
+
+      modal.onOpen();
+      const actions = await waitForLatestActions<{
+        onBodyPaste: (payload: { text: string; items: Array<{ kind: string; type: string }>; preventDefault: () => void }) => void;
+      }>();
+
+      actions.onBodyPaste({
+        text: "https://example.com/article",
+        items: [{ kind: "string", type: "text/plain" }],
+        preventDefault: vi.fn()
+      });
+
+      await waitUntil(() => {
+        expect((modal as any).runtimeState.input.sourceUrl).toBe("https://example.com/article");
+        expect((modal as any).runtimeState.input.hasMedia).toBe(true);
+        expect((modal as any).selectedMedia).toHaveLength(1);
+      });
+
+      await (modal as any).handleSubmit();
+
+      expect(saveGlobalDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contentType: "link",
+          sourceUrl: "https://example.com/article",
+          attachmentPaths: ["Glitter/images/默认池/cover.png"]
+        })
+      );
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("asks before replacing unsaved media when a link is pasted into media capture", async () => {
+    const importFromInput = vi.fn(async (input: string) =>
+      buildImportedLink(input, {
+        mediaCandidates: [{ url: "https://cdn.example.com/cover.png", mediaType: "image", fileName: "cover.png" }]
+      })
+    );
+    const plugin = createAiReadyGlobalPlugin({
       linkImportService: {
         importFromInput
-      },
-      firstUseWorkflow: {
-        stageFirstIdeaDraft: vi.fn(async () => undefined)
       }
-    };
+    });
 
     buildWriteViewStateMock.mockImplementation((state) => state);
+    const modal = new QuickCaptureModal(plugin as any, "capture", {}, { flowContext: "global" });
+    const showSpy = vi.spyOn((modal as any).toastService, "show");
 
-    const modal = new QuickCaptureModal(
-      plugin as any,
-      "capture",
-      {},
-      { flowContext: "global", initialInputText: "已有判断" }
-    );
     modal.onOpen();
+    (modal as any).selectedMedia = [{ file: { name: "shot.png", type: "image/png" }, previewKind: "image", previewUrl: "blob:shot.png" }];
+    (modal as any).runtimeState = {
+      ...(modal as any).runtimeState,
+      input: {
+        ...(modal as any).runtimeState.input,
+        hasMedia: true,
+        text: "当前图片备注"
+      }
+    };
+    (modal as any).renderCurrentState();
 
     const actions = await waitForLatestActions<{
       onBodyPaste: (payload: { text: string; items: Array<{ kind: string; type: string }>; preventDefault: () => void }) => void;
@@ -3494,123 +3546,147 @@ describe("QuickCaptureModal", () => {
     });
 
     expect(preventDefault).toHaveBeenCalledTimes(1);
-    await waitUntil(() => {
-      expect(importFromInput).toHaveBeenCalledWith("https://example.com/article");
+    expect(importFromInput).not.toHaveBeenCalled();
+    expect(getLatestBuildState()).toEqual(
+      expect.objectContaining({
+        contentKind: "media",
+        inputText: "当前图片备注",
+        sourceUrl: undefined,
+        mediaReplaceConfirmVisible: true
+      })
+    );
+
+    const confirmActions = await waitForLatestActions<{
+      onResumeCapture: () => void;
+    }>();
+    confirmActions.onResumeCapture();
+
+    expect(showSpy).toHaveBeenCalledWith({
+      status: "info",
+      message: "可先保存当前图片/视频灵感，再新建一条灵感记录该链接"
     });
-    await waitUntil(() => {
-      expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          contentKind: "link",
-          inputText: "已有判断\n\n导入摘要",
-          importedExcerpt: "导入摘要",
-          titleText: "导入标题",
-          hasManualTitle: false,
-          importState: "idle",
-          sourceUrl: "https://example.com/article"
-        })
-      );
-    });
+    expect(importFromInput).not.toHaveBeenCalled();
+    expect((modal as any).runtimeState.input.sourceUrl).toBeUndefined();
+    expect((modal as any).selectedMedia.map(({ file }: { file: { name: string } }) => file.name)).toEqual(["shot.png"]);
+    expect(getLatestBuildState()).toEqual(
+      expect.objectContaining({
+        mediaReplaceConfirmVisible: false
+      })
+    );
   });
 
-  it("asks before appending a second pasted link and keeps it as plain text", async () => {
-    const originalConfirm = (globalThis as { confirm?: (message: string) => boolean }).confirm;
-    const confirm = vi.fn(() => true);
-    (globalThis as { confirm?: (message: string) => boolean }).confirm = confirm;
+  it("replaces unsaved media only after the user confirms the pasted link import", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "image/png" }),
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer
+    } as Response);
 
     try {
-      const importFromInput = vi.fn(async (input: string) => ({
-        title: input.includes("first") ? "首条导入标题" : "第二条导入标题",
-        body: input.includes("first") ? "首条导入摘要" : "第二条导入摘要",
-        sourceUrl: input
-      }));
-      const plugin = {
-        app: {},
-        settings: {
-          enableDesignReviewMode: false,
-          reviewScenario: "quick-capture-global-default",
-          mediaStorageDirectory: "Glitter"
-        },
-        quickCaptureWorkflow: {
-          saveGlobalDraft: vi.fn(async () => undefined),
-          listGlobalPoolOptions: vi.fn(async () => [{ id: "pool-default", label: "默认池" }])
-        },
+      const importFromInput = vi.fn(async (input: string) =>
+        buildImportedLink(input, {
+          mediaCandidates: [{ url: "https://cdn.example.com/cover.png", mediaType: "image", fileName: "cover.png" }]
+        })
+      );
+      const plugin = createAiReadyGlobalPlugin({
         linkImportService: {
           importFromInput
-        },
-        firstUseWorkflow: {
-          stageFirstIdeaDraft: vi.fn(async () => undefined)
         }
-      };
+      });
 
       buildWriteViewStateMock.mockImplementation((state) => state);
+      const modal = new QuickCaptureModal(plugin as any, "capture", {}, { flowContext: "global" });
 
-      const modal = new QuickCaptureModal(
-        plugin as any,
-        "capture",
-        {},
-        { flowContext: "global", initialInputText: "已有判断" }
-      );
       modal.onOpen();
+      (modal as any).selectedMedia = [{ file: { name: "shot.png", type: "image/png" }, previewKind: "image", previewUrl: "blob:shot.png" }];
+      (modal as any).runtimeState = {
+        ...(modal as any).runtimeState,
+        input: {
+          ...(modal as any).runtimeState.input,
+          hasMedia: true,
+          text: "当前图片备注"
+        }
+      };
+      (modal as any).renderCurrentState();
 
-      const firstActions = await waitForLatestActions<{
+      const actions = await waitForLatestActions<{
         onBodyPaste: (payload: { text: string; items: Array<{ kind: string; type: string }>; preventDefault: () => void }) => void;
       }>();
-      const firstPreventDefault = vi.fn();
 
-      firstActions.onBodyPaste({
-        text: "https://example.com/first",
+      actions.onBodyPaste({
+        text: "https://example.com/article",
         items: [{ kind: "string", type: "text/plain" }],
-        preventDefault: firstPreventDefault
+        preventDefault: vi.fn()
       });
 
-      expect(firstPreventDefault).toHaveBeenCalledTimes(1);
-      await waitUntil(() => {
-        expect(importFromInput).toHaveBeenCalledTimes(1);
-      });
-      await waitUntil(() => {
-        expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
-          expect.objectContaining({
-            contentKind: "link",
-            inputText: "已有判断\n\n首条导入摘要",
-            importedExcerpt: "首条导入摘要",
-            titleText: "首条导入标题",
-            importState: "idle",
-            sourceUrl: "https://example.com/first"
-          })
-        );
-      });
-
-      const secondActions = await waitForLatestActions<{
-        onBodyPaste: (payload: { text: string; items: Array<{ kind: string; type: string }>; preventDefault: () => void }) => void;
-      }>();
-      const secondPreventDefault = vi.fn();
-
-      secondActions.onBodyPaste({
-        text: "https://example.com/second",
-        items: [{ kind: "string", type: "text/plain" }],
-        preventDefault: secondPreventDefault
-      });
-
-      expect(confirm).toHaveBeenCalledWith("第二条链接将不会自动识别内容，是否添加到本条灵感？");
-      expect(secondPreventDefault).toHaveBeenCalledTimes(1);
-      expect(importFromInput).toHaveBeenCalledTimes(1);
-      expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
+      expect(importFromInput).not.toHaveBeenCalled();
+      expect(getLatestBuildState()).toEqual(
         expect.objectContaining({
-          contentKind: "link",
-          inputText: "已有判断\n\n首条导入摘要\n\nhttps://example.com/second",
-          importedExcerpt: "首条导入摘要",
-          titleText: "首条导入标题",
-          importState: "idle",
-          sourceUrl: "https://example.com/first"
+          mediaReplaceConfirmVisible: true
+        })
+      );
+
+      const confirmActions = await waitForLatestActions<{
+        onConfirmClose: () => void;
+      }>();
+      confirmActions.onConfirmClose();
+
+      await waitUntil(() => {
+        expect(importFromInput).toHaveBeenCalledWith("https://example.com/article");
+        expect((modal as any).runtimeState.input.sourceUrl).toBe("https://example.com/article");
+        expect((modal as any).runtimeState.input.hasMedia).toBe(true);
+        expect((modal as any).selectedMedia).toHaveLength(1);
+        expect((modal as any).selectedMedia[0]?.file.name).toBe("cover.png");
+      });
+
+      expect(getLatestBuildState()).toEqual(
+        expect.objectContaining({
+          mediaReplaceConfirmVisible: false,
+          sourceUrl: "https://example.com/article",
+          attachedMediaLabels: ["cover.png"]
         })
       );
     } finally {
-      if (originalConfirm) {
-        (globalThis as { confirm?: (message: string) => boolean }).confirm = originalConfirm;
-      } else {
-        delete (globalThis as { confirm?: (message: string) => boolean }).confirm;
-      }
+      fetchSpy.mockRestore();
     }
+  });
+
+  it("blocks a second pasted link when the capture started in link mode", async () => {
+    const importFromInput = vi.fn(async (input: string) => buildImportedLink(input));
+    const plugin = createAiReadyGlobalPlugin({
+      linkImportService: {
+        importFromInput
+      }
+    });
+
+    buildWriteViewStateMock.mockImplementation((state) => state);
+    const modal = new QuickCaptureModal(plugin as any, "capture", {}, {
+      flowContext: "global",
+      initialInputText: "https://example.com/first"
+    });
+    const showSpy = vi.spyOn((modal as any).toastService, "show");
+
+    modal.onOpen();
+    const actions = await waitForLatestActions<{
+      onBodyPaste: (payload: { text: string; items: Array<{ kind: string; type: string }>; preventDefault: () => void }) => void;
+    }>();
+    const preventDefault = vi.fn();
+
+    actions.onBodyPaste({
+      text: "https://example.com/second",
+      items: [{ kind: "string", type: "text/plain" }],
+      preventDefault
+    });
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(showSpy).toHaveBeenCalledWith({
+      status: "info",
+      message: "当前灵感已是链接类型，如需记录第二条链接请新建一条灵感"
+    });
+    expect(importFromInput).not.toHaveBeenCalled();
+    expect((modal as any).runtimeState.input.sourceUrl).toBe("https://example.com/first");
+    expect((modal as any).runtimeState.input.text).toBe("https://example.com/first");
   });
 
 
@@ -3686,11 +3762,7 @@ describe("QuickCaptureModal", () => {
     expect((modal as any).runtimeState?.input.importState).toBe("loading");
     expect((modal as any).runtimeState?.input.sourceUrl).toBe("https://example.com/article");
 
-    resolveImport({
-      title: "导入标题",
-      body: "导入摘要",
-      sourceUrl: "https://example.com/article"
-    });
+    resolveImport(buildImportedLink("https://example.com/article"));
 
     await waitUntil(() => {
       expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
@@ -3768,11 +3840,7 @@ describe("QuickCaptureModal", () => {
     expect((modal as any).runtimeState?.input.importState).toBe("loading");
     expect((modal as any).runtimeState?.input.sourceUrl).toBe("https://example.com/article");
 
-    resolveImport({
-      title: "导入标题",
-      body: "导入摘要",
-      sourceUrl: "https://example.com/article"
-    });
+    resolveImport(buildImportedLink("https://example.com/article"));
 
     await waitUntil(() => {
       expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
@@ -3929,67 +3997,34 @@ describe("QuickCaptureModal", () => {
     createObjectUrlSpy.mockRestore();
   });
 
-  it("keeps pasted links as supplementary text when the idea is already in media mode", async () => {
-    const importFromInput = vi.fn(async (input: string) => ({
-      title: "导入标题",
-      body: "导入摘要",
-      sourceUrl: input
-    }));
-    const plugin = {
-      app: {},
-      settings: {
-        enableDesignReviewMode: false,
-        reviewScenario: "quick-capture-global-default",
-        mediaStorageDirectory: "Glitter"
-      },
-      quickCaptureWorkflow: {
-        saveGlobalDraft: vi.fn(async () => undefined),
-        listGlobalPoolOptions: vi.fn(async () => [{ id: "pool-default", label: "默认池" }])
-      },
-      linkImportService: {
-        importFromInput
-      },
-      firstUseWorkflow: {
-        stageFirstIdeaDraft: vi.fn(async () => undefined)
-      }
-    };
+  it("promotes the first media-body link to sourceUrl and removes it from body", async () => {
+    const importFromInput = vi.fn(async (input: string) => buildImportedLink(input));
+    const plugin = createAiReadyGlobalPlugin({
+      linkImportService: { importFromInput }
+    });
 
     buildWriteViewStateMock.mockImplementation((state) => state);
 
-    const modal = new QuickCaptureModal(
-      plugin as any,
-      "capture",
-      {},
-      {
-        flowContext: "global",
-        initialInputText: "已有补充说明",
-        initialHasMedia: true
-      }
-    );
+    const modal = new QuickCaptureModal(plugin as any, "capture", {}, {
+      flowContext: "global",
+      initialInputText: "已有补充说明",
+      initialHasMedia: true
+    });
 
     modal.onOpen();
 
     const actions = await waitForLatestActions<{
-      onBodyPaste: (payload: { text: string; items: Array<{ kind: string; type: string }>; preventDefault: () => void }) => void;
       onBodyInputChange: (value: string) => void;
     }>();
-    const preventDefault = vi.fn();
-
-    actions.onBodyPaste({
-      text: "https://example.com/extra",
-      items: [{ kind: "string", type: "text/plain" }],
-      preventDefault
-    });
-
-    expect(preventDefault).not.toHaveBeenCalled();
-    expect(importFromInput).not.toHaveBeenCalled();
 
     actions.onBodyInputChange("已有补充说明\n\nhttps://example.com/extra");
 
-    expect((modal as any).runtimeState.input.text).toBe("已有补充说明\n\nhttps://example.com/extra");
-    expect((modal as any).runtimeState.input.hasMedia).toBe(true);
-    expect((modal as any).runtimeState.input.sourceUrl).toBeUndefined();
-    expect((modal as any).runtimeState.input.importState ?? "idle").toBe("idle");
+    await waitUntil(() => {
+      expect(importFromInput).toHaveBeenCalledWith("https://example.com/extra");
+      expect((modal as any).runtimeState.input.text).toBe("已有补充说明");
+      expect((modal as any).runtimeState.input.sourceUrl).toBe("https://example.com/extra");
+      expect((modal as any).runtimeState.input.hasMedia).toBe(true);
+    });
   });
 
   it("keeps a second typed URL as note text after a primary link is already imported", async () => {
@@ -4503,7 +4538,7 @@ describe("QuickCaptureModal", () => {
     (globalThis as { document?: unknown }).document = originalDocument;
   });
 
-  it("clears stale link metadata when picked media replaces a link attachment", async () => {
+  it("keeps link metadata when picked media switches an imported link into media layout", async () => {
     const originalDocument = (globalThis as { document?: unknown }).document;
     (globalThis as { document?: unknown }).document = {};
 
@@ -4590,16 +4625,23 @@ describe("QuickCaptureModal", () => {
       expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
     });
 
-    expect((modal as any).primaryPastedLink).toBeNull();
-    expect((modal as any).linkImportRequestState).toBeNull();
-    expect((modal as any).runtimeState.input.sourceUrl).toBeUndefined();
-    expect((modal as any).runtimeState.input.importedExcerpt).toBeUndefined();
-    expect((modal as any).runtimeState.input.suspendInlineUrlAutoDetection).toBe(true);
+    expect((modal as any).primaryPastedLink).toEqual({
+      sourceUrl: "https://example.com/article",
+      excerpt: "导入摘要"
+    });
+    expect((modal as any).linkImportRequestState).toEqual(
+      expect.objectContaining({
+        inputText: "https://example.com/article"
+      })
+    );
+    expect((modal as any).runtimeState.input.sourceUrl).toBe("https://example.com/article");
+    expect((modal as any).runtimeState.input.importedExcerpt).toBe("导入摘要");
+    expect((modal as any).runtimeState.input.suspendInlineUrlAutoDetection).toBe(false);
     expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
       expect.objectContaining({
         contentKind: "media",
-        sourceUrl: undefined,
-        importedExcerpt: undefined,
+        sourceUrl: "https://example.com/article",
+        importedExcerpt: "导入摘要",
         attachedMediaCount: 1,
         attachedMediaLabels: ["picked-image.png"]
       })
@@ -4609,7 +4651,7 @@ describe("QuickCaptureModal", () => {
     (globalThis as { document?: unknown }).document = originalDocument;
   });
 
-  it("removes loaded media, clears stale link state, reverts the modal back to text mode, and protects close after a media-only removal", async () => {
+  it("removes loaded media, preserves link state, falls back to link mode, and protects close after a media-only removal", async () => {
     const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
     const plugin = {
       app: {},
@@ -4676,14 +4718,14 @@ describe("QuickCaptureModal", () => {
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:image-preview");
     expect((modal as any).selectedMedia).toEqual([]);
     expect((modal as any).runtimeState.input.hasMedia).toBe(false);
-    expect((modal as any).runtimeState.input.sourceUrl).toBeUndefined();
-    expect((modal as any).runtimeState.input.importedExcerpt).toBeUndefined();
-    expect((modal as any).runtimeState.input.suspendInlineUrlAutoDetection).toBe(true);
+    expect((modal as any).runtimeState.input.sourceUrl).toBe("https://example.com/article");
+    expect((modal as any).runtimeState.input.importedExcerpt).toBe("导入摘要");
+    expect((modal as any).runtimeState.input.suspendInlineUrlAutoDetection).toBe(false);
     expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        contentKind: "text",
-        sourceUrl: undefined,
-        importedExcerpt: undefined,
+        contentKind: "link",
+        sourceUrl: "https://example.com/article",
+        importedExcerpt: "导入摘要",
         inputText: "保留正文 https://docs.example.com/reference",
         attachedMediaCount: 0,
         attachedMediaLabels: []
@@ -4761,11 +4803,7 @@ describe("QuickCaptureModal", () => {
 
     expect(saveGlobalDraft).not.toHaveBeenCalled();
 
-    resolveImport({
-      title: "导入标题",
-      body: "导入摘要",
-      sourceUrl: "https://example.com/article"
-    });
+    resolveImport(buildImportedLink("https://example.com/article"));
 
     await waitUntil(() => {
       expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(

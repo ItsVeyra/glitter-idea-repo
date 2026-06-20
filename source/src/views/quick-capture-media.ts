@@ -23,6 +23,12 @@ export interface PickQuickCaptureAttachmentFilesOptions {
   multiple?: boolean;
 }
 
+export interface QuickCaptureImportedMediaCandidate {
+  url: string;
+  mediaType: "image" | "video";
+  fileName: string;
+}
+
 export function sanitizeQuickCaptureMediaFileName(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, "-").trim() || "media";
 }
@@ -148,6 +154,38 @@ export async function ensureQuickCaptureMediaDirectory(
       throw new Error(`Media directory is not a folder: ${current}`);
     }
   }
+}
+
+export async function downloadQuickCaptureImportedMedia(
+  candidate: QuickCaptureImportedMediaCandidate,
+  fetcher: typeof fetch = fetch
+): Promise<File> {
+  const response = await fetcher(candidate.url);
+  if (!response.ok) {
+    throw new Error(`Failed to download imported media: ${response.status}`);
+  }
+
+  const type = response.headers.get("content-type")?.trim() || (candidate.mediaType === "video" ? "video/mp4" : "image/jpeg");
+  const buffer = await response.arrayBuffer();
+  return new File([buffer], sanitizeQuickCaptureMediaFileName(candidate.fileName), { type });
+}
+
+function normalizeQuickCaptureImportedMediaFiles(files: File[], maxImageAttachments = 7): File[] {
+  const videoFiles = files.filter((file) => file.type.startsWith("video/"));
+  if (videoFiles.length > 0) {
+    return [videoFiles[0]];
+  }
+
+  const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+  return imageFiles.slice(0, Math.max(0, maxImageAttachments));
+}
+
+export async function createSelectedCaptureMediaFromImportedCandidates(
+  candidates: QuickCaptureImportedMediaCandidate[],
+  fetcher: typeof fetch = fetch
+): Promise<SelectedCaptureMedia[]> {
+  const files = await Promise.all(candidates.map((candidate) => downloadQuickCaptureImportedMedia(candidate, fetcher)));
+  return normalizeQuickCaptureImportedMediaFiles(files).map((file) => createSelectedCaptureMedia(file));
 }
 
 export async function saveQuickCaptureSelectedMediaFiles({

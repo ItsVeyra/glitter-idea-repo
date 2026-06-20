@@ -1,3 +1,4 @@
+import { normalizeIdeaSourceUrl, resolveIdeaCapabilityLayoutKind } from "../../domain/idea/idea-content-capabilities";
 import { buildIdeaStatusLabels, formatIdeaTimestamp } from "../../domain/idea/idea-model";
 import { getInterfaceText } from "../../i18n/interface-language";
 import {
@@ -427,52 +428,8 @@ function hasTrimmedContent(value: string | undefined | null): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function normalizeLinkUrl(value: string | undefined | null): string | undefined {
-  const trimmed = value?.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-
-  const candidate = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : /^www\./i.test(trimmed)
-      ? `https://${trimmed}`
-      : undefined;
-
-  if (!candidate) {
-    return undefined;
-  }
-
-  try {
-    return new URL(candidate).toString();
-  } catch {
-    return undefined;
-  }
-}
-
-function resolveBrowseContentKind(
-  contentType: "text" | "link" | "image" | "video" | "mixed",
-  input: { hasBodyContent: boolean; sourceUrl?: string; attachmentPaths: string[] }
-): PoolBrowseCard["contentKind"] {
-  if (contentType === "image") {
-    return firstAttachmentPath(input.attachmentPaths) ? "image" : "empty";
-  }
-  if (contentType === "video") {
-    return firstAttachmentPath(input.attachmentPaths) ? "video" : "empty";
-  }
-  if (contentType === "link") {
-    return hasTrimmedContent(input.sourceUrl) || input.hasBodyContent ? "link" : "empty";
-  }
-  if (contentType === "mixed") {
-    if (firstAttachmentPath(input.attachmentPaths)) {
-      return "image";
-    }
-    if (input.sourceUrl) {
-      return "link";
-    }
-    return input.hasBodyContent ? "text" : "empty";
-  }
-  return input.hasBodyContent ? "text" : "empty";
+function resolveBrowseContentKind(input: { body: string; sourceUrl?: string; attachmentPaths: string[] }): PoolBrowseCard["contentKind"] {
+  return resolveIdeaCapabilityLayoutKind(input);
 }
 
 function resolvePrimaryFileMenuAction(input: {
@@ -733,9 +690,9 @@ export function buildPoolViewStateFromRuntime(input: {
     labels: buildPoolBrowseLabels(input.interfaceLanguage),
     cards: input.cards.map((card) => {
       const mediaPath = firstAttachmentPath(card.attachmentPaths);
-      const normalizedLinkUrl = normalizeLinkUrl(card.sourceUrl);
-      const contentKind = resolveBrowseContentKind(card.contentType, {
-        hasBodyContent: card.hasBodyContent,
+      const normalizedLinkUrl = normalizeIdeaSourceUrl(card.sourceUrl);
+      const contentKind = resolveBrowseContentKind({
+        body: card.hasBodyContent ? (card.body ?? card.excerpt) : "",
         sourceUrl: normalizedLinkUrl,
         attachmentPaths: card.attachmentPaths
       });
@@ -759,17 +716,13 @@ export function buildPoolViewStateFromRuntime(input: {
         typeIcon: card.contentType,
         contentKind,
         bodyText:
-          contentKind === "link"
+          contentKind === "text" || contentKind === "link" || contentKind === "image" || contentKind === "video"
             ? (card.hasBodyContent ? card.body ?? card.excerpt : undefined)
-            : contentKind === "image" || contentKind === "video"
-              ? (card.hasBodyContent ? card.body ?? card.excerpt : undefined)
-              : contentKind === "text"
-                ? (card.hasBodyContent ? card.body ?? card.excerpt : undefined)
-                : undefined,
+            : undefined,
         mediaPath: contentKind === "image" || contentKind === "video" ? mediaPath : undefined,
         mediaThumbnailUrl: contentKind === "image" || contentKind === "video" ? primaryMediaThumbnailUrl : undefined,
         mediaThumbnailUrls: contentKind === "image" && mediaThumbnailUrls.length > 0 ? mediaThumbnailUrls : undefined,
-        linkUrl: contentKind === "link" ? normalizedLinkUrl : undefined,
+        linkUrl: contentKind === "link" || contentKind === "image" || contentKind === "video" ? normalizedLinkUrl : undefined,
         linkDisplayText: undefined,
         updatedLabel: buildUpdatedLabel(card.createdAt, card.updatedAt, card.editedAt, input.interfaceLanguage),
         fileCreated: card.fileCreated,

@@ -3533,6 +3533,58 @@ describe("renderPoolView", () => {
     expect(container.querySelector(".glitter-pool-stage__card-media-label")).toBeNull();
   });
 
+  it("renders a supporting link block inside media cards when sourceUrl is preserved", () => {
+    const container = createContainer();
+    const state = createBrowseState({
+      browse: {
+        cards: [
+          {
+            id: "idea-image-link",
+            title: "Image link",
+            selected: false,
+            typeIcon: "link",
+            contentKind: "image",
+            bodyText: "正文",
+            mediaThumbnailUrl: "app://local/assets/image.png",
+            linkUrl: "https://example.com/article",
+            updatedLabel: "2026-04-18 11:22 已更新",
+            fileCreated: false,
+            statusLabels: [],
+            menuActions: [],
+            snippetLocations: []
+          } as any
+        ]
+      }
+    });
+
+    renderPoolView(container, state, {
+      onBack() {},
+      onItemSelect() {},
+      onCreateIdea() {},
+      onQueryChange() {},
+      onBrowseOverlayToggle() {},
+      onBrowseOverlayClose() {},
+      onContentFilterChange() {},
+      onStatusChange() {},
+      onSortChange() {},
+      onBatchModeToggle() {},
+      onMoveSelectionToPool() {},
+      onCreateFile() {},
+      onOpenPrimaryFile() {},
+      onEditIdea() {},
+      onShareIdea() {},
+      onPoolSwitch() {}
+    });
+
+    const supporting = container.querySelector(".glitter-pool-stage__card-supporting--image") as unknown as FakeElement | null;
+    const linkBlock = container.querySelector("a.glitter-pool-stage__card-link-block") as unknown as FakeElement | null;
+
+    expect(supporting).not.toBeNull();
+    expect(linkBlock).not.toBeNull();
+    expect(supporting?.children.at(-1)).toBe(linkBlock);
+    expect(linkBlock?.getAttribute("title")).toBe("https://example.com/article");
+  });
+
   it("renders video cards with an actual inline video preview instead of an image tag", () => {
     const container = createContainer();
     const state = createBrowseState({

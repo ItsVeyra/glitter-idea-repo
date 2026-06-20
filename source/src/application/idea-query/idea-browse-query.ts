@@ -1,3 +1,4 @@
+import { resolveIdeaCapabilityLayoutKind } from "../../domain/idea/idea-content-capabilities";
 import { hasIdeaSnippetRefs, type Idea } from "../../domain/idea/idea-model";
 import { createIndexStore } from "../../storage/index-store";
 
@@ -45,48 +46,8 @@ function cloneIdea(idea: Idea): Idea {
   };
 }
 
-function hasBodyContent(idea: Pick<Idea, "body">): boolean {
-  return idea.body.trim().length > 0;
-}
-
-function hasAttachment(idea: Pick<Idea, "attachmentPaths">): boolean {
-  return idea.attachmentPaths.some((path) => path.trim().length > 0);
-}
-
-function hasTrimmedContent(value: string | undefined | null): boolean {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
 export function resolveIdeaBrowseContentFilterType(idea: Idea): IdeaBrowseContentFilter | "empty" {
-  if (idea.contentType === "text") {
-    return hasBodyContent(idea) ? "text" : "empty";
-  }
-
-  if (idea.contentType === "link") {
-    return hasTrimmedContent(idea.sourceUrl) || hasBodyContent(idea) ? "link" : "empty";
-  }
-
-  if (idea.contentType === "image") {
-    return hasAttachment(idea) ? "image" : "empty";
-  }
-
-  if (idea.contentType === "video") {
-    return hasAttachment(idea) ? "video" : "empty";
-  }
-
-  if (hasAttachment(idea)) {
-    return "image";
-  }
-
-  if (hasTrimmedContent(idea.sourceUrl)) {
-    return "link";
-  }
-
-  if (hasBodyContent(idea)) {
-    return "text";
-  }
-
-  return "empty";
+  return resolveIdeaCapabilityLayoutKind(idea);
 }
 
 export function normalizeIdeaBrowseContentFilter(contentFilter: unknown): IdeaBrowseContentFilter {

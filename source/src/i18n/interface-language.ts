@@ -151,7 +151,13 @@ export interface InterfaceText {
     mediaAlreadyLink: string;
     mediaAlreadyVideo: string;
     mediaImageLimitReached: (maxCount: number) => string;
+    secondLinkBlockedInLinkCapture: string;
     appendSecondLinkConfirm: string;
+    replaceMediaWithLinkConfirmTitle: string;
+    replaceMediaWithLinkConfirmDescription: string;
+    replaceMediaWithLinkConfirmKeepLabel: string;
+    replaceMediaWithLinkConfirmReplaceLabel: string;
+    replaceMediaWithLinkCancelled: string;
     aiPolishErrors: Record<"missing-config" | "unauthorized" | "network" | "unavailable" | "invalid-response" | "insufficient-rewrite" | "default", string>;
   };
   ideaEdit: {
@@ -529,7 +535,13 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       mediaAlreadyLink: "当前灵感已是链接类型，如需记录图片请新建一条灵感",
       mediaAlreadyVideo: "当前灵感已含视频附件，如需追加图片请先移除视频",
       mediaImageLimitReached: (maxCount) => `当前灵感最多只能附加 ${maxCount} 张图片`,
+      secondLinkBlockedInLinkCapture: "当前灵感已是链接类型，如需记录第二条链接请新建一条灵感",
       appendSecondLinkConfirm: "第二条链接将不会自动识别内容，是否添加到本条灵感？",
+      replaceMediaWithLinkConfirmTitle: "检测到新链接媒体",
+      replaceMediaWithLinkConfirmDescription: "继续后将用该链接提取的图片或视频覆盖当前未保存的媒体内容。",
+      replaceMediaWithLinkConfirmKeepLabel: "取消",
+      replaceMediaWithLinkConfirmReplaceLabel: "覆盖当前媒体",
+      replaceMediaWithLinkCancelled: "可先保存当前图片/视频灵感，再新建一条灵感记录该链接",
       aiPolishErrors: {
         "missing-config": "AI 设置未完成，请先配置后再试。",
         unauthorized: "AI 鉴权失败，请检查 API Key 后重试。",
@@ -923,7 +935,13 @@ const INTERFACE_TEXT: Record<PluginInterfaceLanguage, InterfaceText> = {
       mediaAlreadyLink: "This idea is already a link. Create a new idea to record images.",
       mediaAlreadyVideo: "This idea already has a video attachment. Remove the video before adding images.",
       mediaImageLimitReached: (maxCount) => `This idea can only attach up to ${maxCount} images.`,
+      secondLinkBlockedInLinkCapture: "This idea is already a link. Create a new idea to record another link.",
       appendSecondLinkConfirm: "A second link will not be imported automatically. Add it to this idea?",
+      replaceMediaWithLinkConfirmTitle: "New linked media detected",
+      replaceMediaWithLinkConfirmDescription: "Continuing will replace the current unsaved media with the image or video extracted from this link.",
+      replaceMediaWithLinkConfirmKeepLabel: "Cancel",
+      replaceMediaWithLinkConfirmReplaceLabel: "Replace current media",
+      replaceMediaWithLinkCancelled: "Save the current image or video idea first, then create a new idea for this link.",
       aiPolishErrors: {
         "missing-config": "AI settings are incomplete. Configure them and try again.",
         unauthorized: "AI authorization failed. Check your API key and try again.",

@@ -247,4 +247,61 @@ describe("createIdeaBrowseQueryService", () => {
     expect(fallback.visibleIdeas.map((idea) => idea.id)).toEqual(["mixed-text", "mixed-link", "mixed-empty"]);
     expect(textOnly.visibleIdeas.map((idea) => idea.id)).toEqual(["mixed-text"]);
   });
+
+  it("classifies link-fixed ideas with attachments by media capability before link capability", () => {
+    const service = createIdeaBrowseQueryService();
+    const mediaLink = buildIdea({
+      id: "link-image",
+      title: "Link image",
+      contentType: "link",
+      body: "",
+      sourceUrl: "https://example.com/article",
+      attachmentPaths: ["Glitter/images/研发池/cover.png"],
+      updatedAt: "2026-05-16T11:00:00.000Z"
+    });
+
+    const imageResult = service.queryIdeas(
+      buildPoolInput({
+        ideas: [mediaLink],
+        contentFilter: "image"
+      })
+    );
+    const linkResult = service.queryIdeas(
+      buildPoolInput({
+        ideas: [mediaLink],
+        contentFilter: "link"
+      })
+    );
+
+    expect(imageResult.visibleIdeas.map((idea) => idea.id)).toEqual(["link-image"]);
+    expect(linkResult.visibleIdeas.map((idea) => idea.id)).toEqual([]);
+  });
+
+  it("treats malformed link-fixed sourceUrl values as text capability instead of link", () => {
+    const service = createIdeaBrowseQueryService();
+    const invalidLink = buildIdea({
+      id: "link-invalid",
+      title: "Invalid link",
+      contentType: "link",
+      body: "正文",
+      sourceUrl: "article notes",
+      attachmentPaths: []
+    });
+
+    const linkResult = service.queryIdeas(
+      buildPoolInput({
+        ideas: [invalidLink],
+        contentFilter: "link"
+      })
+    );
+    const textResult = service.queryIdeas(
+      buildPoolInput({
+        ideas: [invalidLink],
+        contentFilter: "text"
+      })
+    );
+
+    expect(linkResult.visibleIdeas.map((idea) => idea.id)).toEqual([]);
+    expect(textResult.visibleIdeas.map((idea) => idea.id)).toEqual(["link-invalid"]);
+  });
 });

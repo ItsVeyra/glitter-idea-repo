@@ -177,4 +177,60 @@ describe("quick-capture-media", () => {
       expect.any(ArrayBuffer)
     );
   });
+
+  it("downloads imported remote media into a File", async () => {
+    const mediaModule = await loadQuickCaptureMediaModule();
+    const fetched = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "image/png" }),
+      arrayBuffer: async () => new TextEncoder().encode("png-binary").buffer
+    }));
+
+    const file = await mediaModule?.downloadQuickCaptureImportedMedia(
+      {
+        url: "https://cdn.example.com/cover.png",
+        mediaType: "image",
+        fileName: "cover.png"
+      },
+      fetched
+    );
+
+    expect(file).toBeInstanceOf(File);
+    expect(file?.name).toBe("cover.png");
+    expect(file?.type).toBe("image/png");
+  });
+
+  it("prefers imported video files over imported images when a link includes video candidates", async () => {
+    const mediaModule = await loadQuickCaptureMediaModule();
+    const fetched = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      headers: new Headers({
+        "content-type": url.endsWith(".mp4") ? "video/mp4" : "image/png"
+      }),
+      arrayBuffer: async () => new TextEncoder().encode(url).buffer
+    }));
+
+    const selectedMedia = await mediaModule?.createSelectedCaptureMediaFromImportedCandidates(
+      [
+        {
+          url: "https://cdn.example.com/clip.mp4",
+          mediaType: "video",
+          fileName: "clip.mp4"
+        },
+        {
+          url: "https://cdn.example.com/cover.png",
+          mediaType: "image",
+          fileName: "cover.png"
+        }
+      ],
+      fetched
+    );
+
+    expect(selectedMedia).toHaveLength(1);
+    expect(selectedMedia?.[0]?.file.name).toBe("clip.mp4");
+    expect(selectedMedia?.[0]?.file.type).toBe("video/mp4");
+    expect(selectedMedia?.[0]?.previewKind).toBe("video");
+  });
 });

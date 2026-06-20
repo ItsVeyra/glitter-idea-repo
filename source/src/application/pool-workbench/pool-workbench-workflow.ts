@@ -20,6 +20,7 @@ import {
   createIdeaRuntimeSource,
   type IdeaRuntimeSource
 } from "../idea-query/idea-runtime-source";
+import { resolveIdeaContentCapabilities } from "../../domain/idea/idea-content-capabilities";
 import type { Idea } from "../../domain/idea/idea-model";
 import type { createIdeaService } from "../../domain/idea/idea-service";
 import type { createPoolService } from "../../domain/pool/pool-service";
@@ -449,6 +450,7 @@ export function createPoolWorkbenchWorkflow({
       const cards: PoolWorkbenchCard[] = visibleIdeas.map((idea) => {
         const snippetLocations = buildSnippetLocations(vault, idea.snippetRefs);
         const mediaThumbnailUrls = resolveMediaThumbnailUrls(vault, idea.attachmentPaths);
+        const capabilities = resolveIdeaContentCapabilities(idea);
 
         return {
           id: idea.id,
@@ -461,7 +463,7 @@ export function createPoolWorkbenchWorkflow({
           sourceUrl: idea.sourceUrl,
           attachmentPaths: [...idea.attachmentPaths],
           mediaThumbnailUrl: mediaThumbnailUrls[0],
-          mediaThumbnailUrls: idea.contentType === "video" || mediaThumbnailUrls.length === 0 ? undefined : mediaThumbnailUrls,
+          mediaThumbnailUrls: capabilities.mediaKind === "video" || mediaThumbnailUrls.length === 0 ? undefined : mediaThumbnailUrls,
           fileCreated: idea.fileCreated,
           filePath: idea.filePath,
           referenced: hasSnippetRefs(idea),

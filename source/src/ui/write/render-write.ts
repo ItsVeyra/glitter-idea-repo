@@ -856,6 +856,43 @@ function renderQuickCaptureCapture(
     );
   }
 
+  if (state.quickCapture?.mediaReplaceConfirm?.visible) {
+    const mediaReplaceConfirm = createNode(
+      card,
+      "div",
+      "glitter-write-stage__close-confirm glitter-write-stage__close-confirm--media-replace"
+    );
+    createNode(
+      mediaReplaceConfirm,
+      "h3",
+      "glitter-write-stage__close-confirm-title",
+      state.quickCapture.mediaReplaceConfirm.title
+    );
+    createNode(
+      mediaReplaceConfirm,
+      "p",
+      "glitter-write-stage__close-confirm-description",
+      state.quickCapture.mediaReplaceConfirm.description
+    );
+    const mediaReplaceActions = createNode(
+      mediaReplaceConfirm,
+      "div",
+      "glitter-write-stage__close-confirm-actions"
+    );
+    createButton(
+      mediaReplaceActions,
+      "glitter-write-stage__close-confirm-secondary",
+      state.quickCapture.mediaReplaceConfirm.keepLabel,
+      () => actions.onResumeCapture?.()
+    );
+    createButton(
+      mediaReplaceActions,
+      "glitter-write-stage__close-confirm-primary",
+      state.quickCapture.mediaReplaceConfirm.replaceLabel,
+      () => actions.onConfirmClose?.()
+    );
+  }
+
   if (state.quickCapture?.emptySubmitFeedback?.visible) {
     const feedback = createNode(card, "div", "glitter-write-stage__empty-submit-feedback");
     createNode(feedback, "div", "glitter-write-stage__empty-submit-feedback-scrim");

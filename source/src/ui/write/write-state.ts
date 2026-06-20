@@ -138,6 +138,13 @@ export interface WriteViewState {
       resumeLabel: string;
       exitLabel: string;
     };
+    mediaReplaceConfirm?: {
+      visible: boolean;
+      title: string;
+      description: string;
+      keepLabel: string;
+      replaceLabel: string;
+    };
     emptySubmitFeedback?: {
       visible: boolean;
       message: string;
@@ -191,6 +198,7 @@ export interface QuickCaptureWriteStateModel {
   canAddMoreImages?: boolean;
   mediaPreviewVisible?: boolean;
   closeConfirmVisible?: boolean;
+  mediaReplaceConfirmVisible?: boolean;
   emptySubmitFeedbackVisible?: boolean;
   selectedPoolId?: string;
   selectedPoolLabel?: string;
@@ -523,6 +531,13 @@ function createQuickCaptureCaptureState(model: QuickCaptureWriteStateModel): Wri
         description: text.write.closeConfirmDescription,
         resumeLabel: text.write.closeConfirmResume,
         exitLabel: text.write.closeConfirmExit
+      },
+      mediaReplaceConfirm: {
+        visible: model.mediaReplaceConfirmVisible ?? false,
+        title: text.write.replaceMediaWithLinkConfirmTitle,
+        description: text.write.replaceMediaWithLinkConfirmDescription,
+        keepLabel: text.write.replaceMediaWithLinkConfirmKeepLabel,
+        replaceLabel: text.write.replaceMediaWithLinkConfirmReplaceLabel
       },
       emptySubmitFeedback: {
         visible: model.emptySubmitFeedbackVisible ?? false,

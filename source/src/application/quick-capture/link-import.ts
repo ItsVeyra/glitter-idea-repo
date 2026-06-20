@@ -9,6 +9,11 @@ export interface QuickCaptureLinkImportResult {
   title: string;
   body: string;
   sourceUrl: string;
+  mediaCandidates: Array<{
+    url: string;
+    mediaType: "image" | "video";
+    fileName: string;
+  }>;
 }
 
 export interface QuickCaptureLinkImportService {
@@ -44,7 +49,8 @@ export function createQuickCaptureLinkImportService(
       return {
         title: result.title,
         body: result.body,
-        sourceUrl: result.sourceUrl
+        sourceUrl: result.sourceUrl,
+        mediaCandidates: result.mediaCandidates
       };
     }
   };

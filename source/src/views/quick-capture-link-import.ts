@@ -57,7 +57,7 @@ export function buildQuickCaptureBodyInputState({
   primaryPastedLink: QuickCapturePasteLinkState | null;
 }): QuickCaptureBodyInputState {
   const previousContentKind = detectQuickCaptureContentKind(runtimeInput);
-  const typedSourceUrl = runtimeInput.hasMedia ? undefined : extractQuickCaptureTypedSourceUrl(value);
+  const typedSourceUrl = runtimeInput.sourceUrl ? undefined : extractQuickCaptureTypedSourceUrl(value);
   const nextText = typedSourceUrl ? removeTypedSourceUrlFromBody(value, typedSourceUrl) : value;
   const previousSourceUrl = primaryPastedLink?.sourceUrl ?? runtimeInput.sourceUrl;
   const nextInput: QuickCaptureRuntimeInput = {
