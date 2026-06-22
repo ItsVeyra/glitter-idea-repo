@@ -4374,6 +4374,73 @@ describe("GlitterPoolView", () => {
     expect(plugin.activateMainView).toHaveBeenCalledTimes(1);
   });
 
+  it("closes the pool switcher overlay before opening quick capture from pool browse", async () => {
+    const loadPoolState = vi.fn(async () => ({
+      pool: {
+        id: "pool-default",
+        title: "默认池",
+        description: "desc",
+        totalItemCount: 1,
+        visibleItemCount: 1,
+        tone: "bluegray" as const
+      },
+      header: { eyebrow: "灵感池", hint: "进入当前池继续整理与筛选" },
+      cards: [],
+      controls: {
+        query: "",
+        status: "all" as const,
+        contentFilter: "all" as const,
+        sort: "updated-desc" as const,
+        selectedCount: 0,
+        hasSelection: false
+      },
+      poolOptions: [{ id: "pool-default", label: "默认池", count: 1, selected: true }]
+    }));
+
+    const plugin = {
+      settings: {
+        enableDesignReviewMode: false,
+        reviewScenario: "pool-browse"
+      },
+      focusedIdeaId: null,
+      pendingFocusedPoolId: null,
+      activateMainView: vi.fn(async () => undefined),
+      poolWorkbenchWorkflow: {
+        loadPoolState,
+        setActivePoolId: vi.fn(async () => undefined),
+        moveIdeasToPool: vi.fn(async () => undefined),
+        createIdeaFile: vi.fn(async () => ({ filePath: "Glitter/Idea.md" })),
+        savePoolMarkdownFile: vi.fn(async () => ({ filePath: "Glitter/池导出/默认池.md", poolTitle: "默认池" })),
+        updatePool: vi.fn(async () => undefined)
+      }
+    };
+
+    buildPoolViewStateFromRuntimeMock.mockImplementation((runtime) => ({ mode: "browse", ...runtime }));
+
+    const view = new GlitterPoolView({} as any, plugin as any);
+    await view.onOpen();
+
+    let actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as {
+      onBrowseOverlayToggle: (overlay: "pool-switcher" | "status" | "filter" | "sort" | "batch") => void;
+      onCreateIdea: () => void;
+    };
+
+    actions.onBrowseOverlayToggle("pool-switcher");
+    await Promise.resolve();
+    expect(buildPoolViewStateFromRuntimeMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ activeOverlay: "pool-switcher" })
+    );
+
+    actions = renderPoolViewMock.mock.calls.at(-1)?.[2] as typeof actions;
+    actions.onCreateIdea();
+    await Promise.resolve();
+
+    expect(buildPoolViewStateFromRuntimeMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ activeOverlay: undefined })
+    );
+    expect(quickCaptureOpenMock).toHaveBeenCalledTimes(1);
+  });
+
   it("prompts before leaving roam mode from the back button and only returns home after confirmation", async () => {
     const loadPoolState = vi.fn(async (input?: {
       poolId?: string;

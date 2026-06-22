@@ -4747,6 +4747,53 @@ describe("QuickCaptureModal", () => {
     revokeObjectUrlSpy.mockRestore();
   });
 
+  it("does not keep link import stuck in loading while imported video media is still downloading", async () => {
+    const deferredVideoFetch = createDeferred<Response>();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => deferredVideoFetch.promise);
+
+    try {
+      const importFromInput = vi.fn(async (input: string) =>
+        buildImportedLink(input, {
+          mediaCandidates: [{ url: "https://cdn.example.com/clip.mp4", mediaType: "video", fileName: "clip.mp4" }]
+        })
+      );
+      const plugin = createAiReadyGlobalPlugin({
+        linkImportService: {
+          importFromInput
+        }
+      });
+
+      buildWriteViewStateMock.mockImplementation((state) => state);
+
+      const modal = new QuickCaptureModal(plugin as any, "capture", {}, { flowContext: "global" });
+      modal.onOpen();
+
+      const actions = await waitForLatestActions<{
+        onBodyInputChange: (value: string) => void;
+      }>();
+
+      actions.onBodyInputChange("https://example.com/article");
+
+      await waitUntil(() => {
+        expect(buildWriteViewStateMock).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            importState: "idle",
+            sourceUrl: "https://example.com/article",
+            importedExcerpt: "导入摘要"
+          })
+        );
+      });
+    } finally {
+      deferredVideoFetch.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "video/mp4" }),
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer
+      } as Response);
+      fetchSpy.mockRestore();
+    }
+  });
+
   it("does not submit link save while import is still loading", async () => {
     let resolveImport!: (value: { title: string; body: string; sourceUrl: string }) => void;
     const importFromInput = vi.fn<() => Promise<{ title: string; body: string; sourceUrl: string }>>().mockImplementation(

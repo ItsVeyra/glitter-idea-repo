@@ -156,6 +156,18 @@ export async function ensureQuickCaptureMediaDirectory(
   }
 }
 
+function resolveImportedMediaContentType(
+  candidate: QuickCaptureImportedMediaCandidate,
+  responseType: string | null
+): string {
+  const normalizedType = responseType?.split(";")[0]?.trim().toLowerCase();
+  if (normalizedType?.startsWith("image/") || normalizedType?.startsWith("video/")) {
+    return normalizedType;
+  }
+
+  return candidate.mediaType === "video" ? "video/mp4" : "image/jpeg";
+}
+
 export async function downloadQuickCaptureImportedMedia(
   candidate: QuickCaptureImportedMediaCandidate,
   fetcher: typeof fetch = fetch
@@ -165,7 +177,7 @@ export async function downloadQuickCaptureImportedMedia(
     throw new Error(`Failed to download imported media: ${response.status}`);
   }
 
-  const type = response.headers.get("content-type")?.trim() || (candidate.mediaType === "video" ? "video/mp4" : "image/jpeg");
+  const type = resolveImportedMediaContentType(candidate, response.headers.get("content-type"));
   const buffer = await response.arrayBuffer();
   return new File([buffer], sanitizeQuickCaptureMediaFileName(candidate.fileName), { type });
 }

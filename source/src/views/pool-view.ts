@@ -698,6 +698,7 @@ export class GlitterPoolView extends ItemView {
       deleteSelectedIdeas: () => this.deleteSelectedIdeas(),
       toggleBrowseOverlay: (overlay) => this.toggleBrowseOverlay(overlay),
       clearBrowseOverlay: () => this.setBrowseOverlay(undefined),
+      getActiveBrowseOverlay: () => this.activeBrowseOverlay,
       isCardMovePickerOpen: (ideaId) => this.isCardMovePickerOpen(ideaId),
       isCardMovePickerSubmitting: (ideaId) => this.isCardMovePickerSubmitting(ideaId),
       openCardMovePicker: (ideaId) => this.openCardMovePicker(ideaId),

@@ -13,6 +13,7 @@ import {
   releaseSelectedCaptureMediaPreviews,
   saveQuickCaptureSelectedMediaFiles,
   type PickQuickCaptureAttachmentFilesOptions,
+  type QuickCaptureImportedMediaCandidate,
   type SelectedCaptureMedia
 } from "./quick-capture-media";
 import {
@@ -1572,19 +1573,14 @@ export class QuickCaptureModal extends Modal {
         ...this.runtimeState,
         input: resolvedState.nextInput
       };
+      this.renderCurrentState();
 
       if (imported.mediaCandidates.length > 0 && this.captureEntryMode !== "link") {
-        const importedMedia = await createSelectedCaptureMediaFromImportedCandidates(imported.mediaCandidates);
-        if (importedMedia.length > 0) {
-          releaseSelectedCaptureMediaPreviews(this.selectedMedia);
-          this.selectedMedia = importedMedia;
-          this.selectedMediaIndex = 0;
-          this.showingMediaPreview = false;
-          this.syncRuntimeStateForMediaSelection();
-        }
+        void this.applyImportedLinkMedia(imported.mediaCandidates, {
+          requestId,
+          requestText: trimmedInput
+        });
       }
-
-      this.renderCurrentState();
     } catch {
       if (!isLatestQuickCaptureLinkImportRequest(this.linkImportRequestState, requestId, trimmedInput)) {
         return;
@@ -1602,6 +1598,37 @@ export class QuickCaptureModal extends Modal {
         })
       };
       this.renderCurrentState();
+    }
+  }
+
+  private async applyImportedLinkMedia(
+    mediaCandidates: QuickCaptureImportedMediaCandidate[],
+    request: { requestId: number; requestText: string }
+  ): Promise<void> {
+    try {
+      const importedMedia = await createSelectedCaptureMediaFromImportedCandidates(mediaCandidates);
+      if (importedMedia.length === 0) {
+        return;
+      }
+
+      if (!isLatestQuickCaptureLinkImportRequest(this.linkImportRequestState, request.requestId, request.requestText)) {
+        releaseSelectedCaptureMediaPreviews(importedMedia);
+        return;
+      }
+
+      if (!this.runtimeState || this.runtimeState.phase !== "capture" || this.captureEntryMode === "link") {
+        releaseSelectedCaptureMediaPreviews(importedMedia);
+        return;
+      }
+
+      releaseSelectedCaptureMediaPreviews(this.selectedMedia);
+      this.selectedMedia = importedMedia;
+      this.selectedMediaIndex = 0;
+      this.showingMediaPreview = false;
+      this.syncRuntimeStateForMediaSelection();
+      this.renderCurrentState();
+    } catch {
+      return;
     }
   }
 

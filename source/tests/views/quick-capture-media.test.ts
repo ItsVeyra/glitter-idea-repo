@@ -201,6 +201,29 @@ describe("quick-capture-media", () => {
     expect(file?.type).toBe("image/png");
   });
 
+  it("falls back to the candidate video type when the remote content type is generic", async () => {
+    const mediaModule = await loadQuickCaptureMediaModule();
+    const fetched = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/octet-stream" }),
+      arrayBuffer: async () => new TextEncoder().encode("video-binary").buffer
+    }));
+
+    const file = await mediaModule?.downloadQuickCaptureImportedMedia(
+      {
+        url: "https://cdn.example.com/clip",
+        mediaType: "video",
+        fileName: "clip.mp4"
+      },
+      fetched
+    );
+
+    expect(file).toBeInstanceOf(File);
+    expect(file?.name).toBe("clip.mp4");
+    expect(file?.type).toBe("video/mp4");
+  });
+
   it("prefers imported video files over imported images when a link includes video candidates", async () => {
     const mediaModule = await loadQuickCaptureMediaModule();
     const fetched = vi.fn(async (url: string) => ({

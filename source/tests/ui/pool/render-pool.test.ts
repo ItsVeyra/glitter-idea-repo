@@ -514,6 +514,11 @@ function expectDeclarationsInSelectorBlock(css: string, selector: string, declar
   });
 }
 
+function expectNoDeclarationInSelectorBlock(css: string, selector: string, declaration: string): void {
+  const block = getSelectorBlock(css, selector);
+  expect(block).not.toContain(declaration);
+}
+
 function expectDeclarationsInLastSelectorBlock(css: string, selector: string, declarations: string[]): void {
   const blockMatches = [...css.matchAll(new RegExp(`${escapeRegExp(selector)}\\s*\\{([\\s\\S]*?)\\}`, "g"))];
   expect(blockMatches.length).toBeGreaterThan(0);
@@ -3456,8 +3461,14 @@ describe("renderPoolView", () => {
     expect(popupItems[0]?.className).toContain("glitter-pool-stage__pool-popup-item--selected");
     expect(popupItems[1]?.className).toContain("glitter-pool-stage__pool-popup-item--active");
     expect(container.querySelectorAll(".glitter-pool-stage__pool-popup-check")).toHaveLength(1);
+    expect((container.querySelector(".glitter-pool-stage__topbar") as unknown as FakeElement | null)?.className).not.toContain(
+      "glitter-pool-stage__topbar--pool-switcher-open"
+    );
     expect((container.querySelector(".glitter-pool-stage__pool-switcher") as unknown as FakeElement | null)?.parent?.className).toContain(
       "glitter-pool-stage__title-cluster"
+    );
+    expect((container.querySelector(".glitter-pool-stage__pool-popup") as unknown as FakeElement | null)?.parent?.className).toContain(
+      "glitter-pool-stage__pool-switcher"
     );
   });
 
@@ -7709,6 +7720,19 @@ describe("renderPoolView", () => {
       "backdrop-filter: blur(28px) saturate(148%);"
     ]);
     expect(stylesCss).toContain(".glitter-followup-guidance-modal-host,");
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-followup-guidance-modal-host", [
+      "display: flex;",
+      "align-items: center;",
+      "justify-content: center;",
+      "z-index: 20;"
+    ]);
+    expect(getSelectorBlock(stylesCss, ".glitter-followup-guidance-modal-host")).not.toContain("position: relative;");
+    expect(getSelectorBlock(stylesCss, ".glitter-followup-guidance-modal-host")).not.toContain("isolation: isolate;");
+    expect(
+      Number.parseInt(getDeclarationValue(getSelectorBlock(stylesCss, ".glitter-followup-guidance-modal-host"), "z-index"), 10)
+    ).toBeGreaterThan(
+      Number.parseInt(getDeclarationValue(getSelectorBlock(stylesCss, ".glitter-pool-stage__toolbar-menu--results-overlay"), "z-index"), 10)
+    );
     expect(stylesCss).toContain(".glitter-followup-guidance-modal {");
     expect(stylesCss).toContain(`.glitter-followup-guidance-modal {
   padding: 0;
@@ -8444,10 +8468,32 @@ describe("renderPoolView", () => {
       "box-shadow: none;"
     ]);
 
-    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-popup", [
-      "left: 50%;",
-      "transform: translateX(-50%);"
+    expect(stylesCss).not.toContain(".glitter-pool-stage__topbar--pool-switcher-open {");
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__title-cluster", "position: relative;");
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-switcher", [
+      "position: relative;",
+      "flex: 0 0 auto;"
     ]);
+    expect(
+      Number.parseInt(getDeclarationValue(getSelectorBlock(stylesCss, ".glitter-pool-stage__pool-switcher"), "z-index"), 10)
+    ).toBeGreaterThan(
+      Number.parseInt(getDeclarationValue(getSelectorBlock(stylesCss, ".glitter-pool-stage__results-header"), "z-index"), 10)
+    );
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-switcher", "left: 0;");
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-switcher", "right: 0;");
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-switcher", "justify-content: center;");
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-switcher", "pointer-events: none;");
+    expectDeclarationsInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-popup", [
+      "position: absolute;",
+      "top: calc(100% + 8px);",
+      "left: 50%;",
+      "transform: translateX(-50%);",
+      "min-width: 196px;",
+      "z-index: 3;"
+    ]);
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-popup", "width: min(100%, 420px);");
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-popup", "max-width: min(100%, 420px);");
+    expectNoDeclarationInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-popup", "pointer-events: auto;");
 
     expect(stylesCss).not.toContain(".glitter-pool-stage__create-fab {");
 

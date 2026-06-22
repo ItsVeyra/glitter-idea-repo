@@ -202,6 +202,15 @@ function expectNoDeclarationInSelectorBlock(css: string, selector: string, decla
   expect(block).not.toContain(declaration);
 }
 
+function getDeclarationValueInSelectorBlock(css: string, selector: string, property: string): string {
+  const blockMatch = css.match(new RegExp(`${escapeRegExp(selector)}\\s*\\{([\\s\\S]*?)\\}`));
+  expect(blockMatch).not.toBeNull();
+  const block = blockMatch?.[1] ?? "";
+  const declarationMatch = block.match(new RegExp(`${escapeRegExp(property)}\\s*:\\s*([^;]+);`));
+  expect(declarationMatch).not.toBeNull();
+  return declarationMatch?.[1]?.trim() ?? "";
+}
+
 function expectDeclarationsInLastSelectorBlock(css: string, selector: string, declarations: string[]): void {
   const blockMatches = [...css.matchAll(new RegExp(`${escapeRegExp(selector)}\\s*\\{([\\s\\S]*?)\\}`, "g"))];
   expect(blockMatches.length).toBeGreaterThan(0);
@@ -480,6 +489,43 @@ describe("renderWriteView", () => {
         "background: transparent;",
         "box-shadow: none;"
       ]
+    );
+    expect(
+      Number.parseInt(
+        getDeclarationValueInSelectorBlock(
+          stylesCss,
+          ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
+          "z-index"
+        ),
+        10
+      )
+    ).toBeGreaterThan(
+      Number.parseInt(
+        getDeclarationValueInSelectorBlock(stylesCss, ".glitter-pool-stage__toolbar-menu--results-overlay", "z-index"),
+        10
+      )
+    );
+    expect(
+      Number.parseInt(
+        getDeclarationValueInSelectorBlock(
+          stylesCss,
+          ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
+          "z-index"
+        ),
+        10
+      )
+    ).toBeGreaterThan(
+      Number.parseInt(getDeclarationValueInSelectorBlock(stylesCss, ".glitter-pool-stage__pool-switcher", "z-index"), 10)
+    );
+    expectNoDeclarationInSelectorBlock(
+      stylesCss,
+      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
+      "position: relative;"
+    );
+    expectNoDeclarationInSelectorBlock(
+      stylesCss,
+      ".glitter-quick-capture-modal-host,\n.glitter-pool-modal-host,\n.GlitterIdea-edit-modal-host,\n.GlitterIdea-picker-modal-host,\n.glitter-snippet-locations-modal-host,\n.glitter-pool-roam-history-modal-host,\n.glitter-pool-roam-board-modal-host",
+      "isolation: isolate;"
     );
     expectNoDeclarationInSelectorBlock(
       stylesCss,

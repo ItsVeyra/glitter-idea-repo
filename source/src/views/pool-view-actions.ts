@@ -53,6 +53,7 @@ export type PoolViewActionFactoryDeps = {
   deleteSelectedIdeas: () => Promise<void>;
   toggleBrowseOverlay: (overlay: PoolBrowseOverlay) => void;
   clearBrowseOverlay: () => void;
+  getActiveBrowseOverlay: () => PoolBrowseOverlay | undefined;
   isCardMovePickerOpen: (ideaId: string) => boolean;
   isCardMovePickerSubmitting: (ideaId: string) => boolean;
   openCardMovePicker: (ideaId: string) => void;
@@ -98,6 +99,13 @@ export function createPoolViewActions(deps: PoolViewActionFactoryDeps): PoolView
     },
     onCreateIdea: () => {
       deps.closeCardMenu({ rerender: false });
+      if (deps.getActiveBrowseOverlay()) {
+        deps.preserveResultScrollOnNextRender();
+        deps.clearBrowseOverlay();
+        if (!deps.rerenderBrowseRuntime()) {
+          deps.renderPoolShell();
+        }
+      }
       const activePool = deps.runtime.poolOptions.find((pool) => pool.selected);
       const openSavedFeedback = (selection?: QuickCaptureSavedSelection): void => {
         const savedPoolId = selection?.poolId ?? deps.activePoolId;
